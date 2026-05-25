@@ -1,0 +1,66 @@
+#pragma once
+
+#include <juce_audio_processors/juce_audio_processors.h>
+#include "dsp/DubDelayEngine.h"
+#include "presets/PresetManager.h"
+
+// Top-level plugin. Owns the parameter tree, resolves tempo-synced delay times
+// from the host transport, converts raw parameters into engine units, and hands
+// audio to the DubDelayEngine.
+class DoobieAudioProcessor : public juce::AudioProcessor
+{
+public:
+    DoobieAudioProcessor();
+    ~DoobieAudioProcessor() override = default;
+
+    void prepareToPlay (double sampleRate, int samplesPerBlock) override;
+    void releaseResources() override {}
+    bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
+    void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+
+    juce::AudioProcessorEditor* createEditor() override;
+    bool hasEditor() const override { return true; }
+
+    const juce::String getName() const override { return "Doobie"; }
+    bool acceptsMidi() const override  { return false; }
+    bool producesMidi() const override { return false; }
+    bool isMidiEffect() const override { return false; }
+    double getTailLengthSeconds() const override { return 8.0; }
+
+    int getNumPrograms() override { return 1; }
+    int getCurrentProgram() override { return 0; }
+    void setCurrentProgram (int) override {}
+    const juce::String getProgramName (int) override { return {}; }
+    void changeProgramName (int, const juce::String&) override {}
+
+    void getStateInformation (juce::MemoryBlock& destData) override;
+    void setStateInformation (const void* data, int sizeInBytes) override;
+
+    juce::AudioProcessorValueTreeState& getValueTreeState() { return apvts; }
+    PresetManager& getPresetManager() { return presetManager; }
+
+    // For the editor's echo visualiser.
+    const doobie::DubDelayEngine& getEngine() const { return engine; }
+    double getCurrentBpm() const { return currentBpm.load(); }
+    double getSampleRateForUI() const { return sampleRate; }
+
+    // Post-processing output level per channel (0..1), for the VU meters.
+    float getOutputLevel (int channel) const
+    {
+        return outputLevel[(size_t) juce::jlimit (0, 1, channel)].load (std::memory_order_relaxed);
+    }
+
+private:
+    juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+    void updateEngineParams();
+
+    juce::AudioProcessorValueTreeState apvts;
+    doobie::DubDelayEngine engine;
+    PresetManager presetManager;
+
+    std::atomic<double> currentBpm { 120.0 };
+    std::array<std::atomic<float>, 2> outputLevel { };
+    double sampleRate = 44100.0;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DoobieAudioProcessor)
+};
