@@ -9,78 +9,110 @@ namespace
     PV hl (int i, float v) { return { dID::headLevel[(size_t) i], v }; }
     PV hp (int i, float v) { return { dID::headPan[(size_t) i],   v }; }
 
-    // The factory bank. Each preset lists only the values that differ from the
-    // parameter defaults; everything else is reset before a preset is applied,
-    // so loads are deterministic. Values are in real units (Hz, ms, indices).
+    // The factory bank, grouped by use. Each preset lists only the values that
+    // differ from the parameter defaults; everything else is reset before a
+    // preset is applied, so loads are deterministic. Values are in real units
+    // (Hz, ms) and, for choice parameters, the option index:
+    //   syncDiv:  ... 4=1/16, 5=1/8T, 6=1/16., 7=1/8, 9=1/8., 10=1/4, 13=1/2 ...
+    //   modeSel:  0=A 4=A+B 6=A+C 11=A+B+C+D
+    //   reverbMode: 0 off, 1 spring, 2 plate, 3 series, 4 parallel
+    //   reverbRoute: 0 post, 1 pre, 2 in-feedback
     std::vector<PresetManager::Preset> buildFactory()
     {
         return {
+            // ---- Dub / reggae -----------------------------------------------
             { "Classic Dub", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::feedback, 0.62f },
-                { dID::drive, 0.40f }, { dID::lpFreq, 3200.0f }, { dID::bass, 0.20f },
-                { dID::reverbMode, 1 }, { dID::reverbRoute, 2 }, { dID::reverbMix, 0.35f },
-                { dID::wow, 0.25f }, { dID::flutter, 0.15f }, { dID::mix, 0.40f } } },
+                { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::feedback, 0.68f },
+                { dID::drive, 0.45f }, { dID::lpFreq, 3000.0f }, { dID::bass, 0.20f },
+                { dID::reverbMode, 1 }, { dID::reverbRoute, 2 }, { dID::reverbMix, 0.40f },
+                { dID::springDecay, 0.6f }, { dID::wow, 0.25f }, { dID::flutter, 0.15f },
+                { dID::mix, 0.40f } } },
 
             { "Dub Siren", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::feedback, 0.95f },
-                { dID::lpFreq, 2600.0f }, { dID::hpFreq, 220.0f }, { dID::drive, 0.50f },
-                { dID::reverbMode, 1 }, { dID::reverbRoute, 2 }, { dID::reverbMix, 0.40f },
+                { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::feedback, 1.0f },
+                { dID::lpFreq, 2400.0f }, { dID::hpFreq, 240.0f }, { dID::drive, 0.5f },
+                { dID::reverbMode, 1 }, { dID::reverbRoute, 2 }, { dID::reverbMix, 0.45f },
                 { dID::mix, 0.45f } } },
 
             { "Tape Slap", {
-                { dID::syncMode, 0 }, { dID::timeMs, 110.0f }, { dID::feedback, 0.12f },
-                { dID::reverbMode, 0 }, { dID::drive, 0.50f }, { dID::wow, 0.30f },
-                { dID::flutter, 0.25f }, { dID::mix, 0.30f } } },
+                { dID::syncMode, 0 }, { dID::timeMs, 110.0f }, { dID::feedback, 0.15f },
+                { dID::reverbMode, 0 }, { dID::drive, 0.55f }, { dID::wow, 0.30f },
+                { dID::flutter, 0.25f }, { dID::lpFreq, 5500.0f }, { dID::mix, 0.32f } } },
+
+            { "Echo Chamber", {
+                { dID::syncMode, 1 }, { dID::syncDiv, 9 }, { dID::feedback, 0.72f },
+                { dID::pingPong, 1 }, { dID::reverbMode, 1 }, { dID::reverbRoute, 0 },
+                { dID::reverbMix, 0.5f }, { dID::springDecay, 0.7f }, { dID::lpFreq, 3600.0f },
+                { dID::mix, 0.45f } } },
+
+            // ---- Ambient / cinematic ---------------------------------------
+            { "Ambient Wash", {
+                { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::reverbMode, 4 },
+                { dID::reverbRoute, 1 }, { dID::reverbMix, 0.60f }, { dID::plateDecay, 0.85f },
+                { dID::plateSize, 0.80f }, { dID::reverbMod, 0.4f }, { dID::feedback, 0.5f },
+                { dID::lpFreq, 8000.0f }, { dID::mix, 0.6f } } },
+
+            { "Frozen Pad", {
+                { dID::freeze, 1 }, { dID::reverbMode, 4 }, { dID::reverbRoute, 0 },
+                { dID::reverbMix, 0.55f }, { dID::plateDecay, 0.9f }, { dID::plateSize, 0.9f },
+                { dID::reverbMod, 0.6f }, { dID::width, 1.4f }, { dID::mix, 0.7f } } },
+
+            { "Cathedral", {
+                { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::reverbMode, 3 },
+                { dID::reverbRoute, 0 }, { dID::reverbMix, 0.55f }, { dID::plateDecay, 0.92f },
+                { dID::plateSize, 0.9f }, { dID::platePredelay, 60.0f }, { dID::springDecay, 0.6f },
+                { dID::feedback, 0.4f }, { dID::mix, 0.55f } } },
+
+            { "Cosmic Drift", {
+                { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::feedback, 0.82f },
+                { dID::reverbMode, 4 }, { dID::reverbRoute, 2 }, { dID::reverbMix, 0.5f },
+                { dID::plateDecay, 0.88f }, { dID::reverbMod, 0.7f }, { dID::springDecay, 0.7f },
+                { dID::wow, 0.4f }, { dID::lpFreq, 4200.0f }, { dID::mix, 0.55f } } },
+
+            // ---- Rhythmic / electronic -------------------------------------
+            { "Dotted Pop", {
+                { dID::syncMode, 1 }, { dID::syncDiv, 9 }, { dID::feedback, 0.45f },
+                { dID::drive, 0.15f }, { dID::reverbMode, 2 }, { dID::reverbRoute, 0 },
+                { dID::reverbMix, 0.22f }, { dID::lpFreq, 9000.0f }, { dID::mix, 0.35f } } },
+
+            { "Ping Triplets", {
+                { dID::syncMode, 1 }, { dID::syncDiv, 5 }, { dID::modeSel, 6 },
+                { dID::feedback, 0.5f }, { dID::pingPong, 1 }, { dID::reverbMode, 1 },
+                { dID::reverbMix, 0.2f }, { dID::mix, 0.38f } } },
 
             { "Multihead Cascade", {
                 { dID::syncMode, 1 }, { dID::syncDiv, 7 }, { dID::modeSel, 11 },
                 { dID::feedback, 0.45f }, hl (0, 0.85f), hl (1, 0.6f), hl (2, 0.6f), hl (3, 0.7f),
                 hp (0, 0.0f), hp (1, -0.5f), hp (2, 0.5f), hp (3, 0.0f),
-                { dID::reverbMode, 2 }, { dID::reverbMix, 0.30f }, { dID::mix, 0.45f } } },
+                { dID::reverbMode, 2 }, { dID::reverbMix, 0.3f }, { dID::mix, 0.45f } } },
 
-            { "Ambient Wash", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::reverbMode, 4 },
-                { dID::reverbRoute, 1 }, { dID::reverbMix, 0.60f }, { dID::plateDecay, 0.85f },
-                { dID::plateSize, 0.80f }, { dID::feedback, 0.50f }, { dID::lpFreq, 8000.0f },
-                { dID::mix, 0.60f } } },
+            { "Techno Quarter", {
+                { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::feedback, 0.55f },
+                { dID::pingPong, 1 }, { dID::drive, 0.2f }, { dID::reverbMode, 0 },
+                { dID::lpFreq, 6500.0f }, { dID::mix, 0.35f } } },
 
-            { "Dotted Skank", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 9 }, { dID::pingPong, 1 },
-                { dID::feedback, 0.50f }, { dID::reverbMode, 2 }, { dID::reverbMix, 0.25f },
-                { dID::mix, 0.40f } } },
+            { "Stutter 16ths", {
+                { dID::syncMode, 1 }, { dID::syncDiv, 4 }, { dID::modeSel, 4 },
+                { dID::feedback, 0.6f }, { dID::pingPong, 1 }, { dID::reverbMode, 1 },
+                { dID::reverbMix, 0.18f }, { dID::mix, 0.4f } } },
 
-            { "Spring Splash", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::reverbMode, 1 },
-                { dID::reverbMix, 0.50f }, { dID::springDecay, 0.70f }, { dID::feedback, 0.40f },
-                { dID::mix, 0.45f } } },
-
-            { "Triplet Skank", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 5 }, { dID::modeSel, 6 },
-                { dID::feedback, 0.50f }, { dID::pingPong, 1 }, { dID::reverbMode, 1 },
-                { dID::mix, 0.40f } } },
-
-            { "Outer Space", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::feedback, 0.85f },
-                { dID::reverbMode, 4 }, { dID::reverbRoute, 2 }, { dID::reverbMix, 0.50f },
-                { dID::plateDecay, 0.90f }, { dID::plateSize, 0.90f }, { dID::reverbMod, 0.60f },
-                { dID::wow, 0.40f }, { dID::lpFreq, 4200.0f }, { dID::mix, 0.55f } } },
-
+            // ---- Lo-fi / vintage character ---------------------------------
             { "Vintage Echo", {
-                { dID::syncMode, 0 }, { dID::timeMs, 320.0f }, { dID::wow, 0.50f },
-                { dID::flutter, 0.45f }, { dID::drive, 0.60f }, { dID::lpFreq, 2800.0f },
-                { dID::hiss, 0.25f }, { dID::feedback, 0.50f }, { dID::reverbMode, 1 },
-                { dID::mix, 0.40f } } },
+                { dID::syncMode, 0 }, { dID::timeMs, 320.0f }, { dID::wow, 0.55f },
+                { dID::flutter, 0.5f }, { dID::drive, 0.6f }, { dID::lpFreq, 2600.0f },
+                { dID::hiss, 0.3f }, { dID::feedback, 0.5f }, { dID::reverbMode, 1 },
+                { dID::reverbMix, 0.3f }, { dID::mix, 0.4f } } },
 
-            { "Clean Quarter", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::feedback, 0.30f },
-                { dID::drive, 0.10f }, { dID::wow, 0.05f }, { dID::flutter, 0.03f },
-                { dID::reverbMode, 0 }, { dID::lpFreq, 12000.0f }, { dID::mix, 0.30f } } },
+            { "Warped Tape", {
+                { dID::syncMode, 0 }, { dID::timeMs, 480.0f }, { dID::wow, 0.8f },
+                { dID::flutter, 0.6f }, { dID::drive, 0.5f }, { dID::lpFreq, 3200.0f },
+                { dID::hiss, 0.4f }, { dID::feedback, 0.55f }, { dID::reverbMode, 1 },
+                { dID::reverbRoute, 2 }, { dID::reverbMix, 0.3f }, { dID::mix, 0.42f } } },
 
-            { "Cavern Plate", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::reverbMode, 3 },
-                { dID::reverbRoute, 0 }, { dID::reverbMix, 0.50f }, { dID::plateDecay, 0.90f },
-                { dID::plateSize, 0.85f }, { dID::springDecay, 0.60f }, { dID::feedback, 0.55f },
-                { dID::mix, 0.50f } } },
+            { "Dusty Slap", {
+                { dID::syncMode, 0 }, { dID::timeMs, 140.0f }, { dID::feedback, 0.2f },
+                { dID::drive, 0.5f }, { dID::wow, 0.4f }, { dID::hiss, 0.5f },
+                { dID::lpFreq, 3000.0f }, { dID::reverbMode, 0 }, { dID::mix, 0.3f } } },
         };
     }
 }

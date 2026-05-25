@@ -24,7 +24,7 @@ dub echoes and as a general-purpose modulated delay / ambience for other genres.
   stereo width.
 - **12 factory presets** plus user preset save/load.
 - **Vintage UI** — brushed-metal panel, amber-lit knobs, analog VU meters, a live
-  echo-pattern visualiser and an animated spring tank.
+  echo-pattern visualiser and a reverb decay-curve display.
 
 ## Building
 
