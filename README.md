@@ -37,7 +37,8 @@ home as a modulated delay and ambience for any genre.
   **post**, **pre**, or **inside the feedback loop** for washing dub textures.
 - **Performance controls** — ping-pong feedback, freeze (infinite hold), wet ducking,
   stereo width.
-- **16 factory presets** across dub, ambient, rhythmic and lo-fi, plus user save/load.
+- **50+ factory presets** across dub/reggae, ambient/cinematic, rhythmic/electronic,
+  lo-fi/vintage, sound-design FX and instrument-specific patches, plus user save/load.
 - **Vintage UI** — brushed-metal panel, amber-lit knobs, analog VU meters, a live
   per-head echo visualiser, and a reverb decay-curve display.
 
