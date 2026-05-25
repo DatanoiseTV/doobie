@@ -110,4 +110,15 @@ target_link_libraries(Doobie PRIVATE
 if(PROJECT_IS_TOP_LEVEL)
     enable_testing()
     add_subdirectory(tests)
+
+    # Offline UI snapshot tool (renders the editor to a PNG, no DAW needed).
+    add_executable(doobie_snapshot tools/Snapshot.cpp)
+    target_include_directories(doobie_snapshot PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(doobie_snapshot PRIVATE
+        Doobie
+        juce::juce_audio_utils
+        juce::juce_dsp
+        juce::juce_gui_extra
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags)
 endif()
