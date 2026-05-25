@@ -17,6 +17,10 @@ using doobie::colours::amber;
 using doobie::colours::teal;
 using doobie::colours::cream;
 
+// Total width of the header's preset cluster: [<] [combo] [>] [SAVE].
+// Shared by paint() (to keep the version text clear of it) and resized().
+static constexpr int kPresetClusterW = 30 + 4 + 170 + 4 + 30 + 8 + 62;
+
 // ----------------------------------------------------------------------------
 // Knob / Combo helpers
 // ----------------------------------------------------------------------------
@@ -74,6 +78,7 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p), echoView (p), reverbView (p)
 {
     setLookAndFeel (&lnf);
+    setOpaque (true);   // paint() fills the whole area; avoids host compositing artifacts
     auto& state = audioProcessor.getValueTreeState();
 
     // Presets.
@@ -243,16 +248,18 @@ void DoobieAudioProcessorEditor::paint (juce::Graphics& g)
     auto header = rHeader.reduced (16, 0);
     g.setColour (amber());
     g.setFont (juce::Font (juce::FontOptions (30.0f)).withExtraKerningFactor (0.08f).boldened());
-    g.drawText ("DOOBIE", header.removeFromLeft (180), juce::Justification::centredLeft);
+    g.drawText ("DOOBIE", header.removeFromLeft (175), juce::Justification::centredLeft);
     g.setColour (cream().withAlpha (0.7f));
-    g.setFont (juce::Font (juce::FontOptions (13.0f)).withExtraKerningFactor (0.18f));
-    g.drawText ("ANALOG DUB DELAY", header.removeFromLeft (200).withTrimmedTop (6),
-                juce::Justification::centredLeft);
+    g.setFont (juce::Font (juce::FontOptions (12.5f)).withExtraKerningFactor (0.18f));
+    g.drawText ("ANALOG DUB DELAY", header.removeFromLeft (190), juce::Justification::centredLeft);
 
-    g.setColour (cream().withAlpha (0.35f));
+    // Version sits in the gap to the LEFT of the preset cluster (kPresetClusterW
+    // must match resized()), so it never overlaps the combo / SAVE button.
+    header.removeFromRight (kPresetClusterW + 12);
+    g.setColour (cream().withAlpha (0.30f));
     g.setFont (juce::Font (juce::FontOptions (10.0f)));
     g.drawText (juce::String ("v") + DOOBIE_VERSION + "  " + DOOBIE_GIT_BRANCH + "@" + DOOBIE_GIT_HASH,
-                rHeader.removeFromRight (220).reduced (10, 0), juce::Justification::centredRight);
+                header.removeFromRight (210), juce::Justification::centredRight);
 
     // Section panels.
     auto panel = [&] (juce::Rectangle<int> r, const juce::String& title, juce::Colour border)
@@ -305,14 +312,16 @@ void DoobieAudioProcessorEditor::resized()
     rHeader = area.removeFromTop (56);
 
     // Header controls (right side): prev / preset / next / save.
-    auto hc = rHeader.reduced (16, 12);
-    hc.removeFromLeft (380);                 // logo space
-    btnSave.setBounds (hc.removeFromRight (70));
-    hc.removeFromRight (220);                 // version space
-    btnNext.setBounds (hc.removeFromRight (32));
-    auto presetArea = hc.removeFromRight (220);
-    btnPrev.setBounds (presetArea.removeFromLeft (32));
-    presetBox.setBounds (presetArea.reduced (4, 0));
+    // Preset cluster anchored to the right: [<] [combo] [>] [SAVE]. Widths must
+    // sum to kPresetClusterW so the version text (drawn in paint) stays clear.
+    auto hc = rHeader.reduced (16, 11);
+    btnSave.setBounds (hc.removeFromRight (62));
+    hc.removeFromRight (8);
+    btnNext.setBounds (hc.removeFromRight (30));
+    hc.removeFromRight (4);
+    presetBox.setBounds (hc.removeFromRight (170));
+    hc.removeFromRight (4);
+    btnPrev.setBounds (hc.removeFromRight (30));
 
     area.reduce (12, 10);
     const int gap = 12;
