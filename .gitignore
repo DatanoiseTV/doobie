@@ -1,0 +1,25 @@
+# Build output
+build/
+cmake-build-*/
+out/
+
+# Generated tooling files
+compile_commands.json
+.cache/
+
+# IDE / editor
+.vscode/
+.idea/
+*.user
+*.xcworkspace
+*.xcodeproj
+DerivedData/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local agent / private notes (never commit)
+TODO.md
+STRUCTURE.md
+CLAUDE.md
