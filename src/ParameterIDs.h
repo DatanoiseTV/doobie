@@ -52,9 +52,11 @@ namespace dID
     inline constexpr auto drive       = "drive";       // tape saturation
     inline constexpr auto hiss        = "hiss";        // tape age / noise floor
 
-    // ---- Pre-delay filters (shape the signal entering the delay) -----------
+    // ---- Input filter (shapes the signal entering the delay) ---------------
     inline constexpr auto preHpFreq   = "preHpFreq";   // input high-pass
     inline constexpr auto preLpFreq   = "preLpFreq";   // input low-pass
+    inline constexpr auto preBass     = "preBass";     // input low shelf
+    inline constexpr auto preTreble   = "preTreble";   // input high shelf
 
     // ---- Feedback tone (the dub tone knobs, applied on every repeat) -------
     inline constexpr auto bass        = "bass";        // low shelf in feedback

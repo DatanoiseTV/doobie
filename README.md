@@ -28,9 +28,10 @@ home as a modulated delay and ambience for any genre.
   changes glide like a tape capstan rather than jumping.
 - **Analog character** — tape saturation, wow & flutter with random drift, and a
   "tape age" hiss, all in the recirculating path.
-- **Two filter stages** — pre-delay high/low-cut shape only the signal that gets
-  echoed (the dry output stays clean), and in-feedback low-cut/high-cut plus
-  bass/treble shelves darken and dissolve each repeat the way real tape does.
+- **Two independent filter stages** — an **input** filter (low-cut, high-cut, bass
+  and treble) shapes only the signal that gets echoed, leaving the dry output clean;
+  a separate **feedback** filter (same four controls) darkens and dissolves each
+  repeat the way real tape does. Each stage has its own dedicated knobs.
 - **Chained reverbs** — a dispersive spring tank and a modulated 8-line FDN plate.
   Run either alone, in series (spring → plate) or in parallel, and route the reverb
   **post**, **pre**, or **inside the feedback loop** for washing dub textures.

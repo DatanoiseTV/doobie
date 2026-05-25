@@ -48,9 +48,10 @@ struct EngineParams
 
     float wow = 0.15f, flutter = 0.1f, drive = 0.25f, hiss = 0.0f;
 
-    float preHp = 20.0f, preLp = 18000.0f;  // pre-delay input filters
+    float preHp = 20.0f, preLp = 18000.0f;   // input filter cuts
+    float preBass = 0.0f, preTreble = 0.0f;  // input filter shelves (-1..1)
 
-    float bass = 0.0f, treble = 0.0f;   // -1..1 shelves
+    float bass = 0.0f, treble = 0.0f;   // feedback shelves (-1..1)
     float hpFreq = 120.0f, lpFreq = 6500.0f;
 
     int   reverbMode  = 1;   // 0 off, 1 spring, 2 plate, 3 series, 4 parallel

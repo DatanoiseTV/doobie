@@ -126,8 +126,8 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
 
     toneL.update (params.bass, params.treble, params.hpFreq, params.lpFreq);
     toneR.update (params.bass, params.treble, params.hpFreq, params.lpFreq);
-    preToneL.update (0.0f, 0.0f, params.preHp, params.preLp);
-    preToneR.update (0.0f, 0.0f, params.preHp, params.preLp);
+    preToneL.update (params.preBass, params.preTreble, params.preHp, params.preLp);
+    preToneR.update (params.preBass, params.preTreble, params.preHp, params.preLp);
     satL.setDrive (params.drive);
     satR.setDrive (params.drive);
 

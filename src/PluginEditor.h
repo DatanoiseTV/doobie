@@ -78,9 +78,11 @@ private:
     // Multi-head.
     std::array<Knob, 4> headLevel, headPan, headRatio;
 
-    // Tape character + filters/tone.
+    // Tape character.
     Knob kWow, kFlutter, kSat, kAge;
-    Knob kPreHp, kPreLp, kBass, kTreble, kLowCut, kHighCut;
+    // Two independent filter stages, each with HP/LP cuts and bass/treble shelves.
+    Knob kPreHp, kPreLp, kPreBass, kPreTreble;  // input (pre-delay)
+    Knob kLowCut, kHighCut, kBass, kTreble;     // feedback (every repeat)
 
     // Reverb.
     Combo cbReverbMode, cbReverbRoute;
@@ -90,7 +92,7 @@ private:
     Knob kInput, kMix, kOutput, kWidth, kDuck;
 
     // Panel rectangles shared between paint() and resized().
-    juce::Rectangle<int> rHeader, rMode, rHeads, rDelay, rTape, rTone, rReverb, rOutput;
+    juce::Rectangle<int> rHeader, rMode, rHeads, rDelay, rTape, rFilters, rReverb, rOutput;
 
     // Visualisers.
     doobie::EchoVisualiser     echoView;

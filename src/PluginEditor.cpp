@@ -131,12 +131,15 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
     kFlutter.attach (*this, state, dID::flutter, "FLUTTER", amber());
     kSat.attach     (*this, state, dID::drive,   "SAT",     amber());
     kAge.attach     (*this, state, dID::hiss,    "AGE",     amber());
-    kPreHp.attach    (*this, state, dID::preHpFreq, "PRE HP", teal());
-    kPreLp.attach    (*this, state, dID::preLpFreq, "PRE LP", teal());
-    kBass.attach     (*this, state, dID::bass,   "BASS",     amber());
-    kTreble.attach   (*this, state, dID::treble, "TREBLE",   amber());
-    kLowCut.attach   (*this, state, dID::hpFreq, "LOW CUT",  amber());
-    kHighCut.attach  (*this, state, dID::lpFreq, "HIGH CUT", amber());
+    // Input filter (teal) and feedback filter (amber), same controls on each.
+    kPreHp.attach     (*this, state, dID::preHpFreq, "LOW CUT",  teal());
+    kPreLp.attach     (*this, state, dID::preLpFreq, "HIGH CUT", teal());
+    kPreBass.attach   (*this, state, dID::preBass,   "BASS",     teal());
+    kPreTreble.attach (*this, state, dID::preTreble, "TREBLE",   teal());
+    kLowCut.attach   (*this, state, dID::hpFreq,  "LOW CUT",  amber());
+    kHighCut.attach  (*this, state, dID::lpFreq,  "HIGH CUT", amber());
+    kBass.attach     (*this, state, dID::bass,    "BASS",     amber());
+    kTreble.attach   (*this, state, dID::treble,  "TREBLE",   amber());
 
     // Reverb (teal accents).
     cbReverbMode.attach  (*this, state, dID::reverbMode,  "REVERB", dID::reverbModeChoices);
@@ -284,13 +287,13 @@ void DoobieAudioProcessorEditor::paint (juce::Graphics& g)
         }
     };
 
-    panel (rMode,   "MODE",   doobie::colours::line());
-    panel (rHeads,  "PLAYBACK HEADS", doobie::colours::line());
-    panel (rDelay,  "DELAY",  doobie::colours::line());
-    panel (rTape,   "TAPE",   doobie::colours::line());
-    panel (rTone,   "FILTERS  (PRE + FEEDBACK)",   doobie::colours::line());
-    panel (rReverb, "REVERB", teal().withAlpha (0.6f));
-    panel (rOutput, "OUTPUT", doobie::colours::line());
+    panel (rMode,    "MODE",   doobie::colours::line());
+    panel (rHeads,   "PLAYBACK HEADS", doobie::colours::line());
+    panel (rDelay,   "DELAY",  doobie::colours::line());
+    panel (rTape,    "TAPE",   doobie::colours::line());
+    panel (rFilters, "FILTERS", doobie::colours::line());
+    panel (rReverb,  "REVERB", teal().withAlpha (0.6f));
+    panel (rOutput,  "OUTPUT", doobie::colours::line());
 
     // Column titles inside the heads panel.
     g.setColour (cream().withAlpha (0.45f));
@@ -301,6 +304,24 @@ void DoobieAudioProcessorEditor::paint (juce::Graphics& g)
     g.drawText ("LEVEL", htitle.removeFromLeft (colw), juce::Justification::centred);
     g.drawText ("PAN",   htitle.removeFromLeft (colw), juce::Justification::centred);
     g.drawText ("TIME",  htitle, juce::Justification::centred);
+
+    // INPUT / FEEDBACK sub-headers inside the FILTERS panel (kept in sync with
+    // resized()). A divider line separates the two stages.
+    {
+        auto f = rFilters.reduced (8).withTrimmedTop (22);
+        const int half = f.getHeight() / 2;
+        auto inArea = f.removeFromTop (half);
+        auto fbArea = f;
+
+        g.setColour (doobie::colours::line());
+        g.drawHorizontalLine (inArea.getBottom(), (float) rFilters.getX() + 8.0f, (float) rFilters.getRight() - 8.0f);
+
+        g.setFont (juce::Font (juce::FontOptions (10.0f)).withExtraKerningFactor (0.1f));
+        g.setColour (teal().withAlpha (0.85f));
+        g.drawText ("INPUT", inArea.removeFromTop (12).withTrimmedLeft (2), juce::Justification::centredLeft);
+        g.setColour (amber().withAlpha (0.85f));
+        g.drawText ("FEEDBACK", fbArea.removeFromTop (12).withTrimmedLeft (2), juce::Justification::centredLeft);
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -359,7 +380,16 @@ void DoobieAudioProcessorEditor::resized()
         }
     }
 
-    // ---- Column B: delay ----------------------------------------------------
+    auto rowOf = [] (juce::Rectangle<int> r, std::initializer_list<Knob*> knobs)
+    {
+        const int kw = r.getWidth() / (int) knobs.size();
+        for (auto* k : knobs)
+            k->place (r.removeFromLeft (kw).reduced (3, 0));
+    };
+
+    // ---- Column B: delay (top) + tape character (bottom) -------------------
+    rTape = colB.removeFromBottom (104);
+    colB.removeFromBottom (gap);
     rDelay = colB;
     {
         auto d = rDelay.reduced (10).withTrimmedTop (24);
@@ -379,24 +409,22 @@ void DoobieAudioProcessorEditor::resized()
         tgPingPong.setBounds (togRow.removeFromLeft (togRow.getWidth() / 2).reduced (8, 6));
         tgFreeze.setBounds   (togRow.reduced (8, 6));
     }
+    rowOf (rTape.reduced (10).withTrimmedTop (22), { &kWow, &kFlutter, &kSat, &kAge });
 
-    // ---- Column C: tape, tone, reverb --------------------------------------
-    rTape = colC.removeFromTop (118);
-    colC.removeFromTop (gap);
-    rTone = colC.removeFromTop (118);
+    // ---- Column C: two filter stages + reverb ------------------------------
+    rFilters = colC.removeFromTop (206);
     colC.removeFromTop (gap);
     rReverb = colC;
-
-    auto rowOf = [] (juce::Rectangle<int> r, std::initializer_list<Knob*> knobs)
     {
-        const int kw = r.getWidth() / (int) knobs.size();
-        for (auto* k : knobs)
-            k->place (r.removeFromLeft (kw).reduced (3, 0));
-    };
-
-    rowOf (rTape.reduced (10).withTrimmedTop (22), { &kWow, &kFlutter, &kSat, &kAge });
-    rowOf (rTone.reduced (8).withTrimmedTop (22),
-           { &kPreHp, &kPreLp, &kBass, &kTreble, &kLowCut, &kHighCut });
+        auto f = rFilters.reduced (8).withTrimmedTop (22);
+        const int half = f.getHeight() / 2;
+        auto inArea = f.removeFromTop (half);
+        auto fbArea = f;
+        inArea.removeFromTop (12);   // INPUT sub-header (drawn in paint)
+        fbArea.removeFromTop (12);   // FEEDBACK sub-header
+        rowOf (inArea, { &kPreHp, &kPreLp, &kPreBass, &kPreTreble });
+        rowOf (fbArea, { &kLowCut, &kHighCut, &kBass, &kTreble });
+    }
 
     {
         auto rv = rReverb.reduced (10).withTrimmedTop (24);
