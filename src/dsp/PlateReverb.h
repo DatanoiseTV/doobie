@@ -46,5 +46,6 @@ private:
     float dampCoef = 0.5f;
     float modDepth = 0.3f;
     float preLenSamples = 0.0f;
+    float outGain = 0.4f;     // normalised so level stays consistent vs decay
 };
 } // namespace doobie

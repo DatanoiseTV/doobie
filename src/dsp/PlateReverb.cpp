@@ -73,6 +73,11 @@ void PlateReverb::setParams (float decay, float size, float damp, float predelay
     dampCoef  = 0.15f + (1.0f - damp) * 0.8f;     // brighter when damp is low
     modDepth  = mod;
     preLenSamples = std::clamp (predelayMs, 0.0f, 200.0f) * 0.001f * (float) sampleRate;
+
+    // The recirculating energy grows like 1/(1-g^2); compensating with
+    // sqrt(1-g^2) keeps the wet return at a roughly constant level whatever the
+    // decay time, so the REVERB MIX control behaves predictably.
+    outGain = 0.4f * std::sqrt (std::max (0.02f, 1.0f - g * g));
 }
 
 void PlateReverb::process (float inL, float inR, float& outL, float& outR) noexcept
@@ -114,9 +119,8 @@ void PlateReverb::process (float inL, float inR, float& outL, float& outR) noexc
         oL += cL[(size_t) i] * s[(size_t) i];
         oR += cR[(size_t) i] * s[(size_t) i];
     }
-    constexpr float outScale = 0.5f / (float) N;
-    outL = oL * outScale;
-    outR = oR * outScale;
+    outL = oL * outGain;
+    outR = oR * outGain;
 
     // Mix through the Hadamard matrix and feed back with the decay gain.
     hadamard8 (s);
