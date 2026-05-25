@@ -16,13 +16,18 @@ public:
     // drive in 0..1.
     void setDrive (float d) noexcept
     {
-        drive    = 1.0f + d * 7.0f;        // 1..8
-        normGain = 1.0f / std::tanh (drive); // keep full-scale roughly unity
+        // Unity small-signal gain (normGain = 1/drive) so the saturator adds
+        // harmonics and softly limits hot peaks without changing the loop gain.
+        // The FEEDBACK control alone then sets how the echoes decay. (The old
+        // 1/tanh(drive) normalisation boosted quiet signals and made heavy
+        // feedback swell unnaturally.)
+        drive    = 1.0f + d * 3.0f;        // 1..4
+        normGain = 1.0f / drive;
     }
 
     inline float process (float x) noexcept
     {
-        const float pre = drive * x + 0.05f * drive * x * x; // gentle asymmetry
+        const float pre = drive * x + 0.04f * drive * x * x; // gentle asymmetry -> even harmonics
         float y = std::tanh (pre) * normGain;
 
         // DC blocker (one-pole high-pass at a few Hz).

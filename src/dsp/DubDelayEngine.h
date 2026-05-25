@@ -87,7 +87,9 @@ private:
     SpringReverb spring;
     PlateReverb  plate;
 
-    juce::SmoothedValue<double> smoothedDelay;
+    // Multiplicative smoothing glides the delay time at a constant ratio, which
+    // sounds like a tape capstan easing to a new speed rather than a linear jump.
+    juce::SmoothedValue<double, juce::ValueSmoothingTypes::Multiplicative> smoothedDelay;
     juce::SmoothedValue<float>  smoothedFeedback, smoothedMix, smoothedOut, smoothedInGain, smoothedWidth;
 
     float duckEnv = 0.0f;

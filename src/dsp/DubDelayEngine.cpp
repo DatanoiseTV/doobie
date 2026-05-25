@@ -22,7 +22,7 @@ void DubDelayEngine::prepare (double sr, int maxBlockSize)
     spring.prepare (sr);
     plate.prepare (sr);
 
-    smoothedDelay.reset (sr, 0.12);
+    smoothedDelay.reset (sr, 0.30);
     smoothedFeedback.reset (sr, 0.03);
     smoothedMix.reset (sr, 0.02);
     smoothedOut.reset (sr, 0.02);
@@ -115,7 +115,7 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
 
     wowFlutter.setAmounts (params.wow, params.flutter);
 
-    spring.setParams (params.springDecay, params.springTone);
+    spring.setParams (params.springDecay, params.springTone, params.plateMod);
     plate.setParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
 
     const int   mask      = kModeMask[(size_t) std::clamp (params.mode, 0, 11)];

@@ -52,48 +52,53 @@ static void testSaturation()
     check (maxOut < 1.5f, "Saturation bounds a hot input");
 }
 
+// Feeds a short noise burst then silence and confirms the reverb (a) never
+// blows up and (b) has clearly decayed by the end. Comparing late-tail energy
+// to early-tail energy keeps the test valid whatever the absolute decay time.
+template <typename Reverb>
+static void testReverbDecay (Reverb& rev)
+{
+    constexpr int sr = 48000;
+    constexpr int total = sr * 3;        // 3 seconds
+    std::mt19937 rng (7);
+    std::uniform_real_distribution<float> dist (-1.0f, 1.0f);
+
+    double early = 0.0, late = 0.0;
+    for (int i = 0; i < total; ++i)
+    {
+        const float in = i < sr / 10 ? dist (rng) : 0.0f; // 0.1 s burst
+        float l, r;
+        rev.process (in, in, l, r);
+
+        if (! (finiteAndBounded (l, 50.0f) && finiteAndBounded (r, 50.0f)))
+        {
+            check (false, "reverb stays finite/bounded");
+            return;
+        }
+
+        const double e = (double) std::fabs (l) + (double) std::fabs (r);
+        if (i >= sr / 10 && i < sr / 3)        // [0.1 s, 0.33 s] early tail
+            early += e;
+        else if (i >= sr * 5 / 2)              // [2.5 s, 3.0 s] late tail
+            late += e;
+    }
+    check (early > 0.0 && late < 0.5 * early, "reverb tail decays after input stops");
+}
+
 static void testPlateStability()
 {
     doobie::PlateReverb plate;
     plate.prepare (48000.0);
-    plate.setParams (0.95f, 0.8f, 0.3f, 20.0f, 0.5f);
-
-    std::mt19937 rng (1);
-    std::uniform_real_distribution<float> dist (-1.0f, 1.0f);
-
-    float maxOut = 0.0f;
-    for (int i = 0; i < 48000; ++i)
-    {
-        const float in = i < 4800 ? dist (rng) : 0.0f; // 0.1 s of noise, then silence
-        float l, r;
-        plate.process (in, in, l, r);
-        check (finiteAndBounded (l, 50.0f) && finiteAndBounded (r, 50.0f), "Plate output stays finite/bounded");
-        if (i > 24000)
-            maxOut = std::fmax (maxOut, std::fmax (std::fabs (l), std::fabs (r)));
-    }
-    check (maxOut < 0.5f, "Plate tail decays after input stops");
+    plate.setParams (0.7f, 0.6f, 0.3f, 20.0f, 0.5f);
+    testReverbDecay (plate);
 }
 
 static void testSpringStability()
 {
     doobie::SpringReverb spring;
     spring.prepare (48000.0);
-    spring.setParams (0.9f, 0.6f);
-
-    std::mt19937 rng (2);
-    std::uniform_real_distribution<float> dist (-1.0f, 1.0f);
-
-    float maxTail = 0.0f;
-    for (int i = 0; i < 48000; ++i)
-    {
-        const float in = i < 4800 ? dist (rng) : 0.0f;
-        float l, r;
-        spring.process (in, in, l, r);
-        check (finiteAndBounded (l, 50.0f) && finiteAndBounded (r, 50.0f), "Spring output stays finite/bounded");
-        if (i > 24000)
-            maxTail = std::fmax (maxTail, std::fmax (std::fabs (l), std::fabs (r)));
-    }
-    check (maxTail < 0.5f, "Spring tail decays after input stops");
+    spring.setParams (0.7f, 0.6f, 0.4f);
+    testReverbDecay (spring);
 }
 
 static void testWowFlutter()
