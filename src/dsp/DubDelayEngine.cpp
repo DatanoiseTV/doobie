@@ -30,6 +30,8 @@ void DubDelayEngine::prepare (double sr, int maxBlockSize)
     juce::dsp::ProcessSpec spec { sr, (juce::uint32) juce::jmax (1, maxBlockSize), 2 };
     toneL.prepare (spec);
     toneR.prepare (spec);
+    preToneL.prepare (spec);
+    preToneR.prepare (spec);
 
     spring.prepare (sr);
     plate.prepare (sr);
@@ -59,6 +61,8 @@ void DubDelayEngine::reset()
     satR.reset();
     toneL.reset();
     toneR.reset();
+    preToneL.reset();
+    preToneR.reset();
     spring.reset();
     plate.reset();
     wowFlutter.reset();
@@ -122,6 +126,8 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
 
     toneL.update (params.bass, params.treble, params.hpFreq, params.lpFreq);
     toneR.update (params.bass, params.treble, params.hpFreq, params.lpFreq);
+    preToneL.update (0.0f, 0.0f, params.preHp, params.preLp);
+    preToneR.update (0.0f, 0.0f, params.preHp, params.preLp);
     satL.setDrive (params.drive);
     satR.setDrive (params.drive);
 
@@ -178,9 +184,11 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
         if (params.pingPong)
             std::swap (fbContribL, fbContribR);
 
-        // Input into the loop (optionally reverberated before the delay).
-        float inL = dryL * ig;
-        float inR = dryR * ig;
+        // Input into the loop: gain, then the pre-delay filters shape only the
+        // signal that gets echoed (the dry output stays untouched), then an
+        // optional reverb before the delay.
+        float inL = preToneL.process (dryL * ig);
+        float inR = preToneR.process (dryR * ig);
         if (reverbOn && params.reverbRoute == 1)
         {
             float rL, rR;

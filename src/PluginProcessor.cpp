@@ -62,6 +62,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     layout.add (std::make_unique<FloatParam> (pid (dID::drive),   "Saturation", Range (0.0f, 1.0f, 0.001f), 0.25f));
     layout.add (std::make_unique<FloatParam> (pid (dID::hiss),    "Tape Age", Range (0.0f, 1.0f, 0.001f), 0.0f));
 
+    // ---- Pre-delay filters (default wide open = transparent) ----------------
+    layout.add (std::make_unique<FloatParam> (pid (dID::preHpFreq), "Pre Low Cut",  Range (20.0f, 1000.0f, 0.1f, 0.4f), 20.0f));
+    layout.add (std::make_unique<FloatParam> (pid (dID::preLpFreq), "Pre High Cut", Range (1000.0f, 18000.0f, 1.0f, 0.4f), 18000.0f));
+
     // ---- Feedback tone ------------------------------------------------------
     layout.add (std::make_unique<FloatParam> (pid (dID::bass),   "Bass",   Range (-1.0f, 1.0f, 0.001f), 0.0f));
     layout.add (std::make_unique<FloatParam> (pid (dID::treble), "Treble", Range (-1.0f, 1.0f, 0.001f), 0.0f));
@@ -134,6 +138,8 @@ void DoobieAudioProcessor::updateEngineParams()
     p.drive = raw (dID::drive);
     p.hiss = raw (dID::hiss);
 
+    p.preHp = raw (dID::preHpFreq);
+    p.preLp = raw (dID::preLpFreq);
     p.bass = raw (dID::bass);
     p.treble = raw (dID::treble);
     p.hpFreq = raw (dID::hpFreq);

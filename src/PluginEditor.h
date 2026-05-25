@@ -78,9 +78,9 @@ private:
     // Multi-head.
     std::array<Knob, 4> headLevel, headPan, headRatio;
 
-    // Tape character + tone.
+    // Tape character + filters/tone.
     Knob kWow, kFlutter, kSat, kAge;
-    Knob kBass, kTreble, kLowCut, kHighCut;
+    Knob kPreHp, kPreLp, kBass, kTreble, kLowCut, kHighCut;
 
     // Reverb.
     Combo cbReverbMode, cbReverbRoute;

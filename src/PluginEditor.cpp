@@ -126,6 +126,8 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
     kFlutter.attach (*this, state, dID::flutter, "FLUTTER", amber());
     kSat.attach     (*this, state, dID::drive,   "SAT",     amber());
     kAge.attach     (*this, state, dID::hiss,    "AGE",     amber());
+    kPreHp.attach    (*this, state, dID::preHpFreq, "PRE HP", teal());
+    kPreLp.attach    (*this, state, dID::preLpFreq, "PRE LP", teal());
     kBass.attach     (*this, state, dID::bass,   "BASS",     amber());
     kTreble.attach   (*this, state, dID::treble, "TREBLE",   amber());
     kLowCut.attach   (*this, state, dID::hpFreq, "LOW CUT",  amber());
@@ -279,7 +281,7 @@ void DoobieAudioProcessorEditor::paint (juce::Graphics& g)
     panel (rHeads,  "PLAYBACK HEADS", doobie::colours::line());
     panel (rDelay,  "DELAY",  doobie::colours::line());
     panel (rTape,   "TAPE",   doobie::colours::line());
-    panel (rTone,   "TONE",   doobie::colours::line());
+    panel (rTone,   "FILTERS  (PRE + FEEDBACK)",   doobie::colours::line());
     panel (rReverb, "REVERB", teal().withAlpha (0.6f));
     panel (rOutput, "OUTPUT", doobie::colours::line());
 
@@ -384,7 +386,8 @@ void DoobieAudioProcessorEditor::resized()
     };
 
     rowOf (rTape.reduced (10).withTrimmedTop (22), { &kWow, &kFlutter, &kSat, &kAge });
-    rowOf (rTone.reduced (10).withTrimmedTop (22), { &kBass, &kTreble, &kLowCut, &kHighCut });
+    rowOf (rTone.reduced (8).withTrimmedTop (22),
+           { &kPreHp, &kPreLp, &kBass, &kTreble, &kLowCut, &kHighCut });
 
     {
         auto rv = rReverb.reduced (10).withTrimmedTop (24);

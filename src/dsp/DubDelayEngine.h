@@ -48,6 +48,8 @@ struct EngineParams
 
     float wow = 0.15f, flutter = 0.1f, drive = 0.25f, hiss = 0.0f;
 
+    float preHp = 20.0f, preLp = 18000.0f;  // pre-delay input filters
+
     float bass = 0.0f, treble = 0.0f;   // -1..1 shelves
     float hpFreq = 120.0f, lpFreq = 6500.0f;
 
@@ -94,7 +96,8 @@ private:
 
     WowFlutter wowFlutter;
     Saturation satL, satR;
-    ToneStack  toneL, toneR;
+    ToneStack  toneL, toneR;       // in the feedback loop (every repeat)
+    ToneStack  preToneL, preToneR; // pre-delay, on the signal entering the tape
 
     SpringReverb spring;
     PlateReverb  plate;
