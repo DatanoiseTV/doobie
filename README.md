@@ -1,54 +1,84 @@
+<div align="center">
+
 # Doobie
 
-An analog dub delay plugin (VST3 / AU / Standalone) built with JUCE. A stereo
-multi-head tape echo whose feedback path carries tape saturation, wow & flutter
-and tone shaping, paired with a spring + plate reverb section that can sit
-before, after, or inside the feedback loop. Equally at home producing classic
-dub echoes and as a general-purpose modulated delay / ambience for other genres.
+### Analog dub delay — VST3 · AU · Standalone
 
-## Features
+A stereo multi-head tape echo with tape saturation, wow & flutter, in-loop tone
+shaping, and a chained spring + plate reverb. Built for classic dub, equally at
+home as a modulated delay and ambience for any genre.
 
-- **Multi-head tape echo** — four playback heads tapping a single tape, each with
-  its own level, pan and time ratio. A 12-position mode dial selects head
-  combinations in the spirit of a Roland Space Echo.
-- **Free or tempo-synced** — free-running time (20 ms – 2 s) or musical divisions
-  from 1/64 up to 4 bars, including dotted and triplet values, locked to the host.
-- **Analog character** — tape saturation, wow & flutter (with random drift), and
-  a "tape age" hiss control, all in the recirculating path.
-- **Dub tone controls in the feedback loop** — bass/treble shelves plus low-cut and
-  high-cut filters, so each repeat dissolves and darkens the way a real tape echo does.
-- **Chained reverbs** — a dispersive spring tank and a modulated 8-line plate (FDN).
+![License](https://img.shields.io/badge/license-GPL--3.0-blue)
+![Formats](https://img.shields.io/badge/formats-VST3%20%C2%B7%20AU%20%C2%B7%20Standalone-f4a024)
+![JUCE](https://img.shields.io/badge/JUCE-8.0-3fb6a8)
+![C++](https://img.shields.io/badge/C%2B%2B-20-555)
+![Platform](https://img.shields.io/badge/macOS-universal-lightgrey)
+
+<img src="docs/screenshots/doobie.png" width="850" alt="Doobie — Classic Dub preset">
+
+</div>
+
+## Highlights
+
+- **Multi-head tape echo** — four playback heads tapping one tape, each with its
+  own level, pan and time ratio. A 12-position mode dial selects head combinations
+  in the spirit of a Roland Space Echo.
+- **Free or tempo-synced** — free time (20 ms – 2 s) or musical divisions from 1/64
+  up to 4 bars (dotted and triplet included), locked to the host. Division and sync
+  changes glide like a tape capstan rather than jumping.
+- **Analog character** — tape saturation, wow & flutter with random drift, and a
+  "tape age" hiss, all in the recirculating path.
+- **Dub tone in the feedback loop** — bass/treble shelves plus low-cut and high-cut,
+  so each repeat darkens and dissolves the way real tape does.
+- **Chained reverbs** — a dispersive spring tank and a modulated 8-line FDN plate.
   Run either alone, in series (spring → plate) or in parallel, and route the reverb
-  post-delay, pre-delay, or inside the feedback loop for washing dub textures.
+  **post**, **pre**, or **inside the feedback loop** for washing dub textures.
 - **Performance controls** — ping-pong feedback, freeze (infinite hold), wet ducking,
   stereo width.
-- **12 factory presets** plus user preset save/load.
+- **16 factory presets** across dub, ambient, rhythmic and lo-fi, plus user save/load.
 - **Vintage UI** — brushed-metal panel, amber-lit knobs, analog VU meters, a live
-  echo-pattern visualiser and a reverb decay-curve display.
+  per-head echo visualiser, and a reverb decay-curve display.
+
+## Screenshots
+
+<div align="center">
+
+| Multi-head, plate reverb | Ambient wash (spring + plate) | Lo-fi vintage echo |
+|:---:|:---:|:---:|
+| <img src="docs/screenshots/multihead.png" width="270"> | <img src="docs/screenshots/ambient.png" width="270"> | <img src="docs/screenshots/vintage.png" width="270"> |
+
+</div>
+
+The echo visualiser (top of the DELAY panel) shows each active head's tap pattern
+and the repeats decaying by the feedback amount. The reverb panel's decay curve
+shows the active reverb's tail length and pre-delay at a glance.
+
+## Getting dub sounds
+
+- **Long dark echoes:** sync to 1/4, FEEDBACK ~0.7, pull HIGH CUT down to ~3 kHz so
+  repeats get darker each pass; add a little SATURATION.
+- **Spring crashes / wash:** set REVERB to *Spring* and ROUTE to *In Feedback* — the
+  reverb builds across repeats. Ride REVERB MIX.
+- **Siren feedback:** push FEEDBACK to ~1.0 and ride the LOW CUT / HIGH CUT.
+- **Freeze a moment:** hit FREEZE to hold the buffer infinitely, then play over it.
 
 ## Building
 
 Requires CMake ≥ 3.22 and a C++20 toolchain. JUCE is vendored as a git submodule.
 
 ```sh
-git clone --recurse-submodules <repo-url> doobie
+git clone --recurse-submodules https://github.com/DatanoiseTV/doobie.git
 cd doobie
 cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build --target Doobie_All
 ```
 
-If you already cloned without submodules:
+Already cloned without submodules? `git submodule update --init --recursive`
 
-```sh
-git submodule update --init --recursive
-```
-
-For a fast local build limited to the host architecture, add
-`-DCMAKE_OSX_ARCHITECTURES=arm64` (or `x86_64`). The default produces a universal
-binary on macOS.
-
-Built plugins are copied to the system plugin folders (`COPY_PLUGIN_AFTER_BUILD`).
-The standalone app is at `build/Doobie_artefacts/<config>/Standalone/`.
+For a fast single-architecture build add `-DCMAKE_OSX_ARCHITECTURES=arm64` (or
+`x86_64`); the default produces a universal binary on macOS. Built plugins are
+copied to the system plugin folders, and the standalone app lands in
+`build/Doobie_artefacts/<config>/Standalone/`.
 
 ## Tests
 
@@ -57,11 +87,24 @@ cmake --build build --target doobie_tests
 ctest --test-dir build
 ```
 
-The tests cover the framework-independent DSP cores (delay line, saturation,
-spring and plate reverb stability, wow/flutter).
+Tests cover the framework-independent DSP cores (delay line, saturation, spring and
+plate stability/decay, wow/flutter). The Audio Unit also passes Apple's `auval`.
 
-## Layout
+## Project layout
 
-See `BRANDING.md` for the visual language. Source is under `src/` with DSP in
-`src/dsp`, UI in `src/ui`, presets in `src/presets`, and the JUCE plugin
-boilerplate in `src/PluginProcessor.*` / `src/PluginEditor.*`.
+DSP lives in `src/dsp`, the UI in `src/ui`, presets in `src/presets`, and the JUCE
+plugin glue in `src/PluginProcessor.*` / `src/PluginEditor.*`. `tools/Snapshot.cpp`
+renders the editor to a PNG offline (used for the screenshots above).
+
+## License
+
+Copyright © 2026 **DatanoiseTV**.
+
+Doobie is free software, licensed under the **GNU General Public License v3.0**
+(see [LICENSE](LICENSE)). In short: you may use, study, modify and redistribute it,
+but any distributed version or derivative **must be released under the GPLv3 with
+full source code**, and **must keep this attribution to DatanoiseTV**.
+
+GPLv3 is required because Doobie links the [JUCE](https://juce.com) framework under
+its GPLv3 option. Building Doobie into a closed-source product would require a
+commercial JUCE license.
