@@ -59,7 +59,7 @@ void DoobieAudioProcessorEditor::Combo::place (juce::Rectangle<int> area)
 // Editor
 // ----------------------------------------------------------------------------
 DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
-    : AudioProcessorEditor (&p), audioProcessor (p), echoView (p)
+    : AudioProcessorEditor (&p), audioProcessor (p), echoView (p), reverbView (p)
 {
     setLookAndFeel (&lnf);
     auto& state = audioProcessor.getValueTreeState();
@@ -140,15 +140,14 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
 
     // Visualisers + meters.
     addAndMakeVisible (echoView);
-    addAndMakeVisible (springView);
+    addAndMakeVisible (reverbView);
     addAndMakeVisible (vuL);
     addAndMakeVisible (vuR);
     vuL.setLevelSource ([this] { return audioProcessor.getOutputLevel (0); });
     vuR.setLevelSource ([this] { return audioProcessor.getOutputLevel (1); });
-    springView.setLevelSource ([this]
-        { return 0.5f * (audioProcessor.getOutputLevel (0) + audioProcessor.getOutputLevel (1)); });
 
     refreshPresetBox();
+    timerCallback();          // initialise dynamic labels / enabled state at once
     startTimerHz (12);
     setSize (1100, 720);
 }
@@ -381,7 +380,7 @@ void DoobieAudioProcessorEditor::resized()
         cbReverbMode.place  (comboRow.removeFromLeft (comboRow.getWidth() / 2).reduced (4, 2));
         cbReverbRoute.place (comboRow.reduced (4, 2));
 
-        springView.setBounds (rv.removeFromBottom (70));
+        reverbView.setBounds (rv.removeFromBottom (70));
         rv.removeFromBottom (6);
 
         auto r1 = rv.removeFromTop (rv.getHeight() / 2);

@@ -76,7 +76,7 @@ namespace dID
     };
 
     inline const juce::StringArray reverbModeChoices {
-        "Off", "Spring", "Plate", "Spring \xe2\x86\x92 Plate", "Spring + Plate"
+        "Off", "Spring", "Plate", "Spring > Plate", "Spring + Plate"
     };
 
     inline const juce::StringArray reverbRouteChoices {
@@ -87,17 +87,17 @@ namespace dID
     // combination of the four playback heads (A,B,C,D). The head-on masks are
     // defined in DubDelayEngine::kModeMask and must stay index-aligned here.
     inline const juce::StringArray modeChoices {
-        "1 \xc2\xb7 A",
-        "2 \xc2\xb7 B",
-        "3 \xc2\xb7 C",
-        "4 \xc2\xb7 D",
-        "5 \xc2\xb7 A+B",
-        "6 \xc2\xb7 C+D",
-        "7 \xc2\xb7 A+C",
-        "8 \xc2\xb7 B+D",
-        "9 \xc2\xb7 A+B+C",
-        "10 \xc2\xb7 B+C+D",
-        "11 \xc2\xb7 A+D",
-        "12 \xc2\xb7 All heads"
+        "1: A",
+        "2: B",
+        "3: C",
+        "4: D",
+        "5: A+B",
+        "6: C+D",
+        "7: A+C",
+        "8: B+D",
+        "9: A+B+C",
+        "10: B+C+D",
+        "11: A+D",
+        "12: A+B+C+D"
     };
 }

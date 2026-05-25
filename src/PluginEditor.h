@@ -5,7 +5,7 @@
 #include "ui/LookAndFeel.h"
 #include "ui/VuMeter.h"
 #include "ui/EchoVisualiser.h"
-#include "ui/SpringTankView.h"
+#include "ui/ReverbResponseView.h"
 
 // The main plugin window: a vintage tape-echo front panel laid out in zones
 // (header, mode + heads, delay + visualiser, tape/tone, reverb, output).
@@ -81,8 +81,8 @@ private:
     juce::Rectangle<int> rHeader, rMode, rHeads, rDelay, rTape, rTone, rReverb, rOutput;
 
     // Visualisers.
-    doobie::EchoVisualiser  echoView;
-    doobie::SpringTankView  springView;
+    doobie::EchoVisualiser     echoView;
+    doobie::ReverbResponseView reverbView;
     doobie::VuMeter vuL { "L" }, vuR { "R" };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DoobieAudioProcessorEditor)

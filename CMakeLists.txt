@@ -48,9 +48,9 @@ endif()
 add_subdirectory(external/JUCE)
 
 juce_add_plugin(Doobie
-    COMPANY_NAME            "Teile Elektronik"
-    BUNDLE_ID               "com.teile.doobie"
-    PLUGIN_MANUFACTURER_CODE Teil
+    COMPANY_NAME            "DatanoiseTV"
+    BUNDLE_ID               "com.datanoisetv.doobie"
+    PLUGIN_MANUFACTURER_CODE Dnse
     PLUGIN_CODE             Doob
     FORMATS                 AU VST3 Standalone
     PRODUCT_NAME            "Doobie"
@@ -79,7 +79,7 @@ target_sources(Doobie PRIVATE
     src/ui/LookAndFeel.cpp
     src/ui/VuMeter.cpp
     src/ui/EchoVisualiser.cpp
-    src/ui/SpringTankView.cpp)
+    src/ui/ReverbResponseView.cpp)
 
 target_include_directories(Doobie PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -89,7 +89,6 @@ target_compile_definitions(Doobie
         JUCE_WEB_BROWSER=0
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0
-        JUCE_DISPLAY_SPLASH_SCREEN=0
         JUCE_REPORT_APP_USAGE=0
     PRIVATE
         DOOBIE_VERSION="${PROJECT_VERSION}"
