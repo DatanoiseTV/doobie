@@ -13,7 +13,7 @@
 #pragma once
 
 #include "FdnReverb.h"
-#include "OctaveShifter.h"
+#include "FftPitchShifter.h"
 
 namespace doobie
 {
@@ -35,7 +35,7 @@ public:
 
 private:
     FdnReverb core;
-    OctaveShifter shiftL, shiftR;
+    FftPitchShifter shiftL, shiftR;
 
     float shimmerAmt = 0.5f;
     float fbL = 0.0f, fbR = 0.0f;

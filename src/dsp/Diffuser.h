@@ -23,12 +23,14 @@ namespace doobie
 class Diffuser
 {
 public:
+    static constexpr int kStages = 7;
+
     void prepare (double sr)
     {
-        constexpr std::array<float, 4> ms { 13.7f, 22.9f, 31.1f, 41.3f };
-        for (int i = 0; i < 4; ++i)
+        constexpr std::array<float, kStages> ms { 13.7f, 21.3f, 29.9f, 41.1f, 53.7f, 67.3f, 79.1f };
+        for (int i = 0; i < kStages; ++i)
         {
-            ap[(size_t) i].prepare (sr, 0.06);
+            ap[(size_t) i].prepare (sr, 0.1);
             len[(size_t) i] = ms[(size_t) i] * 0.001f * (float) sr;
         }
         reset();
@@ -38,7 +40,9 @@ public:
 
     inline float process (float x) noexcept
     {
-        for (int i = 0; i < 4; ++i)
+        // A long all-pass cascade turns each repeat into a dense reverberant
+        // smear while preserving energy (so the feedback decay is unchanged).
+        for (int i = 0; i < kStages; ++i)
         {
             const float z = ap[(size_t) i].read (len[(size_t) i]);
             const float y = -g * x + z;
@@ -49,8 +53,8 @@ public:
     }
 
 private:
-    std::array<DelayLine, 4> ap;
-    std::array<float, 4> len {};
-    float g = 0.7f;
+    std::array<DelayLine, kStages> ap;
+    std::array<float, kStages> len {};
+    float g = 0.72f;
 };
 } // namespace doobie

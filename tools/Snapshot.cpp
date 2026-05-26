@@ -17,6 +17,7 @@
 // Usage: doobie_snapshot [output.png] [presetIndex] [scale]
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include <cmath>
 
 int main (int argc, char* argv[])
 {
@@ -30,6 +31,42 @@ int main (int argc, char* argv[])
     processor.prepareToPlay (44100.0, 512);
     if (presetIndex >= 0)
         processor.getPresetManager().loadFactory (presetIndex);
+
+    // Audio health probe: push ~1 s of white noise (then silence) through the
+    // processor and report output level / finiteness, so DSP-heavy presets
+    // (Pitch, Shimmer) can be checked without a DAW.
+    {
+        juce::Random rng;
+        juce::MidiBuffer midi;
+        juce::AudioBuffer<float> buf (2, 512);
+        double sumSq = 0.0; int counted = 0; bool finite = true;
+        for (int block = 0; block < 160; ++block) // ~1.85 s at 44.1k/512
+        {
+            const bool noiseOn = block < 86;
+            for (int ch = 0; ch < 2; ++ch)
+            {
+                auto* d = buf.getWritePointer (ch);
+                for (int i = 0; i < 512; ++i)
+                    d[i] = noiseOn ? (rng.nextFloat() * 2.0f - 1.0f) * 0.3f : 0.0f;
+            }
+            processor.processBlock (buf, midi);
+            for (int ch = 0; ch < 2; ++ch)
+            {
+                auto* d = buf.getReadPointer (ch);
+                for (int i = 0; i < 512; ++i)
+                {
+                    if (! std::isfinite (d[i])) finite = false;
+                    if (block >= 30) { sumSq += (double) d[i] * d[i]; ++counted; }
+                }
+            }
+        }
+        const double rms = counted > 0 ? std::sqrt (sumSq / counted) : 0.0;
+        std::printf ("audio probe: finite=%s rms=%.4f\n", finite ? "yes" : "NO", rms);
+        processor.reset();
+        processor.prepareToPlay (44100.0, 512);
+        if (presetIndex >= 0)
+            processor.getPresetManager().loadFactory (presetIndex);
+    }
 
     std::unique_ptr<juce::AudioProcessorEditor> editor (processor.createEditor());
     if (editor == nullptr)

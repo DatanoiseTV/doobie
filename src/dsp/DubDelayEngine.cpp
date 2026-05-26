@@ -78,7 +78,8 @@ void DubDelayEngine::reset()
     diffuseR.reset();
     pitchL.reset();
     pitchR.reset();
-    bbdLpL = bbdLpR = 0.0f;
+    tapeWarmL = tapeWarmR = tapeDarkL = tapeDarkR = 0.0f;
+    bbdLpL = bbdLpR = bbdBpL = bbdBpR = 0.0f;
     wowFlutter.reset();
     duckEnv = 0.0f;
     for (auto& m : headMag) m.store (0.0f);
@@ -160,8 +161,11 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
     const float revMix    = params.reverbMix;
     const float hissLevel = params.hiss * 0.015f;
 
-    // BBD mode darkens the feedback with a fixed ~4 kHz one-pole low-pass.
-    const float bbdCoef = 1.0f - std::exp (-6.2831853f * 4000.0f / (float) sampleRate);
+    // Per-character filter coefficients.
+    const float tapeWarmCoef = 1.0f - std::exp (-6.2831853f * 180.0f  / (float) sampleRate); // head-bump band
+    const float tapeDarkCoef = 1.0f - std::exp (-6.2831853f * 5500.0f / (float) sampleRate); // tape HF loss
+    const float bbdF = 2.0f * std::sin (3.14159265f * 2500.0f / (float) sampleRate);          // SVF cutoff
+    const float bbdQ = 0.45f;                                                                  // low = resonant
 
     // Ducking ballistics (fast attack, slow release).
     const float atk = 1.0f - std::exp (-1.0f / (0.005f * (float) sampleRate));
@@ -194,27 +198,43 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
         float fbR = toneR.process (fbReadR);
         switch (params.delayMode)
         {
-            case 0: // Digital: clean repeats, no saturation
+            case 0: // Digital: clean repeats, no saturation, full bandwidth
                 break;
-            case 2: // BBD: saturate, then darken with a touch of noise
-                fbL = satL.process (fbL);
-                fbR = satR.process (fbR);
-                bbdLpL += bbdCoef * (fbL - bbdLpL);
-                bbdLpR += bbdCoef * (fbR - bbdLpR);
-                fbL = bbdLpL + whiteNoise() * 0.004f;
-                fbR = bbdLpR + whiteNoise() * 0.004f;
+
+            case 2: // BBD: driven hard, then a resonant dark low-pass + clock noise
+            {
+                fbL = satL.process (fbL * 1.4f);
+                fbR = satR.process (fbR * 1.4f);
+                bbdLpL += bbdF * bbdBpL;
+                bbdBpL += bbdF * (fbL - bbdLpL - bbdQ * bbdBpL);
+                bbdLpR += bbdF * bbdBpR;
+                bbdBpR += bbdF * (fbR - bbdLpR - bbdQ * bbdBpR);
+                fbL = bbdLpL + whiteNoise() * 0.006f;
+                fbR = bbdLpR + whiteNoise() * 0.006f;
                 break;
-            case 3: // Diffuse: smear each repeat into a wash
+            }
+
+            case 3: // Diffuse: a long all-pass cascade smears each repeat
                 fbL = diffuseL.process (satL.process (fbL));
                 fbR = diffuseR.process (satR.process (fbR));
                 break;
-            case 4: // Pitch: each repeat climbs an octave
+
+            case 4: // Pitch: an FFT shifter lifts every repeat an octave
                 fbL = pitchL.process (satL.process (fbL));
                 fbR = pitchR.process (satR.process (fbR));
                 break;
-            default: // Tape
+
+            default: // Tape: saturation + low-mid head bump + high-frequency loss
                 fbL = satL.process (fbL);
                 fbR = satR.process (fbR);
+                tapeWarmL += tapeWarmCoef * (fbL - tapeWarmL);
+                tapeWarmR += tapeWarmCoef * (fbR - tapeWarmR);
+                fbL += 0.45f * tapeWarmL;
+                fbR += 0.45f * tapeWarmR;
+                tapeDarkL += tapeDarkCoef * (fbL - tapeDarkL);
+                tapeDarkR += tapeDarkCoef * (fbR - tapeDarkR);
+                fbL = 0.6f * fbL + 0.4f * tapeDarkL;
+                fbR = 0.6f * fbR + 0.4f * tapeDarkR;
                 break;
         }
 

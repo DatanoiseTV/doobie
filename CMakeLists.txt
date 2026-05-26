@@ -77,6 +77,7 @@ target_sources(Doobie PRIVATE
     src/dsp/PlateReverb.cpp
     src/dsp/FdnReverb.cpp
     src/dsp/ShimmerReverb.cpp
+    src/dsp/FftPitchShifter.cpp
     src/presets/PresetManager.cpp
     src/ui/LookAndFeel.cpp
     src/ui/VuMeter.cpp

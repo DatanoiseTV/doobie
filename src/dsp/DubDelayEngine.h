@@ -21,7 +21,7 @@
 #include "FdnReverb.h"
 #include "ShimmerReverb.h"
 #include "Diffuser.h"
-#include "OctaveShifter.h"
+#include "FftPitchShifter.h"
 
 #include <juce_dsp/juce_dsp.h>
 #include <array>
@@ -106,9 +106,14 @@ private:
     ToneStack  preToneL, preToneR; // pre-delay, on the signal entering the tape
 
     // Per-character feedback processors (used depending on the delay mode).
-    Diffuser      diffuseL, diffuseR;   // Diffuse mode
-    OctaveShifter pitchL, pitchR;       // Pitch mode
-    float bbdLpL = 0.0f, bbdLpR = 0.0f; // BBD darkening one-pole
+    Diffuser        diffuseL, diffuseR; // Diffuse mode
+    FftPitchShifter pitchL, pitchR;     // Pitch mode (octave up)
+
+    // Tape head-bump (low-mid lift) + HF loss, and the BBD resonant dark filter.
+    float tapeWarmL = 0.0f, tapeWarmR = 0.0f;
+    float tapeDarkL = 0.0f, tapeDarkR = 0.0f;
+    float bbdLpL = 0.0f, bbdLpR = 0.0f;   // SVF low-pass state
+    float bbdBpL = 0.0f, bbdBpR = 0.0f;   // SVF band-pass state
 
     SpringReverb  spring;
     PlateReverb   plate;
