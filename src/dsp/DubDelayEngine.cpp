@@ -38,6 +38,11 @@ void DubDelayEngine::prepare (double sr, int maxBlockSize)
     hall.prepare (sr, 40.0f, 115.0f);
     shimmer.prepare (sr);
 
+    diffuseL.prepare (sr);
+    diffuseR.prepare (sr);
+    pitchL.prepare (sr);
+    pitchR.prepare (sr);
+
     smoothedDelay.reset (sr, 0.30);
     smoothedFeedback.reset (sr, 0.03);
     smoothedMix.reset (sr, 0.02);
@@ -69,6 +74,11 @@ void DubDelayEngine::reset()
     plate.reset();
     hall.reset();
     shimmer.reset();
+    diffuseL.reset();
+    diffuseR.reset();
+    pitchL.reset();
+    pitchR.reset();
+    bbdLpL = bbdLpR = 0.0f;
     wowFlutter.reset();
     duckEnv = 0.0f;
     for (auto& m : headMag) m.store (0.0f);
@@ -150,6 +160,9 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
     const float revMix    = params.reverbMix;
     const float hissLevel = params.hiss * 0.015f;
 
+    // BBD mode darkens the feedback with a fixed ~4 kHz one-pole low-pass.
+    const float bbdCoef = 1.0f - std::exp (-6.2831853f * 4000.0f / (float) sampleRate);
+
     // Ducking ballistics (fast attack, slow release).
     const float atk = 1.0f - std::exp (-1.0f / (0.005f * (float) sampleRate));
     const float rel = 1.0f - std::exp (-1.0f / (0.200f * (float) sampleRate));
@@ -158,7 +171,8 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
 
     for (int n = 0; n < numSamples; ++n)
     {
-        const float m   = wowFlutter.next();
+        const float wf  = wowFlutter.next();
+        const float m   = (params.delayMode == 0) ? 1.0f : wf; // Digital: no wobble
         const double dly = smoothedDelay.getNextValue();
         const float fb  = smoothedFeedback.getNextValue();
         const float mix = smoothedMix.getNextValue();
@@ -174,9 +188,35 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
         float fbReadL = tapeL.read (fbDelay);
         float fbReadR = tapeR.read (fbDelay);
 
-        // Tone shaping + tape saturation in the feedback path.
-        float fbL = satL.process (toneL.process (fbReadL));
-        float fbR = satR.process (toneR.process (fbReadR));
+        // Feedback tone, then the delay-character processing. Saturation is
+        // applied for every analog character but bypassed for clean Digital.
+        float fbL = toneL.process (fbReadL);
+        float fbR = toneR.process (fbReadR);
+        switch (params.delayMode)
+        {
+            case 0: // Digital: clean repeats, no saturation
+                break;
+            case 2: // BBD: saturate, then darken with a touch of noise
+                fbL = satL.process (fbL);
+                fbR = satR.process (fbR);
+                bbdLpL += bbdCoef * (fbL - bbdLpL);
+                bbdLpR += bbdCoef * (fbR - bbdLpR);
+                fbL = bbdLpL + whiteNoise() * 0.004f;
+                fbR = bbdLpR + whiteNoise() * 0.004f;
+                break;
+            case 3: // Diffuse: smear each repeat into a wash
+                fbL = diffuseL.process (satL.process (fbL));
+                fbR = diffuseR.process (satR.process (fbR));
+                break;
+            case 4: // Pitch: each repeat climbs an octave
+                fbL = pitchL.process (satL.process (fbL));
+                fbR = pitchR.process (satR.process (fbR));
+                break;
+            default: // Tape
+                fbL = satL.process (fbL);
+                fbR = satR.process (fbR);
+                break;
+        }
 
         // Reverb sitting inside the feedback loop (washes build up over repeats).
         if (reverbOn && params.reverbRoute == 2)

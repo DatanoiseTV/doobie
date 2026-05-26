@@ -102,6 +102,7 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
     kTime.attach     (*this, state, dID::timeMs,   "TIME",     amber());
     kFeedback.attach (*this, state, dID::feedback, "FEEDBACK", amber());
     cbDivision.attach (*this, state, dID::syncDiv, "DIVISION", dID::syncDivChoices);
+    cbCharacter.attach (*this, state, dID::delayMode, "CHARACTER", dID::delayModeChoices);
 
     for (auto* t : { &tgSync, &tgPingPong, &tgFreeze })
         addAndMakeVisible (t);
@@ -393,21 +394,23 @@ void DoobieAudioProcessorEditor::resized()
     rDelay = colB;
     {
         auto d = rDelay.reduced (10).withTrimmedTop (24);
-        echoView.setBounds (d.removeFromTop (116));
-        d.removeFromTop (8);
+        echoView.setBounds (d.removeFromTop (98));
+        d.removeFromTop (6);
 
-        auto bigRow = d.removeFromTop (150);
+        auto bigRow = d.removeFromTop (132);
         kTime.place     (bigRow.removeFromLeft (bigRow.getWidth() / 2).reduced (6, 0));
         kFeedback.place (bigRow.reduced (6, 0));
 
         d.removeFromTop (6);
-        auto syncRow = d.removeFromTop (44);
-        tgSync.setBounds (syncRow.removeFromLeft (110).reduced (4, 8));
-        cbDivision.place (syncRow.reduced (6, 2));
+        auto syncRow = d.removeFromTop (40);
+        tgSync.setBounds (syncRow.removeFromLeft (104).reduced (4, 7));
+        cbDivision.place (syncRow.reduced (6, 0));
 
-        auto togRow = d.removeFromTop (40);
-        tgPingPong.setBounds (togRow.removeFromLeft (togRow.getWidth() / 2).reduced (8, 6));
-        tgFreeze.setBounds   (togRow.reduced (8, 6));
+        cbCharacter.place (d.removeFromTop (40).reduced (6, 0));
+
+        auto togRow = d.removeFromTop (34);
+        tgPingPong.setBounds (togRow.removeFromLeft (togRow.getWidth() / 2).reduced (8, 5));
+        tgFreeze.setBounds   (togRow.reduced (8, 5));
     }
     rowOf (rTape.reduced (10).withTrimmedTop (22), { &kWow, &kFlutter, &kSat, &kAge });
 

@@ -70,7 +70,7 @@ private:
 
     // Delay.
     Knob kMode, kTime, kFeedback;
-    Combo cbDivision;
+    Combo cbDivision, cbCharacter;
     juce::ToggleButton tgSync { "Sync" }, tgPingPong { "Ping-Pong" }, tgFreeze { "Freeze" };
     std::unique_ptr<APVTS::ButtonAttachment> aSync, aPingPong, aFreeze;
     juce::Label modeReadout;

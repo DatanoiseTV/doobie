@@ -23,6 +23,9 @@ home as a modulated delay and ambience for any genre.
 - **Multi-head tape echo** — four playback heads tapping one tape, each with its
   own level, pan and time ratio. A 12-position mode dial selects head combinations
   in the spirit of a Roland Space Echo.
+- **Five delay characters** — Digital (clean), Tape (wow/flutter + saturation),
+  BBD (dark analog bucket-brigade), Diffuse (repeats smeared into a wash) and
+  Pitch (each repeat climbs an octave).
 - **Free or tempo-synced** — free time (20 ms – 2 s) or musical divisions from 1/64
   up to 4 bars (dotted and triplet included), locked to the host. Division and sync
   changes glide like a tape capstan rather than jumping.
@@ -32,13 +35,15 @@ home as a modulated delay and ambience for any genre.
   and treble) shapes only the signal that gets echoed, leaving the dry output clean;
   a separate **feedback** filter (same four controls) darkens and dissolves each
   repeat the way real tape does. Each stage has its own dedicated knobs.
-- **Chained reverbs** — a dispersive spring tank and a modulated 8-line FDN plate.
-  Run either alone, in series (spring → plate) or in parallel, and route the reverb
-  **post**, **pre**, or **inside the feedback loop** for washing dub textures.
+- **Seven reverb modes** — a dispersive spring tank, a modulated plate, a dense
+  16-line **hall**, an octave-up **shimmer**, plus spring→plate series and
+  spring+plate parallel. Route any of them **post**, **pre**, or **inside the
+  feedback loop** for washing dub textures and blooming ambient tails.
 - **Performance controls** — ping-pong feedback, freeze (infinite hold), wet ducking,
   stereo width.
-- **50+ factory presets** across dub/reggae, ambient/cinematic, rhythmic/electronic,
-  lo-fi/vintage, sound-design FX and instrument-specific patches, plus user save/load.
+- **60+ factory presets** across dub/reggae, ambient/cinematic, rhythmic/electronic,
+  lo-fi/vintage, hall & shimmer, delay characters, sound-design FX and instrument
+  patches, plus user save/load.
 - **Vintage UI** — brushed-metal panel, amber-lit knobs, analog VU meters, a live
   per-head echo visualiser, and a reverb decay-curve display.
 

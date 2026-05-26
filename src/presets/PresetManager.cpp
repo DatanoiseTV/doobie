@@ -372,6 +372,39 @@ namespace
                 { dID::pingPong, 1 }, { dID::width, 1.5f }, { dID::reverbMode, 2 },
                 { dID::reverbRoute, 0 }, { dID::reverbMix, 0.4f }, { dID::feedback, 0.5f },
                 { dID::mix, 0.45f } } },
+
+            // ---- Delay characters (Digital / BBD / Diffuse / Pitch) ---------
+            { "Pristine Digital", {
+                { dID::delayMode, 0 }, { dID::syncMode, 1 }, { dID::syncDiv, 10 },
+                { dID::feedback, 0.5f }, { dID::pingPong, 1 }, { dID::reverbMode, 0 },
+                { dID::wow, 0.0f }, { dID::flutter, 0.0f }, { dID::mix, 0.35f } } },
+
+            { "BBD Analog", {
+                { dID::delayMode, 2 }, { dID::syncMode, 1 }, { dID::syncDiv, 9 },
+                { dID::feedback, 0.6f }, { dID::wow, 0.3f }, { dID::flutter, 0.25f },
+                { dID::reverbMode, 1 }, { dID::reverbMix, 0.3f }, { dID::mix, 0.4f } } },
+
+            { "Diffuse Wash", {
+                { dID::delayMode, 3 }, { dID::syncMode, 1 }, { dID::syncDiv, 10 },
+                { dID::feedback, 0.62f }, { dID::lpFreq, 5000.0f }, { dID::reverbMode, 2 },
+                { dID::reverbRoute, 0 }, { dID::reverbMix, 0.3f }, { dID::mix, 0.45f } } },
+
+            { "Octave Climber", {
+                { dID::delayMode, 4 }, { dID::syncMode, 1 }, { dID::syncDiv, 10 },
+                { dID::feedback, 0.55f }, { dID::reverbMode, 2 }, { dID::reverbRoute, 0 },
+                { dID::reverbMix, 0.3f }, { dID::lpFreq, 7000.0f }, { dID::mix, 0.45f } } },
+
+            { "Pitch Cathedral", {
+                { dID::delayMode, 4 }, { dID::syncMode, 1 }, { dID::syncDiv, 13 },
+                { dID::feedback, 0.5f }, { dID::reverbMode, 5 }, { dID::reverbRoute, 0 },
+                { dID::reverbMix, 0.5f }, { dID::plateDecay, 0.85f }, { dID::plateSize, 0.9f },
+                { dID::mix, 0.5f } } },
+
+            { "Ambient Diffusion", {
+                { dID::delayMode, 3 }, { dID::syncMode, 1 }, { dID::syncDiv, 13 },
+                { dID::feedback, 0.7f }, { dID::reverbMode, 6 }, { dID::reverbRoute, 0 },
+                { dID::reverbMix, 0.5f }, { dID::reverbMod, 0.6f }, { dID::lpFreq, 6000.0f },
+                { dID::width, 1.4f }, { dID::mix, 0.55f } } },
         };
     }
 }

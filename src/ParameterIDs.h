@@ -31,6 +31,7 @@ namespace dID
     inline constexpr auto width       = "width";
 
     // ---- Delay core ---------------------------------------------------------
+    inline constexpr auto delayMode   = "delayMode";   // character / type
     inline constexpr auto syncMode    = "syncMode";    // Free / Sync
     inline constexpr auto timeMs      = "timeMs";      // free-running time
     inline constexpr auto syncDiv     = "syncDiv";     // tempo division
@@ -78,6 +79,13 @@ namespace dID
 
     // ---- Fixed option lists (UI and DSP read the same arrays) --------------
     inline const juce::StringArray syncModeChoices { "Free", "Sync" };
+
+    // Delay character / type. Tape is the default so existing presets are
+    // unchanged. Digital = clean, BBD = dark analog bucket-brigade, Diffuse =
+    // smeared/ambient, Pitch = each repeat climbs an octave.
+    inline const juce::StringArray delayModeChoices {
+        "Digital", "Tape", "BBD", "Diffuse", "Pitch"
+    };
 
     // Tempo divisions, fastest to slowest. Index order is the contract.
     inline const juce::StringArray syncDivChoices {

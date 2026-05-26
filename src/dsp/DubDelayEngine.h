@@ -20,6 +20,8 @@
 #include "PlateReverb.h"
 #include "FdnReverb.h"
 #include "ShimmerReverb.h"
+#include "Diffuser.h"
+#include "OctaveShifter.h"
 
 #include <juce_dsp/juce_dsp.h>
 #include <array>
@@ -39,7 +41,8 @@ struct EngineParams
 
     double delaySamples = 22050.0; // resolved length of the longest head (ratio 1.0)
     float  feedback     = 0.4f;    // 0..1.2 (above ~1 self-oscillates)
-    int    mode         = 11;      // index into kModeMask
+    int    delayMode    = 1;       // 0 digital, 1 tape, 2 BBD, 3 diffuse, 4 pitch
+    int    mode         = 11;      // head mask index (the mode dial)
     bool   pingPong     = false;
     bool   freeze       = false;
     float  duck         = 0.0f;    // 0..1 wet ducking by dry level
@@ -101,6 +104,11 @@ private:
     Saturation satL, satR;
     ToneStack  toneL, toneR;       // in the feedback loop (every repeat)
     ToneStack  preToneL, preToneR; // pre-delay, on the signal entering the tape
+
+    // Per-character feedback processors (used depending on the delay mode).
+    Diffuser      diffuseL, diffuseR;   // Diffuse mode
+    OctaveShifter pitchL, pitchR;       // Pitch mode
+    float bbdLpL = 0.0f, bbdLpR = 0.0f; // BBD darkening one-pole
 
     SpringReverb  spring;
     PlateReverb   plate;

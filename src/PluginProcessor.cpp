@@ -35,6 +35,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     layout.add (std::make_unique<FloatParam> (pid (dID::width),      "Width", Range (0.0f, 2.0f, 0.001f), 1.0f));
 
     // ---- Delay --------------------------------------------------------------
+    layout.add (std::make_unique<ChoiceParam> (pid (dID::delayMode), "Character", dID::delayModeChoices, 1));
     layout.add (std::make_unique<BoolParam> (pid (dID::syncMode), "Sync", true));
     layout.add (std::make_unique<FloatParam> (pid (dID::timeMs), "Time", Range (20.0f, 2000.0f, 0.1f, 0.35f), 375.0f));
     layout.add (std::make_unique<ChoiceParam> (pid (dID::syncDiv), "Division", dID::syncDivChoices, 10));
@@ -123,6 +124,7 @@ void DoobieAudioProcessor::updateEngineParams()
     p.mix       = raw (dID::mix);
     p.width     = raw (dID::width);
     p.feedback  = raw (dID::feedback);
+    p.delayMode = (int) raw (dID::delayMode);
     p.mode      = (int) raw (dID::modeSel);
     p.pingPong  = raw (dID::pingPong) > 0.5f;
     p.freeze    = raw (dID::freeze) > 0.5f;
