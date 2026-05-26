@@ -110,6 +110,12 @@ namespace dID
         0.75, 1.0, 1.3333333, 1.5, 2.0, 3.0, 4.0
     };
 
+    // Display labels for each head division above (index-aligned).
+    inline const juce::StringArray headDivNames {
+        "1/32", "1/16T", "1/16", "1/8T", "1/16.", "1/8", "1/4T",
+        "1/8.", "1/4", "1/2T", "1/4.", "1/2", "1/2.", "1/1"
+    };
+
     // Snap a target time (in quarter notes) to the nearest head division that
     // does not exceed maxQuarters (so a head never taps beyond the repeat).
     inline double snapHeadQuarters (double targetQuarters, double maxQuarters)

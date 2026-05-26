@@ -61,6 +61,10 @@ private:
     void refreshPresetBox();
     void showSaveDialog();
 
+    // Popup readout for a head TIME knob: a musical division in sync mode, a
+    // fraction of the repeat when free-running.
+    juce::String headTimeText (double value) const;
+
     DoobieAudioProcessor& audioProcessor;
     doobie::DoobieLookAndFeel lnf;
 

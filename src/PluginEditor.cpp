@@ -125,6 +125,10 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
         headLevel[(size_t) i].attach (*this, state, dID::headLevel[(size_t) i], heads[i], amber());
         headPan[(size_t) i].attach   (*this, state, dID::headPan[(size_t) i],   i == 0 ? "PAN"  : "", amber());
         headRatio[(size_t) i].attach (*this, state, dID::headRatio[(size_t) i], i == 0 ? "TIME" : "", amber());
+
+        // Show the resolved division (sync) or fraction (free) in the drag popup.
+        headRatio[(size_t) i].slider.textFromValueFunction = [this] (double v) { return headTimeText (v); };
+        headRatio[(size_t) i].slider.updateText();
     }
 
     // Tape + tone.
@@ -178,6 +182,23 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
 DoobieAudioProcessorEditor::~DoobieAudioProcessorEditor()
 {
     setLookAndFeel (nullptr);
+}
+
+juce::String DoobieAudioProcessorEditor::headTimeText (double value) const
+{
+    auto& state = audioProcessor.getValueTreeState();
+    const bool synced = state.getRawParameterValue (dID::syncMode)->load() > 0.5f;
+    if (! synced)
+        return juce::String (value, 2); // continuous fraction of the repeat
+
+    const int divIdx = juce::jlimit (0, (int) dID::syncDivQuarters.size() - 1,
+                                     (int) state.getRawParameterValue (dID::syncDiv)->load());
+    const double masterQ  = dID::syncDivQuarters[(size_t) divIdx];
+    const double snappedQ = dID::snapHeadQuarters (value * masterQ, masterQ);
+    for (int i = 0; i < dID::headDivNames.size(); ++i)
+        if (std::abs (dID::headDivQuarters[(size_t) i] - snappedQ) < 1.0e-4)
+            return dID::headDivNames[i];
+    return dID::syncDivChoices[divIdx]; // head equals the repeat division
 }
 
 void DoobieAudioProcessorEditor::refreshPresetBox()
