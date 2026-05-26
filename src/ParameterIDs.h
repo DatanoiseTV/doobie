@@ -17,6 +17,7 @@
 // header avoids the classic "front-end and back-end drifted apart" bug.
 
 #include <array>
+#include <cmath>
 #include <juce_core/juce_core.h>
 
 namespace dID
@@ -100,6 +101,28 @@ namespace dID
         0.5, 0.6666667, 0.75, 1.0, 1.3333333, 1.5, 2.0,
         2.6666667, 3.0, 4.0, 8.0, 16.0
     };
+
+    // Musical note values (in quarter notes) a playback head can tap in sync
+    // mode. The head TIME control snaps to one of these so taps land on the
+    // grid instead of a continuous fraction of the repeat.
+    inline constexpr std::array<double, 14> headDivQuarters {
+        0.125, 0.1666667, 0.25, 0.3333333, 0.375, 0.5, 0.6666667,
+        0.75, 1.0, 1.3333333, 1.5, 2.0, 3.0, 4.0
+    };
+
+    // Snap a target time (in quarter notes) to the nearest head division that
+    // does not exceed maxQuarters (so a head never taps beyond the repeat).
+    inline double snapHeadQuarters (double targetQuarters, double maxQuarters)
+    {
+        double best = -1.0, bestErr = 1.0e9;
+        for (double d : headDivQuarters)
+        {
+            if (d > maxQuarters + 1.0e-6) continue;
+            const double e = std::abs (d - targetQuarters);
+            if (e < bestErr) { bestErr = e; best = d; }
+        }
+        return best > 0.0 ? best : maxQuarters;
+    }
 
     // New algorithms are appended so existing presets keep their stored index
     // (Off=0, Spring=1, Plate=2, Spring>Plate=3, Spring+Plate=4, Hall=5, Shimmer=6).

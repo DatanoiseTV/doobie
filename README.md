@@ -21,8 +21,10 @@ home as a modulated delay and ambience for any genre.
 ## Highlights
 
 - **Multi-head tape echo** — four playback heads tapping one tape, each with its
-  own level, pan and time ratio. A 12-position mode dial selects head combinations
-  in the spirit of a Roland Space Echo.
+  own level, pan and time. In sync each head's time snaps to a musical division
+  (1/32 … 1/1) so taps land on the grid; free-running, it's a continuous fraction
+  of the repeat. A 12-position mode dial selects head combinations in the spirit
+  of a Roland Space Echo.
 - **Five delay characters** — Digital (clean), Tape (wow/flutter + saturation),
   BBD (dark analog bucket-brigade), Diffuse (repeats smeared into a wash) and
   Pitch (each repeat climbs an octave).

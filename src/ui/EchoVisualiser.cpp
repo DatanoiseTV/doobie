@@ -45,6 +45,15 @@ void EchoVisualiser::paint (juce::Graphics& g)
     const int    mode         = juce::jlimit (0, 11, (int) raw (dID::modeSel));
     const int    mask         = DubDelayEngine::kModeMask[(size_t) mode];
 
+    // In sync mode the head taps snap to musical divisions (mirror the engine).
+    const bool synced = raw (dID::syncMode) > 0.5f;
+    double masterQuarters = 0.0;
+    if (synced)
+    {
+        const int divIdx = juce::jlimit (0, (int) dID::syncDivQuarters.size() - 1, (int) raw (dID::syncDiv));
+        masterQuarters = dID::syncDivQuarters[(size_t) divIdx];
+    }
+
     const auto& mags = processor.getEngine().headMagnitudes();
 
     const double windowSec = juce::jlimit (0.6, 4.0, delaySec * 5.0);
@@ -74,7 +83,9 @@ void EchoVisualiser::paint (juce::Graphics& g)
         if (! on || level <= 0.001f)
             continue;
 
-        const float ratio = juce::jlimit (0.05f, 1.0f, raw (dID::headRatio[(size_t) h]));
+        float ratio = juce::jlimit (0.05f, 1.0f, raw (dID::headRatio[(size_t) h]));
+        if (synced && masterQuarters > 0.0)
+            ratio = (float) (dID::snapHeadQuarters ((double) ratio * masterQuarters, masterQuarters) / masterQuarters);
         const float live  = juce::jlimit (0.0f, 1.0f, mags[(size_t) h].load());
         const float glow  = 0.45f + 0.55f * live;
 

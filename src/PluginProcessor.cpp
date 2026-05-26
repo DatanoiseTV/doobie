@@ -130,11 +130,38 @@ void DoobieAudioProcessor::updateEngineParams()
     p.freeze    = raw (dID::freeze) > 0.5f;
     p.duck      = raw (dID::duck);
 
+    // Resolve the master delay length first (heads reference it). Sync uses a
+    // musical division against host tempo; free uses milliseconds.
+    const bool synced = raw (dID::syncMode) > 0.5f;
+    double masterQuarters = 0.0;
+    if (synced)
+    {
+        const double bpm    = juce::jlimit (20.0, 300.0, currentBpm.load());
+        const int    divIdx = juce::jlimit (0, (int) dID::syncDivQuarters.size() - 1, (int) raw (dID::syncDiv));
+        masterQuarters = dID::syncDivQuarters[(size_t) divIdx];
+        p.delaySamples = masterQuarters * (60.0 / bpm) * sampleRate;
+    }
+    else
+    {
+        p.delaySamples = (raw (dID::timeMs) * 0.001) * sampleRate;
+    }
+
     for (int i = 0; i < 4; ++i)
     {
         p.headLevel[(size_t) i] = raw (dID::headLevel[(size_t) i]);
         p.headPan[(size_t) i]   = raw (dID::headPan[(size_t) i]);
-        p.headRatio[(size_t) i] = raw (dID::headRatio[(size_t) i]);
+
+        const float rawRatio = raw (dID::headRatio[(size_t) i]);
+        if (synced && masterQuarters > 0.0)
+        {
+            // The head TIME control selects a musical division of the repeat.
+            const double snapped = dID::snapHeadQuarters ((double) rawRatio * masterQuarters, masterQuarters);
+            p.headRatio[(size_t) i] = (float) (snapped / masterQuarters);
+        }
+        else
+        {
+            p.headRatio[(size_t) i] = rawRatio; // free-running: continuous fraction
+        }
     }
 
     p.wow = raw (dID::wow);
@@ -161,21 +188,6 @@ void DoobieAudioProcessor::updateEngineParams()
     p.plateDamp   = raw (dID::plateDamp);
     p.platePredelay = raw (dID::platePredelay);
     p.plateMod    = raw (dID::reverbMod);
-
-    // Resolve the delay length: musical division against host tempo, or free ms.
-    const bool synced = raw (dID::syncMode) > 0.5f;
-    if (synced)
-    {
-        const double bpm     = juce::jlimit (20.0, 300.0, currentBpm.load());
-        const int    divIdx  = juce::jlimit (0, (int) dID::syncDivQuarters.size() - 1, (int) raw (dID::syncDiv));
-        const double quarters = dID::syncDivQuarters[(size_t) divIdx];
-        const double seconds  = quarters * (60.0 / bpm);
-        p.delaySamples = seconds * sampleRate;
-    }
-    else
-    {
-        p.delaySamples = (raw (dID::timeMs) * 0.001) * sampleRate;
-    }
 
     engine.setParams (p);
 }
