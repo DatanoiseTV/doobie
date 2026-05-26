@@ -35,6 +35,8 @@ void DubDelayEngine::prepare (double sr, int maxBlockSize)
 
     spring.prepare (sr);
     plate.prepare (sr);
+    hall.prepare (sr, 40.0f, 115.0f);
+    shimmer.prepare (sr);
 
     smoothedDelay.reset (sr, 0.30);
     smoothedFeedback.reset (sr, 0.03);
@@ -65,6 +67,8 @@ void DubDelayEngine::reset()
     preToneR.reset();
     spring.reset();
     plate.reset();
+    hall.reset();
+    shimmer.reset();
     wowFlutter.reset();
     duckEnv = 0.0f;
     for (auto& m : headMag) m.store (0.0f);
@@ -100,6 +104,8 @@ void DubDelayEngine::applyReverb (float inL, float inR, float& outL, float& outR
             outR = 0.5f * (sR + pR);
             break;
         }
+        case 5: hall.process    (inL, inR, outL, outR); break;
+        case 6: shimmer.process (inL, inR, outL, outR); break;
         default: outL = inL; outR = inR; break;
     }
 }
@@ -135,6 +141,9 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
 
     spring.setParams (params.springDecay, params.springTone, params.plateMod);
     plate.setParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
+    hall.setParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
+    // In shimmer mode the MOD control sets the octave regeneration amount.
+    shimmer.setParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
 
     const int   mask      = kModeMask[(size_t) std::clamp (params.mode, 0, 11)];
     const bool  reverbOn  = params.reverbMode != 0;

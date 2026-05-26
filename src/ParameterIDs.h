@@ -93,8 +93,10 @@ namespace dID
         2.6666667, 3.0, 4.0, 8.0, 16.0
     };
 
+    // New algorithms are appended so existing presets keep their stored index
+    // (Off=0, Spring=1, Plate=2, Spring>Plate=3, Spring+Plate=4, Hall=5, Shimmer=6).
     inline const juce::StringArray reverbModeChoices {
-        "Off", "Spring", "Plate", "Spring > Plate", "Spring + Plate"
+        "Off", "Spring", "Plate", "Spring > Plate", "Spring + Plate", "Hall", "Shimmer"
     };
 
     inline const juce::StringArray reverbRouteChoices {

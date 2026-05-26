@@ -75,6 +75,8 @@ target_sources(Doobie PRIVATE
     src/dsp/DubDelayEngine.cpp
     src/dsp/SpringReverb.cpp
     src/dsp/PlateReverb.cpp
+    src/dsp/FdnReverb.cpp
+    src/dsp/ShimmerReverb.cpp
     src/presets/PresetManager.cpp
     src/ui/LookAndFeel.cpp
     src/ui/VuMeter.cpp

@@ -147,6 +147,42 @@ namespace
                 { dID::reverbMix, 0.6f }, { dID::plateDecay, 0.95f }, { dID::plateSize, 0.9f },
                 { dID::springDecay, 0.7f }, { dID::reverbMod, 0.5f }, { dID::mix, 0.65f } } },
 
+            // ---- Hall & Shimmer (the big lush algorithms) -------------------
+            { "Grand Hall", {
+                { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::feedback, 0.4f },
+                { dID::reverbMode, 5 }, { dID::reverbRoute, 0 }, { dID::reverbMix, 0.5f },
+                { dID::plateDecay, 0.82f }, { dID::plateSize, 0.9f }, { dID::platePredelay, 45.0f },
+                { dID::reverbMod, 0.35f }, { dID::lpFreq, 9000.0f }, { dID::mix, 0.5f } } },
+
+            { "Big Room Hall", {
+                { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::feedback, 0.35f },
+                { dID::reverbMode, 5 }, { dID::reverbRoute, 0 }, { dID::reverbMix, 0.42f },
+                { dID::plateDecay, 0.7f }, { dID::plateSize, 0.75f }, { dID::platePredelay, 25.0f },
+                { dID::mix, 0.42f } } },
+
+            { "Hall of Mirrors", {
+                { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::feedback, 0.7f },
+                { dID::reverbMode, 5 }, { dID::reverbRoute, 2 }, { dID::reverbMix, 0.45f },
+                { dID::plateDecay, 0.85f }, { dID::plateSize, 0.9f }, { dID::reverbMod, 0.5f },
+                { dID::lpFreq, 5000.0f }, { dID::mix, 0.55f } } },
+
+            { "Angel Choir", {
+                { dID::syncMode, 1 }, { dID::syncDiv, 16 }, { dID::feedback, 0.4f },
+                { dID::reverbMode, 6 }, { dID::reverbRoute, 0 }, { dID::reverbMix, 0.6f },
+                { dID::plateDecay, 0.8f }, { dID::plateSize, 0.85f }, { dID::reverbMod, 0.75f },
+                { dID::preHpFreq, 200.0f }, { dID::width, 1.4f }, { dID::mix, 0.6f } } },
+
+            { "Shimmer Dub", {
+                { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::feedback, 0.6f },
+                { dID::reverbMode, 6 }, { dID::reverbRoute, 2 }, { dID::reverbMix, 0.4f },
+                { dID::plateDecay, 0.7f }, { dID::reverbMod, 0.6f }, { dID::lpFreq, 4500.0f },
+                { dID::mix, 0.45f } } },
+
+            { "Frozen Shimmer", {
+                { dID::freeze, 1 }, { dID::reverbMode, 6 }, { dID::reverbRoute, 0 },
+                { dID::reverbMix, 0.65f }, { dID::plateDecay, 0.85f }, { dID::plateSize, 0.9f },
+                { dID::reverbMod, 0.8f }, { dID::width, 1.5f }, { dID::mix, 0.7f } } },
+
             // ---- Rhythmic / electronic --------------------------------------
             { "Dotted Pop", {
                 { dID::syncMode, 1 }, { dID::syncDiv, 9 }, { dID::feedback, 0.45f },
@@ -293,10 +329,10 @@ namespace
                 { dID::reverbMode, 1 }, { dID::reverbMix, 0.25f }, { dID::mix, 0.45f } } },
 
             { "Shimmer Tail", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::feedback, 0.6f },
-                { dID::reverbMode, 4 }, { dID::reverbRoute, 0 }, { dID::reverbMix, 0.6f },
-                { dID::plateDecay, 0.9f }, { dID::treble, 0.5f }, { dID::preTreble, 0.4f },
-                { dID::mix, 0.55f } } },
+                { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::feedback, 0.45f },
+                { dID::reverbMode, 6 }, { dID::reverbRoute, 0 }, { dID::reverbMix, 0.6f },
+                { dID::plateDecay, 0.8f }, { dID::reverbMod, 0.7f }, { dID::treble, 0.4f },
+                { dID::preTreble, 0.3f }, { dID::mix, 0.55f } } },
 
             { "Black Hole", {
                 { dID::freeze, 1 }, { dID::reverbMode, 4 }, { dID::reverbRoute, 0 },

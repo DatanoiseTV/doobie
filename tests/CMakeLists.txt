@@ -3,7 +3,9 @@
 add_executable(doobie_tests
     test_dsp.cpp
     ${CMAKE_SOURCE_DIR}/src/dsp/PlateReverb.cpp
-    ${CMAKE_SOURCE_DIR}/src/dsp/SpringReverb.cpp)
+    ${CMAKE_SOURCE_DIR}/src/dsp/SpringReverb.cpp
+    ${CMAKE_SOURCE_DIR}/src/dsp/FdnReverb.cpp
+    ${CMAKE_SOURCE_DIR}/src/dsp/ShimmerReverb.cpp)
 
 target_include_directories(doobie_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
 target_compile_features(doobie_tests PRIVATE cxx_std_20)

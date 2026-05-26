@@ -18,6 +18,8 @@
 #include "ToneStack.h"
 #include "SpringReverb.h"
 #include "PlateReverb.h"
+#include "FdnReverb.h"
+#include "ShimmerReverb.h"
 
 #include <juce_dsp/juce_dsp.h>
 #include <array>
@@ -100,8 +102,10 @@ private:
     ToneStack  toneL, toneR;       // in the feedback loop (every repeat)
     ToneStack  preToneL, preToneR; // pre-delay, on the signal entering the tape
 
-    SpringReverb spring;
-    PlateReverb  plate;
+    SpringReverb  spring;
+    PlateReverb   plate;
+    FdnReverb     hall;
+    ShimmerReverb shimmer;
 
     // Multiplicative smoothing glides the delay time at a constant ratio, which
     // sounds like a tape capstan easing to a new speed rather than a linear jump.

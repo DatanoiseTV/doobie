@@ -5,6 +5,8 @@
 #include "dsp/WowFlutter.h"
 #include "dsp/PlateReverb.h"
 #include "dsp/SpringReverb.h"
+#include "dsp/FdnReverb.h"
+#include "dsp/ShimmerReverb.h"
 
 #include <cmath>
 #include <cstdio>
@@ -101,6 +103,22 @@ static void testSpringStability()
     testReverbDecay (spring);
 }
 
+static void testHallStability()
+{
+    doobie::FdnReverb hall;
+    hall.prepare (48000.0, 40.0f, 115.0f);
+    hall.setParams (0.7f, 0.7f, 0.4f, 20.0f, 0.4f);
+    testReverbDecay (hall);
+}
+
+static void testShimmerStability()
+{
+    doobie::ShimmerReverb shimmer;
+    shimmer.prepare (48000.0);
+    shimmer.setParams (0.7f, 0.6f, 0.4f, 20.0f, 0.5f);
+    testReverbDecay (shimmer);
+}
+
 static void testWowFlutter()
 {
     doobie::WowFlutter wf;
@@ -123,6 +141,8 @@ int main()
     testSaturation();
     testPlateStability();
     testSpringStability();
+    testHallStability();
+    testShimmerStability();
     testWowFlutter();
 
     if (failures == 0)

@@ -52,12 +52,19 @@ float ReverbResponseView::estimateDecaySeconds() const
     const float plateMean = 0.0338f * (0.6f + 0.9f * raw (dID::plateSize));
     const float plateRt   = loopRt (plateG, plateMean, 1.0f - 0.45f * raw (dID::plateDamp));
 
+    // Hall and shimmer share the larger FDN core (longer mean delay, g 0.6..0.99).
+    const float hallG    = 0.6f + 0.39f * raw (dID::plateDecay);
+    const float hallMean = 0.075f * (0.7f + 0.7f * raw (dID::plateSize));
+    const float hallRt   = loopRt (hallG, hallMean, 1.0f - 0.45f * raw (dID::plateDamp));
+
     switch (mode)
     {
         case 1: return springRt;
         case 2: return plateRt;
         case 3: return springRt + plateRt;          // series chains the tails
         case 4: return juce::jmax (springRt, plateRt);
+        case 5: return hallRt;
+        case 6: return hallRt * 1.6f;               // shimmer regenerates longer
         default: return 0.0f;
     }
 }
@@ -66,7 +73,7 @@ float ReverbResponseView::predelaySeconds() const
 {
     auto& s = processor.getValueTreeState();
     const int mode = (int) s.getRawParameterValue (dID::reverbMode)->load();
-    if (mode == 2 || mode == 3 || mode == 4)         // anything with the plate
+    if (mode >= 2)                                   // plate, series, parallel, hall, shimmer
         return s.getRawParameterValue (dID::platePredelay)->load() * 0.001f;
     return 0.0f;
 }
