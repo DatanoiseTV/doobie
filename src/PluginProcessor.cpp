@@ -40,18 +40,21 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     layout.add (std::make_unique<FloatParam> (pid (dID::timeMs), "Time", Range (20.0f, 2000.0f, 0.1f, 0.35f), 375.0f));
     layout.add (std::make_unique<ChoiceParam> (pid (dID::syncDiv), "Division", dID::syncDivChoices, 10));
     layout.add (std::make_unique<FloatParam> (pid (dID::feedback), "Feedback", Range (0.0f, 1.2f, 0.001f), 0.4f));
-    layout.add (std::make_unique<ChoiceParam> (pid (dID::modeSel), "Mode", dID::modeChoices, 0));
     layout.add (std::make_unique<BoolParam> (pid (dID::pingPong), "Ping-Pong", false));
     layout.add (std::make_unique<BoolParam> (pid (dID::freeze), "Freeze", false));
     layout.add (std::make_unique<FloatParam> (pid (dID::duck), "Duck", Range (0.0f, 1.0f, 0.001f), 0.0f));
 
     // ---- Multi-head ---------------------------------------------------------
+    // The head matrix: head 1 on by default (a single tap at the repeat time),
+    // matching the previous default mode. Old presets map onto these switches.
+    const std::array<bool, 4>  defOn    { true, false, false, false };
     const std::array<float, 4> defLevel { 0.7f, 0.7f, 0.7f, 0.7f };
     const std::array<float, 4> defPan   { 0.0f, -0.4f, 0.4f, 0.0f };
     const std::array<float, 4> defRatio  { 1.0f, 0.75f, 0.5f, 0.25f };
     for (int i = 0; i < 4; ++i)
     {
         const auto n = juce::String (i + 1);
+        layout.add (std::make_unique<BoolParam> (pid (dID::headOn[(size_t) i]), "Head " + n + " On", defOn[(size_t) i]));
         layout.add (std::make_unique<FloatParam> (pid (dID::headLevel[(size_t) i]), "Head " + n + " Level", Range (0.0f, 1.0f, 0.001f), defLevel[(size_t) i]));
         layout.add (std::make_unique<FloatParam> (pid (dID::headPan[(size_t) i]),   "Head " + n + " Pan",   Range (-1.0f, 1.0f, 0.001f), defPan[(size_t) i]));
         layout.add (std::make_unique<FloatParam> (pid (dID::headRatio[(size_t) i]), "Head " + n + " Ratio", Range (0.05f, 1.0f, 0.001f), defRatio[(size_t) i]));
@@ -125,7 +128,6 @@ void DoobieAudioProcessor::updateEngineParams()
     p.width     = raw (dID::width);
     p.feedback  = raw (dID::feedback);
     p.delayMode = (int) raw (dID::delayMode);
-    p.mode      = (int) raw (dID::modeSel);
     p.pingPong  = raw (dID::pingPong) > 0.5f;
     p.freeze    = raw (dID::freeze) > 0.5f;
     p.duck      = raw (dID::duck);
@@ -148,6 +150,7 @@ void DoobieAudioProcessor::updateEngineParams()
 
     for (int i = 0; i < 4; ++i)
     {
+        p.headOn[(size_t) i]    = raw (dID::headOn[(size_t) i]) > 0.5f;
         p.headLevel[(size_t) i] = raw (dID::headLevel[(size_t) i]);
         p.headPan[(size_t) i]   = raw (dID::headPan[(size_t) i]);
 
@@ -232,7 +235,11 @@ void DoobieAudioProcessor::setStateInformation (const void* data, int sizeInByte
 {
     if (auto xml = getXmlFromBinary (data, sizeInBytes))
         if (xml->hasTagName (apvts.state.getType()))
-            apvts.replaceState (juce::ValueTree::fromXml (*xml));
+        {
+            auto tree = juce::ValueTree::fromXml (*xml);
+            apvts.replaceState (tree);
+            PresetManager::migrateLegacyState (apvts, tree); // old "modeSel" -> head matrix
+        }
 }
 
 // This creates new instances of the plugin.

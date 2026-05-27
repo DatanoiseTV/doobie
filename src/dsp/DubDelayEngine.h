@@ -22,6 +22,7 @@
 #include "ShimmerReverb.h"
 #include "Diffuser.h"
 #include "FftPitchShifter.h"
+#include "DcBlocker.h"
 
 #include <juce_dsp/juce_dsp.h>
 #include <array>
@@ -42,11 +43,11 @@ struct EngineParams
     double delaySamples = 22050.0; // resolved length of the longest head (ratio 1.0)
     float  feedback     = 0.4f;    // 0..1.2 (above ~1 self-oscillates)
     int    delayMode    = 1;       // 0 digital, 1 tape, 2 BBD, 3 diffuse, 4 pitch
-    int    mode         = 11;      // head mask index (the mode dial)
     bool   pingPong     = false;
     bool   freeze       = false;
     float  duck         = 0.0f;    // 0..1 wet ducking by dry level
 
+    std::array<bool,  4> headOn    { true, false, false, false }; // the head matrix
     std::array<float, 4> headLevel { 0.9f, 0.0f, 0.0f, 0.7f };
     std::array<float, 4> headPan   { 0.0f, 0.0f, 0.0f, 0.0f };
     std::array<float, 4> headRatio { 0.25f, 0.5f, 0.75f, 1.0f };
@@ -72,13 +73,6 @@ struct EngineParams
 class DubDelayEngine
 {
 public:
-    // Head-on bitmask for each of the 12 mode-dial positions (bit i = head i).
-    static constexpr std::array<int, 12> kModeMask {
-        0b0001, 0b0010, 0b0100, 0b1000,   // single heads A,B,C,D
-        0b0011, 0b1100, 0b0101, 0b1010,   // pairs
-        0b0111, 0b1110, 0b1001, 0b1111    // triples / all
-    };
-
     void prepare (double sampleRate, int maxBlockSize);
     void reset();
 
@@ -124,6 +118,16 @@ private:
     // sounds like a tape capstan easing to a new speed rather than a linear jump.
     juce::SmoothedValue<double, juce::ValueSmoothingTypes::Multiplicative> smoothedDelay;
     juce::SmoothedValue<float>  smoothedFeedback, smoothedMix, smoothedOut, smoothedInGain, smoothedWidth;
+
+    // Per-head smoothing kills the clicks that raw control steps would cause:
+    // gain ramps a head in/out when the matrix toggles (no on/off click), pan
+    // glides, and the time ratio eases between divisions like the master capstan.
+    std::array<juce::SmoothedValue<float>, 4> smoothedHeadGain, smoothedHeadPan;
+    std::array<juce::SmoothedValue<double, juce::ValueSmoothingTypes::Multiplicative>, 4> smoothedHeadRatio;
+
+    // DC blockers stop a feedback offset from building across repeats, and keep
+    // the wet output centred regardless of delay character or reverb.
+    DcBlocker dcFbL, dcFbR, dcOutL, dcOutR;
 
     float duckEnv = 0.0f;
     uint32_t rngState = 0x1234567u;

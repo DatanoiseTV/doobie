@@ -18,6 +18,7 @@ namespace
     using PV = std::pair<juce::String, float>;
 
     // Shorthand for head parameter overrides.
+    PV ho (int i, bool on) { return { dID::headOn[(size_t) i], on ? 1.0f : 0.0f }; }
     PV hl (int i, float v) { return { dID::headLevel[(size_t) i], v }; }
     PV hp (int i, float v) { return { dID::headPan[(size_t) i],   v }; }
     PV hr (int i, float v) { return { dID::headRatio[(size_t) i], v }; }
@@ -28,7 +29,8 @@ namespace
     // (Hz, ms, dB) and, for choice parameters, the option index:
     //   syncDiv:  4=1/16 5=1/8T 6=1/16. 7=1/8 8=1/4T 9=1/8. 10=1/4 11=1/2T
     //             12=1/4. 13=1/2 14=1/1T 15=1/2. 16=1/1 17=2 bars
-    //   modeSel:  0=A 1=B 2=C 3=D 4=A+B 5=C+D 6=A+C 7=B+D 8=A+B+C 9=B+C+D 10=A+D 11=all
+    //   heads:    ho(i,true) switches head i on (0=A 1=B 2=C 3=D); head A is on
+    //             by default, so only the extra heads need listing.
     //   reverbMode: 0 off, 1 spring, 2 plate, 3 series, 4 parallel
     //   reverbRoute: 0 post, 1 pre, 2 in-feedback
     std::vector<PresetManager::Preset> buildFactory()
@@ -66,7 +68,7 @@ namespace
                 { dID::mix, 0.45f } } },
 
             { "Steppers Delay", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 7 }, { dID::modeSel, 6 },
+                { dID::syncMode, 1 }, { dID::syncDiv, 7 }, ho (0, true), ho (2, true),
                 { dID::feedback, 0.6f }, { dID::pingPong, 1 }, { dID::reverbMode, 1 },
                 { dID::reverbRoute, 0 }, { dID::reverbMix, 0.3f }, { dID::lpFreq, 3500.0f },
                 { dID::mix, 0.4f } } },
@@ -190,12 +192,12 @@ namespace
                 { dID::reverbMix, 0.22f }, { dID::lpFreq, 9000.0f }, { dID::mix, 0.35f } } },
 
             { "Ping Triplets", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 5 }, { dID::modeSel, 6 },
+                { dID::syncMode, 1 }, { dID::syncDiv, 5 }, ho (0, true), ho (2, true),
                 { dID::feedback, 0.5f }, { dID::pingPong, 1 }, { dID::reverbMode, 1 },
                 { dID::reverbMix, 0.2f }, { dID::mix, 0.38f } } },
 
             { "Multihead Cascade", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 7 }, { dID::modeSel, 11 },
+                { dID::syncMode, 1 }, { dID::syncDiv, 7 }, ho (0, true), ho (1, true), ho (2, true), ho (3, true),
                 { dID::feedback, 0.45f }, hl (0, 0.85f), hl (1, 0.6f), hl (2, 0.6f), hl (3, 0.7f),
                 hp (0, 0.0f), hp (1, -0.5f), hp (2, 0.5f), hp (3, 0.0f),
                 { dID::reverbMode, 2 }, { dID::reverbMix, 0.3f }, { dID::mix, 0.45f } } },
@@ -206,7 +208,7 @@ namespace
                 { dID::lpFreq, 6500.0f }, { dID::mix, 0.35f } } },
 
             { "Stutter 16ths", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 4 }, { dID::modeSel, 4 },
+                { dID::syncMode, 1 }, { dID::syncDiv, 4 }, ho (0, true), ho (1, true),
                 { dID::feedback, 0.6f }, { dID::pingPong, 1 }, { dID::reverbMode, 1 },
                 { dID::reverbMix, 0.18f }, { dID::mix, 0.4f } } },
 
@@ -218,11 +220,11 @@ namespace
 
             { "Trance Gate Echo", {
                 { dID::syncMode, 1 }, { dID::syncDiv, 4 }, { dID::feedback, 0.5f },
-                { dID::pingPong, 1 }, { dID::modeSel, 4 }, { dID::lpFreq, 9000.0f },
+                { dID::pingPong, 1 }, ho (0, true), ho (1, true), { dID::lpFreq, 9000.0f },
                 { dID::reverbMode, 2 }, { dID::reverbMix, 0.2f }, { dID::mix, 0.4f } } },
 
             { "Polyrhythm 3:4", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 5 }, { dID::modeSel, 8 },
+                { dID::syncMode, 1 }, { dID::syncDiv, 5 }, ho (0, true), ho (1, true), ho (2, true),
                 { dID::feedback, 0.45f }, { dID::pingPong, 1 }, { dID::reverbMode, 1 },
                 { dID::reverbMix, 0.2f }, { dID::mix, 0.42f } } },
 
@@ -232,7 +234,7 @@ namespace
                 { dID::mix, 0.35f } } },
 
             { "Galloping 8ths", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 7 }, { dID::modeSel, 10 },
+                { dID::syncMode, 1 }, { dID::syncDiv, 7 }, ho (0, true), ho (3, true),
                 hr (0, 1.0f), hr (3, 0.66f), { dID::feedback, 0.6f }, { dID::pingPong, 1 },
                 { dID::reverbMode, 1 }, { dID::reverbMix, 0.2f }, { dID::mix, 0.42f } } },
 
@@ -313,12 +315,12 @@ namespace
                 { dID::reverbMode, 0 }, { dID::mix, 0.5f } } },
 
             { "Telegraph", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 4 }, { dID::modeSel, 0 },
+                { dID::syncMode, 1 }, { dID::syncDiv, 4 }, ho (0, true),
                 { dID::feedback, 0.7f }, { dID::preHpFreq, 600.0f }, { dID::preLpFreq, 2500.0f },
                 { dID::hpFreq, 400.0f }, { dID::lpFreq, 2200.0f }, { dID::mix, 0.4f } } },
 
             { "Granular Cloud", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 4 }, { dID::modeSel, 11 },
+                { dID::syncMode, 1 }, { dID::syncDiv, 4 }, ho (0, true), ho (1, true), ho (2, true), ho (3, true),
                 { dID::feedback, 0.6f }, { dID::reverbMod, 0.8f }, { dID::wow, 0.6f },
                 { dID::reverbMode, 4 }, { dID::reverbRoute, 2 }, { dID::reverbMix, 0.5f },
                 { dID::mix, 0.5f } } },
@@ -368,7 +370,7 @@ namespace
                 { dID::reverbMix, 0.3f }, { dID::mix, 0.35f } } },
 
             { "Wide Triplet Sky", {
-                { dID::syncMode, 1 }, { dID::syncDiv, 8 }, { dID::modeSel, 6 },
+                { dID::syncMode, 1 }, { dID::syncDiv, 8 }, ho (0, true), ho (2, true),
                 { dID::pingPong, 1 }, { dID::width, 1.5f }, { dID::reverbMode, 2 },
                 { dID::reverbRoute, 0 }, { dID::reverbMix, 0.4f }, { dID::feedback, 0.5f },
                 { dID::mix, 0.45f } } },
@@ -423,6 +425,35 @@ juce::File PresetManager::userPresetDirectory()
     if (! dir.exists())
         dir.createDirectory();
     return dir;
+}
+
+void PresetManager::migrateLegacyState (juce::AudioProcessorValueTreeState& state,
+                                        const juce::ValueTree& loaded)
+{
+    int  legacyMode = -1;
+    bool hasHeadOn  = false;
+
+    for (const auto& child : loaded)
+    {
+        if (! child.hasType ("PARAM"))
+            continue;
+        const auto id = child.getProperty ("id").toString();
+        if (id == dID::legacyModeSel)
+            legacyMode = (int) (float) child.getProperty ("value");
+        for (auto* h : dID::headOn)
+            if (id == h)
+                hasHeadOn = true;
+    }
+
+    // A current state already carries the head switches; only convert when an
+    // old "modeSel" is present and no switches are.
+    if (legacyMode < 0 || hasHeadOn)
+        return;
+
+    const int mask = dID::legacyModeMask[(size_t) juce::jlimit (0, 11, legacyMode)];
+    for (int i = 0; i < 4; ++i)
+        if (auto* p = state.getParameter (dID::headOn[(size_t) i]))
+            p->setValueNotifyingHost ((mask & (1 << i)) != 0 ? 1.0f : 0.0f);
 }
 
 juce::StringArray PresetManager::getFactoryNames() const
@@ -494,7 +525,9 @@ void PresetManager::loadByName (const juce::String& name)
     {
         if (auto xml = juce::XmlDocument::parse (file))
         {
-            apvts.replaceState (juce::ValueTree::fromXml (*xml));
+            auto tree = juce::ValueTree::fromXml (*xml);
+            apvts.replaceState (tree);
+            migrateLegacyState (apvts, tree); // convert a pre-matrix user preset
             currentName = name;
         }
     }

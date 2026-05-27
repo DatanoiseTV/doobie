@@ -42,8 +42,6 @@ void EchoVisualiser::paint (juce::Graphics& g)
     const double sampleRate   = processor.getSampleRateForUI();
     const double delaySec     = sampleRate > 0.0 ? (double) delaySamples / sampleRate : 0.25;
     const float  feedback     = juce::jlimit (0.0f, 1.2f, raw (dID::feedback));
-    const int    mode         = juce::jlimit (0, 11, (int) raw (dID::modeSel));
-    const int    mask         = DubDelayEngine::kModeMask[(size_t) mode];
 
     // In sync mode the head taps snap to musical divisions (mirror the engine).
     const bool synced = raw (dID::syncMode) > 0.5f;
@@ -78,7 +76,7 @@ void EchoVisualiser::paint (juce::Graphics& g)
         g.drawText (names[h], juce::Rectangle<float> (plot.getX() - 9.0f, laneY - 7.0f, 10.0f, 14.0f),
                     juce::Justification::centred);
 
-        const bool on = (mask & (1 << h)) != 0;
+        const bool on = raw (dID::headOn[(size_t) h]) > 0.5f;
         const float level = juce::jlimit (0.0f, 1.0f, raw (dID::headLevel[(size_t) h]));
         if (! on || level <= 0.001f)
             continue;

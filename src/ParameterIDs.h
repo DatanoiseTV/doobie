@@ -37,13 +37,14 @@ namespace dID
     inline constexpr auto timeMs      = "timeMs";      // free-running time
     inline constexpr auto syncDiv     = "syncDiv";     // tempo division
     inline constexpr auto feedback    = "feedback";    // "intensity"
-    inline constexpr auto modeSel     = "modeSel";     // Space-Echo mode dial (12)
     inline constexpr auto pingPong    = "pingPong";
     inline constexpr auto freeze      = "freeze";
     inline constexpr auto duck        = "duck";
 
     // ---- Multi-head ---------------------------------------------------------
-    // Four read heads tapping one tape. ratio scales the base delay time.
+    // Four read heads tapping one tape. Each head has an on/off switch (the head
+    // matrix), a level, a pan and a time ratio that scales the base delay.
+    inline constexpr std::array<const char*, 4> headOn    { "head1On",    "head2On",    "head3On",    "head4On"    };
     inline constexpr std::array<const char*, 4> headLevel { "head1Level", "head2Level", "head3Level", "head4Level" };
     inline constexpr std::array<const char*, 4> headPan   { "head1Pan",   "head2Pan",   "head3Pan",   "head4Pan"   };
     inline constexpr std::array<const char*, 4> headRatio { "head1Ratio", "head2Ratio", "head3Ratio", "head4Ratio" };
@@ -140,21 +141,16 @@ namespace dID
         "Post", "Pre", "In Feedback"
     };
 
-    // 12-position Space-Echo style mode dial. Each position activates a
-    // combination of the four playback heads (A,B,C,D). The head-on masks are
-    // defined in DubDelayEngine::kModeMask and must stay index-aligned here.
-    inline const juce::StringArray modeChoices {
-        "1: A",
-        "2: B",
-        "3: C",
-        "4: D",
-        "5: A+B",
-        "6: C+D",
-        "7: A+C",
-        "8: B+D",
-        "9: A+B+C",
-        "10: B+C+D",
-        "11: A+D",
-        "12: A+B+C+D"
+    // ---- Legacy migration ---------------------------------------------------
+    // Versions up to 0.1.0 used a single 12-position "modeSel" choice (a
+    // Space-Echo style dial) instead of four independent head on/off switches.
+    // When an old state or preset is loaded we map that index to the head
+    // matrix via this table (bit i = head i on). Kept only for backwards
+    // compatibility; new states store the four headOn switches directly.
+    inline constexpr auto legacyModeSel = "modeSel";
+    inline constexpr std::array<int, 12> legacyModeMask {
+        0b0001, 0b0010, 0b0100, 0b1000,   // single heads A,B,C,D
+        0b0011, 0b1100, 0b0101, 0b1010,   // pairs
+        0b0111, 0b1110, 0b1001, 0b1111    // triples / all
     };
 }

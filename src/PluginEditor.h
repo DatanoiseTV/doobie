@@ -73,11 +73,14 @@ private:
     juce::TextButton btnPrev { "<" }, btnNext { ">" }, btnSave { "SAVE" };
 
     // Delay.
-    Knob kMode, kTime, kFeedback;
+    Knob kTime, kFeedback;
     Combo cbDivision, cbCharacter;
     juce::ToggleButton tgSync { "Sync" }, tgPingPong { "Ping-Pong" }, tgFreeze { "Freeze" };
     std::unique_ptr<APVTS::ButtonAttachment> aSync, aPingPong, aFreeze;
-    juce::Label modeReadout;
+
+    // Head matrix: four lit pads switching each playback head on/off.
+    std::array<juce::ToggleButton, 4> headPads;
+    std::array<std::unique_ptr<APVTS::ButtonAttachment>, 4> headPadAtt;
 
     // Multi-head.
     std::array<Knob, 4> headLevel, headPan, headRatio;

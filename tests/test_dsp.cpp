@@ -1,6 +1,7 @@
 // Minimal assertion-based tests for the DSP cores. No framework: each check
 // prints on failure and the process returns non-zero so CTest flags it.
 #include "dsp/DelayLine.h"
+#include "dsp/DcBlocker.h"
 #include "dsp/Saturation.h"
 #include "dsp/WowFlutter.h"
 #include "dsp/PlateReverb.h"
@@ -51,6 +52,45 @@ static void testSaturation()
     for (int i = 0; i < 1000; ++i)
         maxOut = std::fmax (maxOut, std::fabs (s.process (i % 2 == 0 ? 50.0f : -50.0f)));
     check (maxOut < 1.5f, "Saturation bounds a hot input");
+}
+
+static void testDcBlocker()
+{
+    constexpr double sr = 48000.0;
+
+    // A constant DC input must be driven toward zero.
+    doobie::DcBlocker dc;
+    dc.prepare (sr);
+    float out = 0.0f;
+    for (int i = 0; i < (int) sr; ++i)   // 1 second to settle
+        out = dc.process (1.0f);
+    check (std::fabs (out) < 0.01f, "DcBlocker removes a constant DC offset");
+
+    // A 1 kHz tone (well above the few-Hz cutoff) must pass at near unity gain.
+    doobie::DcBlocker dc2;
+    dc2.prepare (sr);
+    float peak = 0.0f;
+    for (int i = 0; i < (int) sr; ++i)
+    {
+        const float in = std::sin (6.2831853f * 1000.0f * (float) i / (float) sr);
+        const float y  = dc2.process (in);
+        if (i > (int) sr / 2)            // after the transient settles
+            peak = std::fmax (peak, std::fabs (y));
+    }
+    check (peak > 0.97f && peak < 1.03f, "DcBlocker preserves audio-band signal");
+
+    // A DC-biased tone keeps its swing but loses the offset (mean ~ 0).
+    doobie::DcBlocker dc3;
+    dc3.prepare (sr);
+    double mean = 0.0;
+    int counted = 0;
+    for (int i = 0; i < (int) sr; ++i)
+    {
+        const float in = 0.5f + 0.3f * std::sin (6.2831853f * 200.0f * (float) i / (float) sr);
+        const float y  = dc3.process (in);
+        if (i > (int) sr / 2) { mean += y; ++counted; }
+    }
+    check (std::fabs (mean / counted) < 0.01f, "DcBlocker centres a DC-biased tone");
 }
 
 // Feeds a short noise burst then silence and confirms the reverb (a) never
@@ -130,6 +170,7 @@ static void testWowFlutter()
 int main()
 {
     testDelayLine();
+    testDcBlocker();
     testSaturation();
     testPlateStability();
     testSpringStability();

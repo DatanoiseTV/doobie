@@ -43,12 +43,21 @@ void DubDelayEngine::prepare (double sr, int maxBlockSize)
     pitchL.prepare (sr);
     pitchR.prepare (sr);
 
-    smoothedDelay.reset (sr, 0.30);
+    // A longer glide on the master time makes large jumps (a division change, a
+    // big TIME sweep) ease in like a tape capstan instead of zipping.
+    smoothedDelay.reset (sr, 0.45);
     smoothedFeedback.reset (sr, 0.03);
     smoothedMix.reset (sr, 0.02);
     smoothedOut.reset (sr, 0.02);
     smoothedInGain.reset (sr, 0.02);
     smoothedWidth.reset (sr, 0.05);
+
+    for (int i = 0; i < 4; ++i)
+    {
+        smoothedHeadGain[(size_t) i].reset (sr, 0.03);  // ~30 ms: click-free on/off
+        smoothedHeadPan[(size_t) i].reset  (sr, 0.03);
+        smoothedHeadRatio[(size_t) i].reset (sr, 0.12); // capstan-style time glide
+    }
 
     smoothedDelay.setCurrentAndTargetValue (params.delaySamples);
     smoothedFeedback.setCurrentAndTargetValue (params.feedback);
@@ -56,6 +65,13 @@ void DubDelayEngine::prepare (double sr, int maxBlockSize)
     smoothedOut.setCurrentAndTargetValue (params.outGain);
     smoothedInGain.setCurrentAndTargetValue (params.inputGain);
     smoothedWidth.setCurrentAndTargetValue (params.width);
+
+    // Gentle (5 Hz) in the feedback loop so dub sub-bass survives many passes
+    // while DC still can't accumulate; the wet output is single-pass, so 8 Hz.
+    dcFbL.prepare (sr, 5.0f);
+    dcFbR.prepare (sr, 5.0f);
+    dcOutL.prepare (sr);
+    dcOutR.prepare (sr);
 
     reset();
 }
@@ -82,6 +98,23 @@ void DubDelayEngine::reset()
     bbdLpL = bbdLpR = bbdBpL = bbdBpR = 0.0f;
     wowFlutter.reset();
     duckEnv = 0.0f;
+
+    dcFbL.reset();
+    dcFbR.reset();
+    dcOutL.reset();
+    dcOutR.reset();
+
+    // Snap the per-head smoothers to their current targets so a reset doesn't
+    // ramp from stale values.
+    for (int i = 0; i < 4; ++i)
+    {
+        const float gain = params.headOn[(size_t) i] ? params.headLevel[(size_t) i] : 0.0f;
+        smoothedHeadGain[(size_t) i].setCurrentAndTargetValue (gain);
+        smoothedHeadPan[(size_t) i].setCurrentAndTargetValue (params.headPan[(size_t) i]);
+        smoothedHeadRatio[(size_t) i].setCurrentAndTargetValue (
+            std::clamp ((double) params.headRatio[(size_t) i], 0.05, 1.0));
+    }
+
     for (auto& m : headMag) m.store (0.0f);
 }
 
@@ -156,7 +189,17 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
     // In shimmer mode the MOD control sets the octave regeneration amount.
     shimmer.setParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
 
-    const int   mask      = kModeMask[(size_t) std::clamp (params.mode, 0, 11)];
+    // Per-head targets. A head that is off (or at zero level) targets zero gain
+    // and the smoother ramps it out instead of cutting it dead.
+    for (int i = 0; i < 4; ++i)
+    {
+        const float gain = params.headOn[(size_t) i] ? params.headLevel[(size_t) i] : 0.0f;
+        smoothedHeadGain[(size_t) i].setTargetValue (gain);
+        smoothedHeadPan[(size_t) i].setTargetValue (params.headPan[(size_t) i]);
+        smoothedHeadRatio[(size_t) i].setTargetValue (
+            std::clamp ((double) params.headRatio[(size_t) i], 0.05, 1.0));
+    }
+
     const bool  reverbOn  = params.reverbMode != 0;
     const float revMix    = params.reverbMix;
     const float hissLevel = params.hiss * 0.015f;
@@ -247,6 +290,11 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
             fbR = fbR * (1.0f - revMix) + rR * revMix;
         }
 
+        // Block DC before it recirculates, so no character (Digital included) or
+        // in-loop reverb can pump a growing offset around the feedback path.
+        fbL = dcFbL.process (fbL);
+        fbR = dcFbR.process (fbR);
+
         const float fbGain = params.freeze ? 1.0f : fb;
         float fbContribL = fbL * fbGain;
         float fbContribR = fbR * fbGain;
@@ -281,17 +329,18 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
         float wetL = 0.0f, wetR = 0.0f;
         for (int i = 0; i < 4; ++i)
         {
-            if ((mask & (1 << i)) == 0)
-                continue;
-            const float lvl = params.headLevel[(size_t) i];
-            if (lvl <= 0.0001f)
+            // Advance every head's smoothers each sample so a head ramps cleanly
+            // back in when re-enabled; skip the read only once it is silent.
+            const float  lvl   = smoothedHeadGain[(size_t) i].getNextValue();
+            const float  p     = smoothedHeadPan[(size_t) i].getNextValue();
+            const double ratio = smoothedHeadRatio[(size_t) i].getNextValue();
+            if (lvl <= 1.0e-5f)
                 continue;
 
-            const float hd = std::max (2.0f, (float) (dly * params.headRatio[(size_t) i] * m));
+            const float hd = std::max (2.0f, (float) (dly * ratio * m));
             const float tL = tapeL.read (hd);
             const float tR = tapeR.read (hd);
 
-            const float p    = params.headPan[(size_t) i];
             const float balL = (p <= 0.0f) ? 1.0f : 1.0f - p;
             const float balR = (p >= 0.0f) ? 1.0f : 1.0f + p;
 
@@ -322,6 +371,11 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
         const float duckGain = std::clamp (1.0f - params.duck * duckEnv * 2.0f, 0.0f, 1.0f);
         wetL *= duckGain;
         wetR *= duckGain;
+
+        // Keep the wet path centred (reverb/character can introduce a small
+        // offset); the dry signal is passed through untouched.
+        wetL = dcOutL.process (wetL);
+        wetR = dcOutR.process (wetR);
 
         // Dry/wet crossfade and output trim.
         const float outL = (dryL * (1.0f - mix) + wetL * mix) * og;

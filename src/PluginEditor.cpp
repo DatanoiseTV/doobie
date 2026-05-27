@@ -98,7 +98,6 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
     btnSave.onClick = [this] { showSaveDialog(); };
 
     // Delay block.
-    kMode.attach     (*this, state, dID::modeSel,  "MODE",     amber());
     kTime.attach     (*this, state, dID::timeMs,   "TIME",     amber());
     kFeedback.attach (*this, state, dID::feedback, "FEEDBACK", amber());
     cbDivision.attach (*this, state, dID::syncDiv, "DIVISION", dID::syncDivChoices);
@@ -113,10 +112,18 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
     aPingPong = std::make_unique<APVTS::ButtonAttachment> (state, dID::pingPong, tgPingPong);
     aFreeze   = std::make_unique<APVTS::ButtonAttachment> (state, dID::freeze,   tgFreeze);
 
-    modeReadout.setJustificationType (juce::Justification::centred);
-    modeReadout.setColour (juce::Label::textColourId, amber());
-    modeReadout.setFont (juce::Font (juce::FontOptions (13.0f)).withExtraKerningFactor (0.04f));
-    addAndMakeVisible (modeReadout);
+    // Head matrix: one lit pad per head, switching it in or out of the echo.
+    static const char* headLetters[4] = { "A", "B", "C", "D" };
+    for (int i = 0; i < 4; ++i)
+    {
+        auto& pad = headPads[(size_t) i];
+        pad.setButtonText (headLetters[i]);
+        pad.getProperties().set ("pad", true);
+        pad.getProperties().set ("headLetter", headLetters[i]);
+        pad.getProperties().set ("accent", (int) amber().getARGB());
+        addAndMakeVisible (pad);
+        headPadAtt[(size_t) i] = std::make_unique<APVTS::ButtonAttachment> (state, dID::headOn[(size_t) i], pad);
+    }
 
     // Heads. Captions act as column headers only on the first row.
     static const char* heads[4] = { "A", "B", "C", "D" };
@@ -233,10 +240,6 @@ void DoobieAudioProcessorEditor::timerCallback()
 {
     auto& state = audioProcessor.getValueTreeState();
 
-    const int modeIdx = juce::jlimit (0, dID::modeChoices.size() - 1,
-                                      (int) state.getRawParameterValue (dID::modeSel)->load());
-    modeReadout.setText (dID::modeChoices[modeIdx], juce::dontSendNotification);
-
     const bool synced = state.getRawParameterValue (dID::syncMode)->load() > 0.5f;
     cbDivision.box.setEnabled (synced);
     kTime.slider.setEnabled (! synced);
@@ -309,7 +312,7 @@ void DoobieAudioProcessorEditor::paint (juce::Graphics& g)
         }
     };
 
-    panel (rMode,    "MODE",   doobie::colours::line());
+    panel (rMode,    "HEAD MATRIX", doobie::colours::line());
     panel (rHeads,   "PLAYBACK HEADS", doobie::colours::line());
     panel (rDelay,   "DELAY",  doobie::colours::line());
     panel (rTape,    "TAPE",   doobie::colours::line());
@@ -385,9 +388,18 @@ void DoobieAudioProcessorEditor::resized()
     colA.removeFromTop (gap);
     rHeads = colA;
     {
-        auto m = rMode.reduced (10).withTrimmedTop (22);
-        modeReadout.setBounds (m.removeFromBottom (22));
-        kMode.place (m);
+        // 2x2 grid of head pads (A B / C D) filling the matrix panel.
+        auto m = rMode.reduced (14).withTrimmedTop (24);
+        const int padGap = 10;
+        const int cellH = (m.getHeight() - padGap) / 2;
+        auto topRow = m.removeFromTop (cellH);
+        m.removeFromTop (padGap);
+        auto botRow = m;
+        const int cellW = (topRow.getWidth() - padGap) / 2;
+        headPads[0].setBounds (topRow.removeFromLeft (cellW));
+        headPads[1].setBounds (topRow.removeFromRight (cellW));
+        headPads[2].setBounds (botRow.removeFromLeft (cellW));
+        headPads[3].setBounds (botRow.removeFromRight (cellW));
 
         auto h = rHeads.reduced (10).withTrimmedTop (42); // title + column header row
         const int rowH = h.getHeight() / 4;

@@ -46,6 +46,12 @@ public:
 
     static juce::File userPresetDirectory();
 
+    // Map a pre-0.1.0 12-position "modeSel" found in a loaded state onto the
+    // four head on/off switches. No-op when the state already has the switches
+    // (a current state) or no legacy mode. Call right after replaceState.
+    static void migrateLegacyState (juce::AudioProcessorValueTreeState& state,
+                                    const juce::ValueTree& loaded);
+
 private:
     void applyPreset (const Preset& preset);
     void resetToDefaults();

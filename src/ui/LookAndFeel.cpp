@@ -120,6 +120,47 @@ void DoobieLookAndFeel::positionComboBoxText (juce::ComboBox& box, juce::Label& 
 void DoobieLookAndFeel::drawToggleButton (juce::Graphics& g, juce::ToggleButton& button,
                                           bool shouldDrawButtonAsHighlighted, bool)
 {
+    // Head-matrix pads: a square lit button with a big centred letter, glowing
+    // when the head is on. Flagged with the "pad" property by the editor.
+    if (button.getProperties().contains ("pad"))
+    {
+        const auto pad    = button.getLocalBounds().toFloat().reduced (3.0f);
+        const auto accent = accentFor (button);
+        const bool on     = button.getToggleState();
+
+        g.setColour (colours::panelShadow());
+        g.fillRoundedRectangle (pad.expanded (1.5f), 7.0f);
+
+        if (on)
+        {
+            g.setColour (accent.withAlpha (0.30f));
+            g.fillRoundedRectangle (pad.expanded (2.5f), 8.0f); // outer glow
+        }
+
+        juce::ColourGradient face = on
+            ? juce::ColourGradient (accent.brighter (0.30f), pad.getTopLeft(),
+                                    accent.darker (0.30f),   pad.getBottomLeft(), false)
+            : juce::ColourGradient (colours::metal().brighter (0.18f), pad.getTopLeft(),
+                                    colours::metal().darker (0.45f),   pad.getBottomLeft(), false);
+        g.setGradientFill (face);
+        g.fillRoundedRectangle (pad, 6.0f);
+
+        g.setColour (shouldDrawButtonAsHighlighted ? colours::cream()
+                                                   : (on ? accent.brighter (0.4f) : colours::line()));
+        g.drawRoundedRectangle (pad.reduced (0.5f), 6.0f, 1.4f);
+
+        const auto letter = button.getProperties().getWithDefault ("headLetter", button.getButtonText()).toString();
+        g.setColour (on ? colours::panelShadow() : colours::cream().withAlpha (0.55f));
+        g.setFont (juce::Font (juce::FontOptions (pad.getHeight() * 0.42f)).withExtraKerningFactor (0.04f).boldened());
+        g.drawText (letter, pad, juce::Justification::centred, false);
+
+        g.setColour (on ? colours::panelShadow().withAlpha (0.7f) : colours::cream().withAlpha (0.35f));
+        g.setFont (juce::Font (juce::FontOptions (10.0f)).withExtraKerningFactor (0.12f));
+        g.drawText (on ? "ON" : "OFF", pad.reduced (0.0f, 6.0f).removeFromBottom (14.0f),
+                    juce::Justification::centred, false);
+        return;
+    }
+
     const auto bounds = button.getLocalBounds().toFloat();
     const float lampD = juce::jmin (16.0f, bounds.getHeight() - 4.0f);
     const auto  lamp  = juce::Rectangle<float> (bounds.getX(), bounds.getCentreY() - lampD * 0.5f, lampD, lampD);
