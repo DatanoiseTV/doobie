@@ -32,8 +32,9 @@ home as a modulated delay and ambience for any genre.
 - **Free or tempo-synced** — free time (20 ms – 2 s) or musical divisions from 1/64
   up to 4 bars (dotted and triplet included), locked to the host. Division and sync
   changes glide like a tape capstan rather than jumping.
-- **Analog character** — tape saturation, wow & flutter with random drift, and a
-  "tape age" hiss, all in the recirculating path.
+- **Analog character** — tape saturation, wow & flutter with random drift, and an
+  **AGE** macro that wears the tape down: hiss, slow level dropouts, progressive
+  high-frequency loss and extra transport instability, compounding across repeats.
 - **Two independent filter stages** — an **input** filter (low-cut, high-cut, bass
   and treble) shapes only the signal that gets echoed, leaving the dry output clean;
   a separate **feedback** filter (same four controls) darkens and dissolves each

@@ -23,6 +23,7 @@
 #include "Diffuser.h"
 #include "FftPitchShifter.h"
 #include "DcBlocker.h"
+#include "TapeAge.h"
 
 #include <juce_dsp/juce_dsp.h>
 #include <array>
@@ -52,7 +53,8 @@ struct EngineParams
     std::array<float, 4> headPan   { 0.0f, 0.0f, 0.0f, 0.0f };
     std::array<float, 4> headRatio { 0.25f, 0.5f, 0.75f, 1.0f };
 
-    float wow = 0.15f, flutter = 0.1f, drive = 0.25f, hiss = 0.0f;
+    float wow = 0.15f, flutter = 0.1f, drive = 0.25f;
+    float age = 0.0f;   // tape-wear macro: hiss + dropouts + HF loss + instability
 
     float preHp = 20.0f, preLp = 18000.0f;   // input filter cuts
     float preBass = 0.0f, preTreble = 0.0f;  // input filter shelves (-1..1)
@@ -128,6 +130,10 @@ private:
     // DC blockers stop a feedback offset from building across repeats, and keep
     // the wet output centred regardless of delay character or reverb.
     DcBlocker dcFbL, dcFbR, dcOutL, dcOutR;
+
+    // Tape-wear macro driven by the AGE control (dropouts, HF loss, hiss,
+    // transport instability), applied to the recirculating feedback.
+    TapeAge tapeAge;
 
     float duckEnv = 0.0f;
     uint32_t rngState = 0x1234567u;

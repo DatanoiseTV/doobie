@@ -73,6 +73,8 @@ void DubDelayEngine::prepare (double sr, int maxBlockSize)
     dcOutL.prepare (sr);
     dcOutR.prepare (sr);
 
+    tapeAge.prepare (sr);
+
     reset();
 }
 
@@ -103,6 +105,7 @@ void DubDelayEngine::reset()
     dcFbR.reset();
     dcOutL.reset();
     dcOutR.reset();
+    tapeAge.reset();
 
     // Snap the per-head smoothers to their current targets so a reset doesn't
     // ramp from stale values.
@@ -181,7 +184,11 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
     satL.setDrive (params.drive);
     satR.setDrive (params.drive);
 
-    wowFlutter.setAmounts (params.wow, params.flutter);
+    // AGE feeds extra transport instability into wow/flutter on top of their
+    // own knobs, so an old tape wobbles even when wow/flutter are low.
+    tapeAge.setAmount (params.age);
+    wowFlutter.setAmounts (std::clamp (params.wow     + tapeAge.wowBoost(),     0.0f, 1.5f),
+                           std::clamp (params.flutter + tapeAge.flutterBoost(), 0.0f, 1.5f));
 
     spring.setParams (params.springDecay, params.springTone, params.plateMod);
     plate.setParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
@@ -202,7 +209,7 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
 
     const bool  reverbOn  = params.reverbMode != 0;
     const float revMix    = params.reverbMix;
-    const float hissLevel = params.hiss * 0.015f;
+    const float hissLevel = tapeAge.hissLevel();
 
     // Per-character filter coefficients.
     const float tapeWarmCoef = 1.0f - std::exp (-6.2831853f * 180.0f  / (float) sampleRate); // head-bump band
@@ -280,6 +287,10 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
                 fbR = 0.6f * fbR + 0.4f * tapeDarkR;
                 break;
         }
+
+        // Tape wear: dropouts and progressive HF loss on the recirculating
+        // signal (hiss is added at the tape write below). Bypassed at AGE 0.
+        tapeAge.process (fbL, fbR);
 
         // Reverb sitting inside the feedback loop (washes build up over repeats).
         if (reverbOn && params.reverbRoute == 2)

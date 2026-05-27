@@ -170,7 +170,7 @@ void DoobieAudioProcessor::updateEngineParams()
     p.wow = raw (dID::wow);
     p.flutter = raw (dID::flutter);
     p.drive = raw (dID::drive);
-    p.hiss = raw (dID::hiss);
+    p.age = raw (dID::hiss);   // "hiss" id is historical; now drives the AGE macro
 
     p.preHp = raw (dID::preHpFreq);
     p.preLp = raw (dID::preLpFreq);

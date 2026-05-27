@@ -2,6 +2,7 @@
 // prints on failure and the process returns non-zero so CTest flags it.
 #include "dsp/DelayLine.h"
 #include "dsp/DcBlocker.h"
+#include "dsp/TapeAge.h"
 #include "dsp/Saturation.h"
 #include "dsp/WowFlutter.h"
 #include "dsp/PlateReverb.h"
@@ -93,6 +94,53 @@ static void testDcBlocker()
     check (std::fabs (mean / counted) < 0.01f, "DcBlocker centres a DC-biased tone");
 }
 
+static void testTapeAge()
+{
+    constexpr double sr = 48000.0;
+
+    // At amount 0 the macro is a true bypass: signal unchanged, no hiss/boosts.
+    {
+        doobie::TapeAge age;
+        age.prepare (sr);
+        age.setAmount (0.0f);
+        bool unchanged = true;
+        for (int i = 0; i < 4096; ++i)
+        {
+            float l = std::sin (0.01f * (float) i), r = l;
+            const float l0 = l;
+            age.process (l, r);
+            if (std::fabs (l - l0) > 1.0e-6f) unchanged = false;
+        }
+        check (unchanged, "TapeAge amount 0 is a bypass");
+        check (age.hissLevel() == 0.0f && age.wowBoost() == 0.0f && age.flutterBoost() == 0.0f,
+               "TapeAge amount 0 contributes no hiss/instability");
+    }
+
+    // At full amount the feedback gain stays bounded (<= 1, so it is safe in the
+    // loop) and high frequencies are attenuated relative to a steady tone.
+    {
+        doobie::TapeAge age;
+        age.prepare (sr);
+        age.setAmount (1.0f);
+        float maxAbs = 0.0f, hfPeak = 0.0f;
+        bool finite = true;
+        for (int i = 0; i < (int) sr; ++i)
+        {
+            float l = std::sin (6.2831853f * 15000.0f * (float) i / (float) sr); // ~15 kHz
+            float r = l;
+            age.process (l, r);
+            if (! std::isfinite (l)) finite = false;
+            const float ratio = std::fabs (l) / 1.0f; // input peak is 1.0
+            maxAbs = std::fmax (maxAbs, ratio);
+            if (i > (int) sr / 2) hfPeak = std::fmax (hfPeak, std::fabs (l));
+        }
+        check (finite, "TapeAge stays finite at full amount");
+        check (maxAbs <= 1.0001f, "TapeAge feedback gain never exceeds unity");
+        check (hfPeak < 0.85f, "TapeAge rolls off highs at full amount");
+        check (age.hissLevel() > 0.0f, "TapeAge adds a noise floor at full amount");
+    }
+}
+
 // Feeds a short noise burst then silence and confirms the reverb (a) never
 // blows up and (b) has clearly decayed by the end. Comparing late-tail energy
 // to early-tail energy keeps the test valid whatever the absolute decay time.
@@ -171,6 +219,7 @@ int main()
 {
     testDelayLine();
     testDcBlocker();
+    testTapeAge();
     testSaturation();
     testPlateStability();
     testSpringStability();

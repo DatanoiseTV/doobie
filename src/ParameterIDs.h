@@ -53,7 +53,7 @@ namespace dID
     inline constexpr auto wow         = "wow";
     inline constexpr auto flutter     = "flutter";
     inline constexpr auto drive       = "drive";       // tape saturation
-    inline constexpr auto hiss        = "hiss";        // tape age / noise floor
+    inline constexpr auto hiss        = "hiss";        // AGE macro: hiss + dropouts + HF loss + instability (id kept for compatibility)
 
     // ---- Input filter (shapes the signal entering the delay) ---------------
     inline constexpr auto preHpFreq   = "preHpFreq";   // input high-pass

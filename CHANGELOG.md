@@ -4,6 +4,24 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] — 2026-05-27
+
+### Added
+- **AGE is now a tape-wear macro**, not just a hiss level. One knob drives hiss,
+  slow level dropouts (oxide shedding), progressive high-frequency loss, and
+  extra wow/flutter from a tired transport — all compounding through the
+  feedback path. At 0 it is a true bypass, so low-age patches are unchanged.
+
+### Changed
+- **Factory bank rewritten** (~60 presets) around the head matrix and the AGE
+  macro: multi-head tap patterns (including combinations the old dial couldn't
+  make, e.g. heads B+C+D with A off), heavier use of AGE on the lo-fi/vintage
+  patches, and coverage of every delay character, reverb mode and route.
+
+### Compatibility
+- The AGE control keeps its parameter id and 0–1 range, so automation still
+  works; patches that set it above 0 will sound more worn than before.
+
 ## [0.2.0] — 2026-05-27
 
 ### Added
