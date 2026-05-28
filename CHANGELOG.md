@@ -4,6 +4,19 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.11.0] — 2026-05-28
+
+### Added
+- **Vector cassette visualiser.** The lane visualiser at the top of the DELAY
+  panel is replaced by a vector cassette transport — two reels with their
+  spindles, idler rollers, tape head, pinch roller and REC indicator, drawn
+  as scalable JUCE Graphics. Visual design and proportions are ported 1:1
+  from the author's own Recordy project
+  (https://github.com/DatanoiseTV/Recordy) and reimplemented in idiomatic
+  JUCE C++ — see the attribution in `src/ui/VectorCassette.h`. Idles with a
+  steady reel rotation; later iterations on this branch will wire it to the
+  multi-head taps + an animated tape loop and re-tune the colour scheme.
+
 ## [0.10.0] — 2026-05-28
 
 ### Added

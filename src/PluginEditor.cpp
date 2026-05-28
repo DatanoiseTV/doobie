@@ -296,7 +296,10 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
     kDuck.attach   (*this, state, dID::duck,       "DUCK",   amber());
 
     // Visualisers + meters.
-    addAndMakeVisible (echoView);
+    addAndMakeVisible (cassetteView);
+    // echoView is kept as a member but not added to the layout for now —
+    // the cassette replaces it at the top of the DELAY panel (1:1 port from
+    // Recordy). Re-instate by swapping bounds in resized() if needed.
     addAndMakeVisible (reverbView);
     addAndMakeVisible (vuL);
     addAndMakeVisible (vuR);
@@ -659,7 +662,7 @@ void DoobieAudioProcessorEditor::resized()
     rDelay = colB;
     {
         auto d = rDelay.reduced (10).withTrimmedTop (24);
-        echoView.setBounds (d.removeFromTop (98));
+        cassetteView.setBounds (d.removeFromTop (98));
         d.removeFromTop (6);
 
         auto bigRow = d.removeFromTop (132);

@@ -19,6 +19,7 @@
 #include "ui/EchoVisualiser.h"
 #include "ui/ReverbResponseView.h"
 #include "ui/ModSourceMeter.h"
+#include "ui/VectorCassette.h"
 
 // The main plugin window: a vintage tape-echo front panel laid out in zones
 // (header, mode + heads, delay + visualiser, tape/tone, reverb, output).
@@ -122,8 +123,12 @@ private:
     // Panel rectangles shared between paint() and resized().
     juce::Rectangle<int> rHeader, rMode, rHeads, rDelay, rTape, rFilters, rReverb, rMod, rOutput;
 
-    // Visualisers.
+    // Visualisers. Cassette replaces the echo lane visualiser at the top of
+    // the DELAY panel (1:1 port from the Recordy project, attribution in
+    // VectorCassette.h); echoView is kept declared for now in case a future
+    // iteration brings the lane view back as a second tab.
     doobie::EchoVisualiser     echoView;
+    doobie::VectorCassette     cassetteView;
     doobie::ReverbResponseView reverbView;
     doobie::VuMeter vuL { "L" }, vuR { "R" };
 
