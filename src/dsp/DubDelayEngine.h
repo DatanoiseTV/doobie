@@ -103,6 +103,11 @@ public:
     // currently-loaded IR at a new playback speed (0.25..4.0). Cheap if the
     // speed hasn't actually moved.
     void setIRSpeed (float speed)           { conv.setSpeed (speed); }
+    float getIRSpeed() const                { return conv.getSpeed(); }
+
+    // For the visualiser: the raw IR waveform and its source sample rate.
+    const juce::AudioBuffer<float>& getIRBuffer()       const { return conv.getCachedIR(); }
+    double                          getIRSourceSr()     const { return conv.getCachedSourceSr(); }
 
     // Load one of the bundled factory IRs (Voxengo's free pack). Decoded from
     // a BinaryData WAV blob on the message thread, then installed atomically

@@ -158,6 +158,12 @@ public:
     juce::File   getLoadedFile()   const          { return loadedFile; }
     juce::String getDisplayName()  const          { return displayName; }
 
+    // The decoded IR data the visualiser draws. Lives until the next load /
+    // clear; safe to read from the message thread (loads only mutate it on
+    // the same thread that calls loadFrom*).
+    const juce::AudioBuffer<float>& getCachedIR()       const noexcept { return cachedBuffer; }
+    double                          getCachedSourceSr() const noexcept { return cachedSourceSr; }
+
     // ---- Audio process ------------------------------------------------------
 
     inline void process (float l, float r, float& outL, float& outR) noexcept

@@ -101,6 +101,16 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
     // Delay block.
     kTime.attach     (*this, state, dID::timeMs,   "TIME",     amber());
     kFeedback.attach (*this, state, dID::feedback, "FEEDBACK", amber());
+
+    // Show the TIME knob's value as "375 ms" or "1.20 s" rather than a raw
+    // float — useful in free mode where the user is dialling milliseconds in.
+    kTime.slider.textFromValueFunction = [] (double ms)
+    {
+        if (ms < 1000.0)
+            return juce::String ((int) std::round (ms)) + " ms";
+        return juce::String (ms / 1000.0, 2) + " s";
+    };
+    kTime.slider.updateText();
     cbDivision.attach (*this, state, dID::syncDiv, "DIVISION", dID::syncDivChoices);
     cbCharacter.attach (*this, state, dID::delayMode, "CHARACTER", dID::delayModeChoices);
 
@@ -674,14 +684,17 @@ void DoobieAudioProcessorEditor::resized()
         cbReverbMode.place  (comboRow.removeFromLeft (comboRow.getWidth() / 2).reduced (4, 2));
         cbReverbRoute.place (comboRow.reduced (4, 2));
 
-        auto bottomArea = rv.removeFromBottom (70);
-        reverbView.setBounds (bottomArea);
-        // The IR controls share the reverb-view footprint; visibility decides
-        // which one shows at any time (toggled in timerCallback). Two rows:
-        //   row 1: factory-IR combo (full width)
-        //   row 2: LOAD CUSTOM... | clear | currently-loaded IR name
+        // The bottom block of the reverb panel hosts the visualiser and (in
+        // Convolution mode) the IR controls below it. Visualiser is always
+        // visible — for Convolution it now draws the actual loaded IR
+        // waveform; for algorithmic modes it shows the ER pattern + tail.
+        auto bottomArea = rv.removeFromBottom (110);
+        reverbView.setBounds (bottomArea.removeFromTop (60));
+        bottomArea.removeFromTop (4);
+        // The IR controls sit below the visualiser, visible only when
+        // REVERB == Convolution (toggled in timerCallback).
         {
-            auto irArea = bottomArea.reduced (6);
+            auto irArea = bottomArea.reduced (6, 0);
             const int rowH = (irArea.getHeight() - 4) / 2;
             cbFactoryIr.setBounds (irArea.removeFromTop (rowH));
             irArea.removeFromTop (4);

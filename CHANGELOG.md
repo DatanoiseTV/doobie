@@ -4,6 +4,30 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.9.0] — 2026-05-28
+
+### Added
+- **Reverb response visualiser rework.** The view next to the reverb panel
+  now shows the character of the active reverb, not just a smooth decay
+  line:
+  - **Algorithmic modes** (Spring, Plate, Series, Parallel, Hall, Shimmer)
+    each have a deterministic per-mode early-reflection pattern drawn as
+    discrete amber spikes during the first ~60-140 ms (sparse for Spring,
+    dense for Plate, wider-spread for Hall) followed by the diffuse-tail
+    envelope — modes are instantly distinguishable at a glance.
+  - **Convolution mode** draws the actual loaded IR as a peak-envelope
+    waveform from the cached source buffer, with a gentle gamma so the
+    early reflections sit at the top and the tail stays visible. The
+    timeline reflects the current IR SPEED multiplier (the label notes
+    "x0.5" etc. when speed is off-centre).
+- Predelay marker, second-grid lines and the mode + decay-time / IR-length
+  readout are still there.
+
+### Changed
+- **TIME knob** now displays its value as "375 ms" (below 1 s) or
+  "1.20 s" (1 s and above) on hover instead of the raw float, so free-mode
+  delay times are readable at a glance.
+
 ## [0.8.0] — 2026-05-28
 
 ### Added
