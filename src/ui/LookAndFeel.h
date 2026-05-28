@@ -20,16 +20,20 @@ namespace doobie
 // static contexts without ordering worries.
 namespace colours
 {
-    inline juce::Colour panel()       { return juce::Colour (0xff1c1a17); }
-    inline juce::Colour panelLight()  { return juce::Colour (0xff2a2622); }
-    inline juce::Colour panelShadow() { return juce::Colour (0xff100f0d); }
-    inline juce::Colour cream()       { return juce::Colour (0xffe8dcc0); }
+    // Palette darkened on the vector-cassette branch so the surrounding
+    // chrome matches the white-on-black hardware aesthetic of the cassette.
+    // Amber/teal accents stay (lit head pads, REC, knob arcs) so important
+    // controls still read at a glance against the near-black panels.
+    inline juce::Colour panel()       { return juce::Colour (0xff0d0c0a); }
+    inline juce::Colour panelLight()  { return juce::Colour (0xff14120e); }
+    inline juce::Colour panelShadow() { return juce::Colour (0xff050403); }
+    inline juce::Colour cream()       { return juce::Colour (0xfff5ede0); }
     inline juce::Colour amber()       { return juce::Colour (0xfff4a024); }
     inline juce::Colour amberDim()    { return juce::Colour (0xff8a5e1e); }
     inline juce::Colour teal()        { return juce::Colour (0xff3fb6a8); }
     inline juce::Colour red()         { return juce::Colour (0xffd8492e); }
-    inline juce::Colour metal()       { return juce::Colour (0xff3a3631); }
-    inline juce::Colour line()        { return juce::Colour (0xff4a443c); }
+    inline juce::Colour metal()       { return juce::Colour (0xff1f1c18); }
+    inline juce::Colour line()        { return juce::Colour (0xff5a534a); }
 }
 
 // The vintage tape-echo look: brushed-metal knobs with an amber pointer and a

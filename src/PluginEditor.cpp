@@ -309,7 +309,7 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
     refreshPresetBox();
     timerCallback();          // initialise dynamic labels / enabled state at once
     startTimerHz (12);
-    setSize (1100, 870);
+    setSize (1100, 960);
 }
 
 DoobieAudioProcessorEditor::~DoobieAudioProcessorEditor()
@@ -662,7 +662,10 @@ void DoobieAudioProcessorEditor::resized()
     rDelay = colB;
     {
         auto d = rDelay.reduced (10).withTrimmedTop (24);
-        cassetteView.setBounds (d.removeFromTop (98));
+        // Cassette is the centerpiece of the DELAY panel — give it real
+        // vertical space so the reels and tape path are readable, not a thin
+        // strip above the knobs.
+        cassetteView.setBounds (d.removeFromTop (180));
         d.removeFromTop (6);
 
         auto bigRow = d.removeFromTop (132);

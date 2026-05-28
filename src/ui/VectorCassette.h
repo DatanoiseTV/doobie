@@ -161,6 +161,7 @@ private:
     float takeupAngle  = 0.0f;
     float pinchY       = kPinchEngaged;
     float tensionPhase = 0.0f;
+    float dashOffset   = 0.0f;
 
     // ---- Timer drives the reel rotation + tape-tension wobble ------------
     void timerCallback() override
@@ -173,16 +174,17 @@ private:
         {
             // Reel angular speed scales by the inverse of the pack radius so
             // the inner / outer fills lock to a constant tape speed — same
-            // physics as the source project's tick().
+            // physics as the source project's tick(). 240 deg/sec at the
+            // reference radius is brisk enough that the spindle's motion is
+            // obvious in a snapshot capture, not just over a long view.
             const float referenceR = 40.0f;
-            const float base       = 90.0f * speed;
-            const float r          = packRadius();
+            const float base       = 240.0f * speed;
             const float rS         = std::sqrt ((1.0f - position) * (kSupply.rMax * kSupply.rMax - kSupply.rHub * kSupply.rHub) + kSupply.rHub * kSupply.rHub);
             const float rT         = std::sqrt (position * (kTakeup.rMax * kTakeup.rMax - kTakeup.rHub * kTakeup.rHub) + kTakeup.rHub * kTakeup.rHub);
-            juce::ignoreUnused (r);
             supplyAngle = std::fmod (supplyAngle - base * (referenceR / std::max (rS, kSupply.rHub)) * dt, 360.0f);
             takeupAngle = std::fmod (takeupAngle - base * (referenceR / std::max (rT, kTakeup.rHub)) * dt, 360.0f);
             tensionPhase += dt * 4.0f;
+            dashOffset  -= 140.0f * speed * dt;     // tape "moves" via dash offset
         }
         repaint();
     }
