@@ -215,7 +215,7 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
     const float tapeWarmCoef = 1.0f - std::exp (-6.2831853f * 180.0f  / (float) sampleRate); // head-bump band
     const float tapeDarkCoef = 1.0f - std::exp (-6.2831853f * 5500.0f / (float) sampleRate); // tape HF loss
     const float bbdF = 2.0f * std::sin (3.14159265f * 2500.0f / (float) sampleRate);          // SVF cutoff
-    const float bbdQ = 0.45f;                                                                  // low = resonant
+    const float bbdQ = 0.85f;                                                                  // low value = resonant (0.85 -> mild lift, no shriek)
 
     // Ducking ballistics (fast attack, slow release).
     const float atk = 1.0f - std::exp (-1.0f / (0.005f * (float) sampleRate));
@@ -251,10 +251,16 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
             case 0: // Digital: clean repeats, no saturation, full bandwidth
                 break;
 
-            case 2: // BBD: driven hard, then a resonant dark low-pass + clock noise
+            case 2: // BBD: a touch of drive into a dark, mildly resonant low-pass
             {
-                fbL = satL.process (fbL * 1.4f);
-                fbR = satR.process (fbR * 1.4f);
+                // The pre-multiplier and SVF resonance both add gain inside the
+                // feedback loop. Earlier values (1.4 + Q=0.45) pushed the round
+                // trip to ~3x, which made BBD self-oscillate around FB=0.3 while
+                // the other characters needed FB~1.0. These are tuned so the BBD
+                // threshold lands around FB~0.8 — still a hint hotter than Tape
+                // (the character of an MN3005-era BBD), but no runaway at low FB.
+                fbL = satL.process (fbL * 1.1f);
+                fbR = satR.process (fbR * 1.1f);
                 bbdLpL += bbdF * bbdBpL;
                 bbdBpL += bbdF * (fbL - bbdLpL - bbdQ * bbdBpL);
                 bbdLpR += bbdF * bbdBpR;

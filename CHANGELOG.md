@@ -4,6 +4,18 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.4.1] — 2026-05-28
+
+### Fixed
+- **BBD self-oscillated too early.** The BBD character had a 1.4× pre-drive
+  feeding a resonant SVF (Q=0.45, peak ~2.2×) inside the feedback loop, so the
+  round-trip gain was ~3×: BBD ran away at FEEDBACK ≈ 0.32 while every other
+  character needed ≈ 1.0. Pre-drive softened to 1.1× and Q raised to 0.85, so
+  BBD now self-oscillates around FEEDBACK ≈ 0.8 — still a touch hotter than
+  Tape (the character of an MN3005-era bucket brigade), but no runaway at
+  moderate feedback. A new regression test asserts every delay character
+  decays at FEEDBACK 0.6.
+
 ## [0.4.0] — 2026-05-28
 
 ### Changed
