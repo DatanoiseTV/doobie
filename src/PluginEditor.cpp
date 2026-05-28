@@ -417,6 +417,36 @@ void DoobieAudioProcessorEditor::timerCallback()
     const auto current = audioProcessor.getPresetManager().getCurrentName();
     if (presetBox.getText() != current)
         presetBox.setText (current, juce::dontSendNotification);
+
+    // --- Cassette transport: mirror the engine's master delay length ---------
+    // Real tape echoes have a fixed head-to-head distance, so longer delay <=>
+    // slower capstan. Map effective master-delay -> reel speed around the
+    // 375 ms default (= speed 1.0). The exponent < 1 softens the extremes so
+    // a 30 ms flanger setting reads "fast" without strobing and an 8 s dub
+    // delay still rotates visibly instead of locking up. Synced mode uses the
+    // same math as the processor (quarters * 60/bpm) so the visual tracks
+    // host tempo.
+    double timeSec = 0.375;
+    if (synced)
+    {
+        const double bpm = juce::jlimit (20.0, 300.0, audioProcessor.getCurrentBpm());
+        const int divIdx = juce::jlimit (0, (int) dID::syncDivQuarters.size() - 1,
+                                         (int) state.getRawParameterValue (dID::syncDiv)->load());
+        timeSec = dID::syncDivQuarters[(size_t) divIdx] * (60.0 / bpm);
+    }
+    else
+    {
+        timeSec = state.getRawParameterValue (dID::timeMs)->load() * 0.001;
+    }
+    const double ratio = 0.375 / juce::jmax (0.001, timeSec);
+    const float  speed = (float) juce::jlimit (0.15, 5.0, std::pow (ratio, 0.6));
+    cassetteView.setSpeed (speed);
+
+    // Freeze locks the buffer -> capstan stops. Delay-bypass kills the tape
+    // path entirely (Doobie is in tape-saturator-only mode); reels stop too.
+    const bool frozen  = state.getRawParameterValue (dID::freeze)->load() > 0.5f;
+    const bool dlyByp  = state.getRawParameterValue (dID::delayBypass)->load() > 0.5f;
+    cassetteView.setPlaying (! (frozen || dlyByp));
 }
 
 // ----------------------------------------------------------------------------
