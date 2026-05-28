@@ -48,6 +48,7 @@ struct EngineParams
     int    delayMode    = 1;       // 0 digital, 1 tape, 2 BBD, 3 diffuse, 4 pitch
     bool   pingPong     = false;
     bool   freeze       = false;
+    bool   delayBypass  = false;   // skip the tape entirely; run the rest of the chain on dry
     float  duck         = 0.0f;    // 0..1 wet ducking by dry level
 
     std::array<bool,  4> headOn    { true, false, false, false }; // the head matrix
@@ -97,15 +98,16 @@ public:
     bool       hasIR() const                { return conv.hasIR(); }
     juce::File getLoadedIRFile() const      { return conv.getLoadedFile(); }
 
-    // Load one of the synthesised factory IRs. Generated on the message thread,
-    // installed atomically; safe to call while audio is processing.
+    // Load one of the bundled factory IRs (Voxengo's free pack). Decoded from
+    // a BinaryData WAV blob on the message thread, then installed atomically
+    // by JUCE Convolution — safe to call while audio is processing. JUCE
+    // resamples the 44.1 kHz source IR to the current sample rate.
     bool loadFactoryIR (int index)
     {
-        const auto& specs = factoryIRSpecs();
-        if (index < 0 || index >= (int) specs.size())
+        const auto data = factoryIRData (index);
+        if (data.getSize() == 0)
             return false;
-        auto ir = generateFactoryIR (specs[(size_t) index], sampleRate);
-        conv.loadFromBuffer (std::move (ir), sampleRate, index, specs[(size_t) index].name);
+        conv.loadFromBinary (data.getData(), data.getSize(), index, factoryIRName (index));
         return true;
     }
     int          getFactoryIRIndex() const { return conv.getFactoryIndex(); }

@@ -4,6 +4,29 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] — 2026-05-28
+
+### Added
+- **38 free Voxengo impulse responses bundled with the plugin.** Real-room and
+  effect IRs by Aleksey Vaneev — concert halls (Musikvereinsaal, Scala Milan),
+  churches (St Nicolaes, Derlon Sanctuary), drum rooms, parking garages, caves,
+  guitar cabinets and creative spaces (Deep Space, Greek 7 Echo Hall, etc.).
+  Embedded via JUCE BinaryData and auto-discovered at runtime, so they replace
+  the placeholder synthesised IRs entirely. License terms preserved verbatim in
+  `external/voxengo-irs/license.txt`; full attribution lives in the README.
+- **Delay bypass toggle** (next to PING-PONG / FREEZE). When on, the tape
+  buffer is left untouched and the input is fed straight through the same
+  character chain (saturation, BBD low-pass, diffusion, pitch, etc.) and the
+  AGE macro — turning the plugin into a tape-style coloration / saturator
+  while the reverb panel and the dry/wet mix still work normally.
+
+### Compatibility
+- Voxengo's impulse responses are © Aleksey Vaneev under their own
+  royalty-free license (`external/voxengo-irs/license.txt`). They are bundled
+  unaltered, with that license file intact, and acknowledged in the README —
+  meeting the redistribution conditions Voxengo sets. They are NOT licensed
+  under Doobie's GPL-3.0; they are aggregated with it (mere aggregation).
+
 ## [0.5.0] — 2026-05-28
 
 ### Added

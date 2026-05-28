@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(Doobie VERSION 0.5.0 LANGUAGES C CXX)
+project(Doobie VERSION 0.6.0 LANGUAGES C CXX)
 
 # -----------------------------------------------------------------------------
 # Project-wide settings
@@ -67,12 +67,25 @@ juce_add_plugin(Doobie
 juce_generate_juce_header(Doobie)
 
 # -----------------------------------------------------------------------------
+# Voxengo free impulse responses — bundled as JUCE BinaryData so the
+# Convolution reverb has 38 real-room IRs out of the box. Created by Aleksey
+# Vaneev (Voxengo) and distributed royalty-free under their own license; see
+# external/voxengo-irs/license.txt (NOT under Doobie's GPL-3.0). The
+# acknowledgment Voxengo's license requires lives in the README.
+# -----------------------------------------------------------------------------
+file(GLOB DOOBIE_VOXENGO_IRS CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/voxengo-irs/*.wav")
+juce_add_binary_data(DoobieIRs SOURCES ${DOOBIE_VOXENGO_IRS})
+set_target_properties(DoobieIRs PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+
+# -----------------------------------------------------------------------------
 # Sources
 # -----------------------------------------------------------------------------
 target_sources(Doobie PRIVATE
     src/PluginProcessor.cpp
     src/PluginEditor.cpp
     src/dsp/DubDelayEngine.cpp
+    src/dsp/FactoryIRs.cpp
     src/dsp/SpringReverb.cpp
     src/dsp/PlateReverb.cpp
     src/dsp/FdnReverb.cpp
@@ -99,6 +112,7 @@ target_compile_definitions(Doobie
         DOOBIE_GIT_BRANCH="${DOOBIE_GIT_BRANCH}")
 
 target_link_libraries(Doobie PRIVATE
+    DoobieIRs
     juce::juce_audio_utils
     juce::juce_dsp
     PUBLIC

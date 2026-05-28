@@ -42,6 +42,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     layout.add (std::make_unique<FloatParam> (pid (dID::feedback), "Feedback", Range (0.0f, 1.2f, 0.001f), 0.4f));
     layout.add (std::make_unique<BoolParam> (pid (dID::pingPong), "Ping-Pong", false));
     layout.add (std::make_unique<BoolParam> (pid (dID::freeze), "Freeze", false));
+    layout.add (std::make_unique<BoolParam> (pid (dID::delayBypass), "Delay Bypass", false));
     layout.add (std::make_unique<FloatParam> (pid (dID::duck), "Duck", Range (0.0f, 1.0f, 0.001f), 0.0f));
 
     // ---- Multi-head ---------------------------------------------------------
@@ -128,9 +129,10 @@ void DoobieAudioProcessor::updateEngineParams()
     p.width     = raw (dID::width);
     p.feedback  = raw (dID::feedback);
     p.delayMode = (int) raw (dID::delayMode);
-    p.pingPong  = raw (dID::pingPong) > 0.5f;
-    p.freeze    = raw (dID::freeze) > 0.5f;
-    p.duck      = raw (dID::duck);
+    p.pingPong    = raw (dID::pingPong) > 0.5f;
+    p.freeze      = raw (dID::freeze) > 0.5f;
+    p.delayBypass = raw (dID::delayBypass) > 0.5f;
+    p.duck        = raw (dID::duck);
 
     // Resolve the master delay length first (heads reference it). Sync uses a
     // musical division against host tempo; free uses milliseconds.

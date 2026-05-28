@@ -85,13 +85,18 @@ public:
         loaded.store (true,         std::memory_order_release);
     }
 
-    // Synchronous load from a generated AudioBuffer (factory IRs).
-    void loadFromBuffer (juce::AudioBuffer<float>&& buffer, double bufferSampleRate,
+    // Load from a raw WAV/AIFF/FLAC byte block (factory IRs come in through
+    // JUCE BinaryData). JUCE parses the audio format header itself, handles
+    // resampling to the processing rate, and swaps the IR atomically on its
+    // background loader thread. The data only needs to live until this call
+    // returns; for BinaryData blobs that's the lifetime of the executable.
+    void loadFromBinary (const void* sourceData, size_t sourceSize,
                          int factoryIndex, const juce::String& label)
     {
-        conv.loadImpulseResponse (std::move (buffer), bufferSampleRate,
+        conv.loadImpulseResponse (sourceData, sourceSize,
                                   juce::dsp::Convolution::Stereo::yes,
-                                  juce::dsp::Convolution::Trim::no,
+                                  juce::dsp::Convolution::Trim::yes,
+                                  0,
                                   juce::dsp::Convolution::Normalise::yes);
         loadedFile  = juce::File();
         factoryIdx  = factoryIndex;

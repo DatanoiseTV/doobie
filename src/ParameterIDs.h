@@ -39,6 +39,7 @@ namespace dID
     inline constexpr auto feedback    = "feedback";    // "intensity"
     inline constexpr auto pingPong    = "pingPong";
     inline constexpr auto freeze      = "freeze";
+    inline constexpr auto delayBypass = "delayBypass";   // skip the tape; let the user run the rest of the chain alone
     inline constexpr auto duck        = "duck";
 
     // ---- Multi-head ---------------------------------------------------------

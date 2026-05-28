@@ -42,10 +42,16 @@ home as a modulated delay and ambience for any genre.
   repeat the way real tape does. Each stage has its own dedicated knobs.
 - **Eight reverb modes** — a dispersive spring tank, a modulated plate, a dense
   16-line **hall**, an octave-up **shimmer**, plus spring→plate series and
-  spring+plate parallel, and a **convolution** mode with six built-in spaces
-  (Small Room, Big Room, Hall, Cathedral, Cave, Tunnel) that also loads any
-  WAV/AIFF/FLAC impulse response. Route any of them **post**, **pre**, or
-  **inside the feedback loop** for washing dub textures and blooming ambient tails.
+  spring+plate parallel, and a **convolution** mode bundled with **38 free
+  Voxengo impulse responses** (concert halls, churches, rooms, cabinets and
+  effect spaces) that also loads any WAV/AIFF/FLAC impulse response of your
+  own. Route any of them **post**, **pre**, or **inside the feedback loop**
+  for washing dub textures and blooming ambient tails.
+- **Delay bypass** — flick the BYPASS toggle next to PING-PONG/FREEZE and the
+  tape buffer goes silent, but the input still passes through the character
+  chain (Tape/BBD/Diffuse/Pitch saturation, head-bump and HF loss) plus AGE
+  and the reverb panel. Lets you use Doobie as a tape-style saturator /
+  colouration insert.
 - **Performance controls** — ping-pong feedback, freeze (infinite hold), wet ducking,
   stereo width.
 - **60+ factory presets** across dub/reggae, ambient/cinematic, rhythmic/electronic,
@@ -79,14 +85,26 @@ shows the active reverb's tail length and pre-delay at a glance.
 
 ## Impulse responses
 
-Set REVERB to *Convolution*. Six built-in IRs (Small Room, Big Room, Hall,
-Cathedral, Cave, Tunnel) ship with the plugin — they're generated at runtime so
-they cost no binary size and have no third-party licensing. Pick one from the
-combo, or use **LOAD CUSTOM...** to load any WAV / AIFF / FLAC of your own.
-The session restores either choice automatically.
+Set REVERB to *Convolution*. **38 impulse responses ship with the plugin** —
+all from [Voxengo's free IR pack](https://www.voxengo.com/impulses/), by
+**Aleksey Vaneev**, distributed royalty-free under his own terms (see
+[`external/voxengo-irs/license.txt`](external/voxengo-irs/license.txt)).
+The set covers real concert halls (Musikvereinsaal, Scala Milan Opera Hall),
+churches (St Nicolaes Church, Derlon Sanctuary), drum rooms, parking garages,
+caves, guitar cabinets and effect spaces (Deep Space, Greek 7 Echo Hall, On a
+Star, etc.). Pick one from the IR combo in the reverb panel.
 
-A few permissively-licensed external IR collections that work well as a
-starting point for custom files:
+**LOAD CUSTOM...** loads any WAV / AIFF / FLAC of your own; the session
+restores either the factory or the custom selection automatically.
+
+These impulse responses are © Aleksey Vaneev; they are bundled unaltered with
+Doobie under Voxengo's terms — they are **not** under Doobie's GPL-3.0. By
+using them you acknowledge that Aleksey Vaneev retains exclusive ownership of
+the impulse files including all intellectual property rights therein, at all
+times.
+
+A few other permissively-licensed external IR collections that work well as
+starting points for custom files:
 
 - **[Voxengo free impulses](https://www.voxengo.com/impulses/)** — royalty-free for
   any use including commercial; the cleanest licensing of the lot. Halls, plates,

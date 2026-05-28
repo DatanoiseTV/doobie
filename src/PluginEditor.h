@@ -75,8 +75,8 @@ private:
     // Delay.
     Knob kTime, kFeedback;
     Combo cbDivision, cbCharacter;
-    juce::ToggleButton tgSync { "Sync" }, tgPingPong { "Ping-Pong" }, tgFreeze { "Freeze" };
-    std::unique_ptr<APVTS::ButtonAttachment> aSync, aPingPong, aFreeze;
+    juce::ToggleButton tgSync { "Sync" }, tgPingPong { "Ping-Pong" }, tgFreeze { "Freeze" }, tgBypass { "Bypass" };
+    std::unique_ptr<APVTS::ButtonAttachment> aSync, aPingPong, aFreeze, aBypass;
 
     // Head matrix: four lit pads switching each playback head on/off.
     std::array<juce::ToggleButton, 4> headPads;

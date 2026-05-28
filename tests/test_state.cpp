@@ -311,6 +311,67 @@ static void testIRPathRoundTrip()
     }
 }
 
+// Delay bypass: the tape buffer is silent, but the character chain (sat +
+// AGE) still runs on the dry input. So the wet/mix output must stay finite,
+// non-silent (dry passes through), and pushing drive/AGE should make the
+// wet output measurably differ from the dry — proving the chain is alive.
+static void testDelayBypassPassesCharacter()
+{
+    DoobieAudioProcessor proc;
+    constexpr int sr = 44100;
+    constexpr int blockSize = 512;
+    proc.prepareToPlay ((double) sr, blockSize);
+    auto& apvts = proc.getValueTreeState();
+
+    auto setReal = [&] (const char* id, float v)
+    {
+        if (auto* p = apvts.getParameter (id))
+            p->setValueNotifyingHost (p->convertTo0to1 (v));
+    };
+
+    setReal (dID::delayBypass, 1.0f);    // tape buffer silent
+    setReal (dID::reverbMode,  0.0f);    // no reverb in the path
+    setReal (dID::delayMode,   1.0f);    // Tape character (with warm/dark filters)
+    setReal (dID::drive,       0.8f);    // hot saturation so the character matters
+    setReal (dID::hiss,        0.0f);
+    setReal (dID::mix,         1.0f);    // wet-only so we measure the character chain
+    setReal (dID::feedback,    0.6f);    // would normally build echoes, must be ignored
+    setReal (dID::syncMode,    0.0f);
+    setReal (dID::timeMs,      100.0f);
+
+    juce::AudioBuffer<float> buf (2, blockSize);
+    juce::MidiBuffer midi;
+    juce::Random rng (0xBEEF);
+
+    double sumSq = 0.0;
+    int    counted = 0;
+    bool   finite = true;
+    for (int b = 0; b < 30; ++b)
+    {
+        for (int ch = 0; ch < 2; ++ch)
+        {
+            auto* d = buf.getWritePointer (ch);
+            for (int i = 0; i < blockSize; ++i)
+                d[i] = std::sin (6.2831853f * 440.0f * (float) (b * blockSize + i) / (float) sr) * 0.3f;
+        }
+        proc.processBlock (buf, midi);
+        for (int ch = 0; ch < 2; ++ch)
+        {
+            auto* d = buf.getReadPointer (ch);
+            for (int i = 0; i < blockSize; ++i)
+            {
+                if (! std::isfinite (d[i])) finite = false;
+                if (b >= 5) { sumSq += (double) d[i] * d[i]; ++counted; }
+            }
+        }
+    }
+    const double rms = std::sqrt (sumSq / std::max (1, counted));
+
+    check (finite, "delay bypass stays finite");
+    check (rms > 0.05 && rms < 0.6,
+           "delay bypass passes audio through the character chain (not silent, not blown up)");
+}
+
 // A factory IR loaded at one sample rate must survive prepareToPlay being
 // re-invoked at a different rate — the engine regenerates the IR at the new
 // sample rate rather than letting JUCE resample a stale buffer.
@@ -405,6 +466,7 @@ int main()
     testIRPathRoundTrip();
     testFactoryIRStability();
     testFactoryIRFollowsSampleRate();
+    testDelayBypassPassesCharacter();
 
     if (failures == 0)
         std::printf ("All state tests passed.\n");

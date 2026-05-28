@@ -103,14 +103,16 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
     cbDivision.attach (*this, state, dID::syncDiv, "DIVISION", dID::syncDivChoices);
     cbCharacter.attach (*this, state, dID::delayMode, "CHARACTER", dID::delayModeChoices);
 
-    for (auto* t : { &tgSync, &tgPingPong, &tgFreeze })
+    for (auto* t : { &tgSync, &tgPingPong, &tgFreeze, &tgBypass })
         addAndMakeVisible (t);
     tgSync.getProperties().set     ("accent", (int) amber().getARGB());
     tgPingPong.getProperties().set ("accent", (int) amber().getARGB());
     tgFreeze.getProperties().set   ("accent", (int) doobie::colours::red().getARGB());
-    aSync     = std::make_unique<APVTS::ButtonAttachment> (state, dID::syncMode, tgSync);
-    aPingPong = std::make_unique<APVTS::ButtonAttachment> (state, dID::pingPong, tgPingPong);
-    aFreeze   = std::make_unique<APVTS::ButtonAttachment> (state, dID::freeze,   tgFreeze);
+    tgBypass.getProperties().set   ("accent", (int) doobie::colours::red().getARGB());
+    aSync     = std::make_unique<APVTS::ButtonAttachment> (state, dID::syncMode,    tgSync);
+    aPingPong = std::make_unique<APVTS::ButtonAttachment> (state, dID::pingPong,    tgPingPong);
+    aFreeze   = std::make_unique<APVTS::ButtonAttachment> (state, dID::freeze,      tgFreeze);
+    aBypass   = std::make_unique<APVTS::ButtonAttachment> (state, dID::delayBypass, tgBypass);
 
     // Head matrix: one lit pad per head, switching it in or out of the echo.
     static const char* headLetters[4] = { "A", "B", "C", "D" };
@@ -523,8 +525,10 @@ void DoobieAudioProcessorEditor::resized()
         cbCharacter.place (d.removeFromTop (40).reduced (6, 0));
 
         auto togRow = d.removeFromTop (34);
-        tgPingPong.setBounds (togRow.removeFromLeft (togRow.getWidth() / 2).reduced (8, 5));
-        tgFreeze.setBounds   (togRow.reduced (8, 5));
+        const int tw = togRow.getWidth() / 3;
+        tgPingPong.setBounds (togRow.removeFromLeft (tw).reduced (6, 5));
+        tgFreeze.setBounds   (togRow.removeFromLeft (tw).reduced (6, 5));
+        tgBypass.setBounds   (togRow.reduced (6, 5));
     }
     rowOf (rTape.reduced (10).withTrimmedTop (22), { &kWow, &kFlutter, &kSat, &kAge });
 
