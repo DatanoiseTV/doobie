@@ -29,9 +29,10 @@ home as a modulated delay and ambience for any genre.
 - **Five delay characters** — Digital (clean), Tape (wow/flutter + saturation),
   BBD (dark analog bucket-brigade), Diffuse (repeats smeared into a wash) and
   Pitch (each repeat climbs an octave).
-- **Free or tempo-synced** — free time (20 ms – 2 s) or musical divisions from 1/64
-  up to 4 bars (dotted and triplet included), locked to the host. Division and sync
-  changes glide like a tape capstan rather than jumping.
+- **Free or tempo-synced** — free time (20 ms – 8 s) or musical divisions from 1/64
+  up to 4 bars (dotted and triplet included), locked to the host. The tape buffer
+  goes out to 16 s, so "4 bars at 60 BPM" or slower ambient drones fit comfortably.
+  Division and sync changes glide like a tape capstan rather than jumping.
 - **Analog character** — tape saturation, wow & flutter with random drift, and an
   **AGE** macro that wears the tape down: hiss, slow level dropouts, progressive
   high-frequency loss and extra transport instability, compounding across repeats.

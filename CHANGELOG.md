@@ -4,6 +4,16 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] — 2026-05-28
+
+### Changed
+- **Longer max delay.** The tape buffer goes out to 16 s (was 8 s) and the
+  free-mode TIME knob to 8 s (was 2 s), so "4 bars at 60 BPM" — and slow
+  ambient drones in general — fit without running out of tape. Memory cost is
+  modest: ~8 MB stereo per instance at 48 kHz, ~32 MB at 192 kHz.
+- The echo visualiser's window cap is widened to match, so long delays still
+  show a meaningful strip of taps.
+
 ## [0.3.0] — 2026-05-27
 
 ### Added

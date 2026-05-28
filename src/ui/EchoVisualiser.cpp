@@ -54,7 +54,10 @@ void EchoVisualiser::paint (juce::Graphics& g)
 
     const auto& mags = processor.getEngine().headMagnitudes();
 
-    const double windowSec = juce::jlimit (0.6, 4.0, delaySec * 5.0);
+    // Show ~5 repeats of the current delay, but bound the window so very short
+    // delays don't look cramped and the longest delays still get a meaningful
+    // strip of taps visible.
+    const double windowSec = juce::jlimit (0.6, 16.0, delaySec * 5.0);
     const auto plot = bounds.reduced (10.0f, 8.0f);
     const float laneH = plot.getHeight() / 4.0f;
 

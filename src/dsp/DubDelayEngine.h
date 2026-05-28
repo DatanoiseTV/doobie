@@ -140,6 +140,9 @@ private:
 
     std::array<std::atomic<float>, 4> headMag { };
 
-    double maxDelaySeconds = 8.0;
+    // Long enough for "4 bars at 60 BPM" (= 16 s) and slow ambient drones. The
+    // power-of-two buffer rounds up to ~32 s at typical 48 kHz, costing ~8 MB
+    // stereo; at 192 kHz it caps around 32 MB stereo.
+    double maxDelaySeconds = 16.0;
 };
 } // namespace doobie
