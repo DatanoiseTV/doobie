@@ -91,6 +91,36 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     layout.add (std::make_unique<FloatParam> (pid (dID::platePredelay), "Plate Pre-delay", Range (0.0f, 200.0f, 0.1f), 20.0f));
     layout.add (std::make_unique<FloatParam> (pid (dID::reverbMod),     "Reverb Mod", Range (0.0f, 1.0f, 0.001f), 0.3f));
 
+    // ---- Modulation matrix --------------------------------------------------
+    {
+        Range lfoRateRange  (0.05f, 20.0f, 0.001f);
+        lfoRateRange.setSkewForCentre (1.0f);
+        Range envAtkRange   (0.1f, 500.0f, 0.1f);
+        envAtkRange.setSkewForCentre (20.0f);
+        Range envRelRange   (1.0f, 2000.0f, 0.1f);
+        envRelRange.setSkewForCentre (150.0f);
+
+        layout.add (std::make_unique<FloatParam>  (pid (dID::lfo1Rate),   "LFO 1 Rate",   lfoRateRange, 1.0f));
+        layout.add (std::make_unique<FloatParam>  (pid (dID::lfo1Depth),  "LFO 1 Depth",  Range (0.0f, 1.0f, 0.001f), 0.5f));
+        layout.add (std::make_unique<ChoiceParam> (pid (dID::lfo1Wave),   "LFO 1 Wave",   dID::lfoWaveChoices, 0));
+        layout.add (std::make_unique<FloatParam>  (pid (dID::lfo2Rate),   "LFO 2 Rate",   lfoRateRange, 0.5f));
+        layout.add (std::make_unique<FloatParam>  (pid (dID::lfo2Depth),  "LFO 2 Depth",  Range (0.0f, 1.0f, 0.001f), 0.5f));
+        layout.add (std::make_unique<ChoiceParam> (pid (dID::lfo2Wave),   "LFO 2 Wave",   dID::lfoWaveChoices, 1));
+        layout.add (std::make_unique<FloatParam>  (pid (dID::envAttack), "Env Attack",   envAtkRange, 10.0f));
+        layout.add (std::make_unique<FloatParam>  (pid (dID::envRelease),"Env Release",  envRelRange, 200.0f));
+        layout.add (std::make_unique<FloatParam>  (pid (dID::envSens),   "Env Sensitivity", Range (-24.0f, 24.0f, 0.1f), 0.0f));
+
+        const juce::StringArray sourceChoices = doobie::modSourceNames();
+        const juce::StringArray destChoices   = doobie::modDestNames();
+        for (int i = 0; i < 4; ++i)
+        {
+            const auto n = juce::String (i + 1);
+            layout.add (std::make_unique<ChoiceParam> (pid (dID::modSlotSrc[(size_t) i]), "Mod " + n + " Source",      sourceChoices, 0));
+            layout.add (std::make_unique<ChoiceParam> (pid (dID::modSlotDst[(size_t) i]), "Mod " + n + " Destination", destChoices,   0));
+            layout.add (std::make_unique<FloatParam>  (pid (dID::modSlotAmt[(size_t) i]), "Mod " + n + " Amount",      Range (-1.0f, 1.0f, 0.001f), 0.0f));
+        }
+    }
+
     // ---- IR controls (Convolution mode) -------------------------------------
     // Gain compensates for peak-normalised IRs that sound quiet against the
     // dry signal; speed lies about the source sample rate to stretch / squash
@@ -139,11 +169,14 @@ bool DoobieAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) c
 void DoobieAudioProcessor::prepareToPlay (double sr, int samplesPerBlock)
 {
     sampleRate = sr;
+    lfo1.prepare (sr);
+    lfo2.prepare (sr);
+    envFollower.prepare (sr);
     updateEngineParams();
     engine.prepare (sr, samplesPerBlock);
 }
 
-void DoobieAudioProcessor::updateEngineParams()
+doobie::EngineParams DoobieAudioProcessor::buildEngineParams()
 {
     auto raw = [this] (const char* id) { return apvts.getRawParameterValue (id)->load(); };
 
@@ -220,7 +253,12 @@ void DoobieAudioProcessor::updateEngineParams()
     p.platePredelay = raw (dID::platePredelay);
     p.plateMod    = raw (dID::reverbMod);
 
-    engine.setParams (p);
+    return p;
+}
+
+void DoobieAudioProcessor::updateEngineParams()
+{
+    engine.setParams (buildEngineParams());
 }
 
 void DoobieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
@@ -237,7 +275,53 @@ void DoobieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
             if (auto bpm = pos->getBpm())
                 currentBpm.store (*bpm);
 
-    updateEngineParams();
+    // --- Modulation matrix --------------------------------------------------
+    // Pull LFO / env / slot settings from APVTS, run the env follower over the
+    // dry input before the engine mutates the buffer, advance the LFOs to get
+    // this block's mod-source values, then overlay them on the base
+    // EngineParams. The engine's own per-sample smoothers ramp toward the
+    // modulated targets, so even fast modulation stays click-free.
+    auto raw = [this] (const char* id) { return apvts.getRawParameterValue (id)->load(); };
+
+    lfo1.setRate (raw (dID::lfo1Rate));
+    lfo1.setDepth (raw (dID::lfo1Depth));
+    lfo1.setWaveform ((doobie::Lfo::Wave) (int) raw (dID::lfo1Wave));
+    lfo2.setRate (raw (dID::lfo2Rate));
+    lfo2.setDepth (raw (dID::lfo2Depth));
+    lfo2.setWaveform ((doobie::Lfo::Wave) (int) raw (dID::lfo2Wave));
+    envFollower.setAttack (raw (dID::envAttack));
+    envFollower.setRelease (raw (dID::envRelease));
+    envFollower.setSensitivity (raw (dID::envSens));
+
+    const int numSamples = buffer.getNumSamples();
+    if (numSamples > 0 && buffer.getNumChannels() > 0)
+    {
+        const float* L = buffer.getReadPointer (0);
+        const float* R = buffer.getNumChannels() > 1 ? buffer.getReadPointer (1) : L;
+        envFollower.processBlock (L, R, numSamples);
+    }
+
+    const doobie::ModSourceValues sources {
+        lfo1.advance (numSamples),
+        lfo2.advance (numSamples),
+        envFollower.value()
+    };
+
+    // Publish to the UI metering atomics. Editor reads these on a timer.
+    lfo1ValueUI.store (sources.lfo1, std::memory_order_relaxed);
+    lfo2ValueUI.store (sources.lfo2, std::memory_order_relaxed);
+    envValueUI.store  (sources.env,  std::memory_order_relaxed);
+
+    for (int i = 0; i < doobie::kNumModSlots; ++i)
+    {
+        modSlots[(size_t) i].source = (doobie::ModSource) (int) raw (dID::modSlotSrc[(size_t) i]);
+        modSlots[(size_t) i].dest   = (doobie::ModDest)   (int) raw (dID::modSlotDst[(size_t) i]);
+        modSlots[(size_t) i].amount = raw (dID::modSlotAmt[(size_t) i]);
+    }
+
+    auto p = buildEngineParams();
+    doobie::applyModMatrix (p, modSlots, sources);
+    engine.setParams (p);
     engine.process (buffer);
 
     // Capture output peaks for the VU meters.

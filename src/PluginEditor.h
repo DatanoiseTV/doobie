@@ -18,6 +18,7 @@
 #include "ui/VuMeter.h"
 #include "ui/EchoVisualiser.h"
 #include "ui/ReverbResponseView.h"
+#include "ui/ModSourceMeter.h"
 
 // The main plugin window: a vintage tape-echo front panel laid out in zones
 // (header, mode + heads, delay + visualiser, tape/tone, reverb, output).
@@ -107,11 +108,19 @@ private:
     juce::Label      irLabel;
     std::unique_ptr<juce::FileChooser> irChooser;
 
+    // Modulation matrix: 2 LFOs + envelope follower visible in the main panel,
+    // slot matrix opens in a popup behind the MATRIX button.
+    Knob  kLfo1Rate, kLfo1Depth, kLfo2Rate, kLfo2Depth;
+    Combo cbLfo1Wave, cbLfo2Wave;
+    Knob  kEnvAttack, kEnvRelease, kEnvSens;
+    juce::TextButton btnMatrix { "MATRIX..." };
+    std::unique_ptr<doobie::ModSourceMeter> lfo1Meter, lfo2Meter, envMeter;
+
     // Output.
     Knob kInput, kMix, kOutput, kWidth, kDuck;
 
     // Panel rectangles shared between paint() and resized().
-    juce::Rectangle<int> rHeader, rMode, rHeads, rDelay, rTape, rFilters, rReverb, rOutput;
+    juce::Rectangle<int> rHeader, rMode, rHeads, rDelay, rTape, rFilters, rReverb, rMod, rOutput;
 
     // Visualisers.
     doobie::EchoVisualiser     echoView;

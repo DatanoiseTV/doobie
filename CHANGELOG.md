@@ -4,6 +4,36 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] — 2026-05-28
+
+### Added
+- **Modulation matrix.** Two free-running LFOs (rate 0.05–20 Hz, depth,
+  waveform from Sine / Triangle / Saw Up / Saw Down / Square / Random S&H)
+  and one envelope follower (attack 0.1–500 ms, release 1–2000 ms,
+  ±24 dB sensitivity) feed a four-slot matrix. Each slot picks a source, a
+  destination from a curated 28-entry list (Delay Time, Feedback, Mix, Width,
+  **Duck**, Drive, Wow, Flutter, Age, all four filter cutoffs, both shelves,
+  every head's level, Reverb Mix / Mod, Plate Decay/Size/Damp/Predelay,
+  Spring Decay/Tone, IR Gain) and a bipolar amount.
+- **Sidechain-style ducking** is the obvious move — route Env → Duck with a
+  positive amount and the wet path drops while the input is loud. The matrix
+  is general: any source can drive any destination.
+- Modulation is applied per-block to the base EngineParams; the engine's
+  per-sample smoothers ramp toward the modulated targets, so even fast LFO
+  modulation stays click-free.
+
+### UI
+- New MODULATION panel above the output bar with three always-on sections —
+  **LFO 1**, **LFO 2**, **ENVELOPE** — each with its own live meter
+  (bipolar bar for the LFOs, unipolar bar for the envelope follower). The
+  slot configuration is one click away behind a **MATRIX...** button that
+  opens a popup, keeping the main UI tidy.
+
+### Known follow-ups
+- The reverb decay-curve visualiser is unchanged for now; turning it into a
+  proper IR-style view (early reflections + tail) is queued for the next
+  commit.
+
 ## [0.7.0] — 2026-05-28
 
 ### Added

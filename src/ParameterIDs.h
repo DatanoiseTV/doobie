@@ -82,6 +82,34 @@ namespace dID
     inline constexpr auto irGain        = "irGain";    // dB, makeup gain on the convolution wet
     inline constexpr auto irSpeed       = "irSpeed";   // playback speed multiplier (0.25..4.0)
 
+    // ---- Modulation matrix --------------------------------------------------
+    // Two LFOs + one envelope follower feed a 4-slot matrix; each slot picks a
+    // source, a destination (curated subset of engine params, see ModMatrix.h)
+    // and a bipolar amount. Mod is applied per block to the base params; the
+    // engine's own smoothers ramp toward the modulated targets.
+    inline constexpr auto lfo1Rate   = "lfo1Rate";    // Hz
+    inline constexpr auto lfo1Depth  = "lfo1Depth";   // 0..1
+    inline constexpr auto lfo1Wave   = "lfo1Wave";    // choice index
+    inline constexpr auto lfo2Rate   = "lfo2Rate";
+    inline constexpr auto lfo2Depth  = "lfo2Depth";
+    inline constexpr auto lfo2Wave   = "lfo2Wave";
+    inline constexpr auto envAttack  = "envAttack";   // ms
+    inline constexpr auto envRelease = "envRelease";  // ms
+    inline constexpr auto envSens    = "envSens";     // dB
+
+    // Per-slot triples (source, destination, amount). kNumModSlots in
+    // ModMatrix.h must match the array size here.
+    inline constexpr std::array<const char*, 4> modSlotSrc {
+        "mod1Src", "mod2Src", "mod3Src", "mod4Src" };
+    inline constexpr std::array<const char*, 4> modSlotDst {
+        "mod1Dst", "mod2Dst", "mod3Dst", "mod4Dst" };
+    inline constexpr std::array<const char*, 4> modSlotAmt {
+        "mod1Amt", "mod2Amt", "mod3Amt", "mod4Amt" };
+
+    inline const juce::StringArray lfoWaveChoices {
+        "Sine", "Triangle", "Saw Up", "Saw Down", "Square", "Random S&H"
+    };
+
     // ---- Fixed option lists (UI and DSP read the same arrays) --------------
     inline const juce::StringArray syncModeChoices { "Free", "Sync" };
 

@@ -14,6 +14,9 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include "dsp/DubDelayEngine.h"
+#include "dsp/Lfo.h"
+#include "dsp/EnvelopeFollower.h"
+#include "dsp/ModMatrix.h"
 #include "presets/PresetManager.h"
 
 // Top-level plugin. Owns the parameter tree, resolves tempo-synced delay times
@@ -80,6 +83,12 @@ public:
         return outputLevel[(size_t) juce::jlimit (0, 1, channel)].load (std::memory_order_relaxed);
     }
 
+    // Latest LFO and envelope-follower values, for UI metering. Updated once
+    // per audio block; read by the editor on its timer.
+    float getLfo1Value() const   { return lfo1ValueUI.load   (std::memory_order_relaxed); }
+    float getLfo2Value() const   { return lfo2ValueUI.load   (std::memory_order_relaxed); }
+    float getEnvValue() const    { return envValueUI.load    (std::memory_order_relaxed); }
+
 private:
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     void updateEngineParams();
@@ -93,8 +102,20 @@ private:
     doobie::DubDelayEngine engine;
     PresetManager presetManager;
 
+    // Modulation: two LFOs, one envelope follower (fed the dry input on each
+    // processBlock), four mod slots. See dsp/ModMatrix.h.
+    doobie::Lfo              lfo1, lfo2;
+    doobie::EnvelopeFollower envFollower;
+    std::array<doobie::ModSlot, doobie::kNumModSlots> modSlots;
+
+    // Building EngineParams is shared between processBlock (which adds the
+    // mod-matrix overlay before sending) and other callers (state restore).
+    doobie::EngineParams buildEngineParams();
+
     std::atomic<double> currentBpm { 120.0 };
     std::array<std::atomic<float>, 2> outputLevel { };
+    // Latest mod-source values published from processBlock for UI metering.
+    std::atomic<float> lfo1ValueUI { 0.0f }, lfo2ValueUI { 0.0f }, envValueUI { 0.0f };
     double sampleRate = 44100.0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DoobieAudioProcessor)

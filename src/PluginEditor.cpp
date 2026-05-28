@@ -12,6 +12,7 @@
 
 #include "PluginEditor.h"
 #include "ParameterIDs.h"
+#include "ui/ModMatrixPopup.h"
 
 using doobie::colours::amber;
 using doobie::colours::teal;
@@ -222,6 +223,44 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
         cbFactoryIr.setSelectedId (1, juce::dontSendNotification); // back to (none)
     };
 
+    // ---- Modulation matrix ------------------------------------------------
+    // Two LFOs, an envelope follower, and four slot rows that route any source
+    // to any destination with a bipolar amount.
+    kLfo1Rate.attach    (*this, state, dID::lfo1Rate,   "RATE",  teal());
+    kLfo1Depth.attach   (*this, state, dID::lfo1Depth,  "DEPTH", teal());
+    cbLfo1Wave.attach   (*this, state, dID::lfo1Wave,   "WAVE",  dID::lfoWaveChoices);
+    kLfo2Rate.attach    (*this, state, dID::lfo2Rate,   "RATE",  teal());
+    kLfo2Depth.attach   (*this, state, dID::lfo2Depth,  "DEPTH", teal());
+    cbLfo2Wave.attach   (*this, state, dID::lfo2Wave,   "WAVE",  dID::lfoWaveChoices);
+    kEnvAttack.attach   (*this, state, dID::envAttack,  "ATK",   teal());
+    kEnvRelease.attach  (*this, state, dID::envRelease, "REL",   teal());
+    kEnvSens.attach     (*this, state, dID::envSens,    "SENS",  teal());
+
+    // MATRIX button opens the slot configuration in a popup, keeping the main
+    // mod panel focused on the always-on sources (LFOs + envelope follower).
+    addAndMakeVisible (btnMatrix);
+    btnMatrix.getProperties().set ("accent", (int) teal().getARGB());
+    btnMatrix.onClick = [this]
+    {
+        auto popup = std::make_unique<doobie::ModMatrixPopup> (audioProcessor.getValueTreeState(), lnf);
+        const auto trigger = btnMatrix.getScreenBounds();
+        juce::CallOutBox::launchAsynchronously (std::move (popup), trigger, nullptr);
+    };
+
+    // Visual indicators that show what the mod sources are doing right now.
+    lfo1Meter = std::make_unique<doobie::ModSourceMeter> (
+        doobie::ModSourceMeter::Style::Bipolar,
+        [this] { return audioProcessor.getLfo1Value(); }, teal());
+    lfo2Meter = std::make_unique<doobie::ModSourceMeter> (
+        doobie::ModSourceMeter::Style::Bipolar,
+        [this] { return audioProcessor.getLfo2Value(); }, teal());
+    envMeter = std::make_unique<doobie::ModSourceMeter> (
+        doobie::ModSourceMeter::Style::Unipolar,
+        [this] { return audioProcessor.getEnvValue(); }, amber());
+    addAndMakeVisible (lfo1Meter.get());
+    addAndMakeVisible (lfo2Meter.get());
+    addAndMakeVisible (envMeter.get());
+
     kInput.attach  (*this, state, dID::inputDrive, "INPUT",  amber());
     kMix.attach    (*this, state, dID::mix,        "MIX",    amber());
     kOutput.attach (*this, state, dID::outputGain, "OUTPUT", amber());
@@ -239,7 +278,7 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
     refreshPresetBox();
     timerCallback();          // initialise dynamic labels / enabled state at once
     startTimerHz (12);
-    setSize (1100, 720);
+    setSize (1100, 870);
 }
 
 DoobieAudioProcessorEditor::~DoobieAudioProcessorEditor()
@@ -415,7 +454,30 @@ void DoobieAudioProcessorEditor::paint (juce::Graphics& g)
     panel (rTape,    "TAPE",   doobie::colours::line());
     panel (rFilters, "FILTERS", doobie::colours::line());
     panel (rReverb,  "REVERB", teal().withAlpha (0.6f));
+    panel (rMod,     "MODULATION", teal().withAlpha (0.6f));
     panel (rOutput,  "OUTPUT", doobie::colours::line());
+
+    // Sub-headers and dividers inside the MOD panel. The MATRIX... button on
+    // the right opens a popup with the slot configuration; the three left
+    // sub-sections (LFO 1 / LFO 2 / ENV) are always visible.
+    {
+        auto m = rMod.reduced (10).withTrimmedTop (24);
+        m.removeFromRight (110); // matrix-button column
+        const int thirdW = m.getWidth() / 3;
+        auto lfo1Area = m.removeFromLeft (thirdW);
+        auto lfo2Area = m.removeFromLeft (thirdW);
+        auto envArea  = m;
+
+        g.setColour (doobie::colours::line().withAlpha (0.6f));
+        g.drawVerticalLine (lfo2Area.getX(), (float) lfo2Area.getY() + 4.0f, (float) lfo2Area.getBottom() - 4.0f);
+        g.drawVerticalLine (envArea.getX(),  (float) envArea.getY()  + 4.0f, (float) envArea.getBottom()  - 4.0f);
+
+        g.setColour (teal().withAlpha (0.85f));
+        g.setFont (juce::Font (juce::FontOptions (10.0f)).withExtraKerningFactor (0.12f));
+        g.drawText ("LFO 1",    lfo1Area.removeFromTop (12).withTrimmedLeft (4), juce::Justification::centredLeft);
+        g.drawText ("LFO 2",    lfo2Area.removeFromTop (12).withTrimmedLeft (8), juce::Justification::centredLeft);
+        g.drawText ("ENVELOPE", envArea.removeFromTop (12).withTrimmedLeft (8),  juce::Justification::centredLeft);
+    }
 
     // Column titles inside the heads panel.
     g.setColour (cream().withAlpha (0.45f));
@@ -472,6 +534,51 @@ void DoobieAudioProcessorEditor::resized()
     // Bottom output bar (full width).
     rOutput = area.removeFromBottom (104);
     area.removeFromBottom (gap);
+
+    // Modulation panel sits above the output bar, spanning the full width.
+    // Compact layout: three sections (LFO 1 | LFO 2 | ENVELOPE) each with its
+    // own meter, plus a MATRIX... button for the slot configuration popup.
+    rMod = area.removeFromBottom (130);
+    area.removeFromBottom (gap);
+    {
+        auto m = rMod.reduced (10).withTrimmedTop (24);
+
+        // Right-edge: MATRIX button column (compact).
+        const int btnColW = 110;
+        auto btnCol = m.removeFromRight (btnColW).reduced (4, 2);
+        btnMatrix.setBounds (btnCol.removeFromTop (32));
+
+        // Three sub-sections (LFO 1 | LFO 2 | ENV) split the remaining space.
+        const int thirdW = m.getWidth() / 3;
+
+        auto layoutLfo = [] (juce::Rectangle<int> r, Knob& rate, Knob& depth, Combo& wave,
+                             doobie::ModSourceMeter* meter)
+        {
+            r.removeFromTop (12); // section header drawn in paint()
+            if (meter != nullptr)
+                meter->setBounds (r.removeFromBottom (10).reduced (4, 0));
+            const int knobW = r.getWidth() / 3;
+            rate.place  (r.removeFromLeft (knobW).reduced (4, 0));
+            depth.place (r.removeFromLeft (knobW).reduced (4, 0));
+            wave.place  (r.reduced (4, 14));
+        };
+        auto layoutEnv = [] (juce::Rectangle<int> r, Knob& atk, Knob& rel, Knob& sens,
+                             doobie::ModSourceMeter* meter)
+        {
+            r.removeFromTop (12);
+            // Meter sits to the right of the knobs (unipolar = vertical bar).
+            if (meter != nullptr)
+                meter->setBounds (r.removeFromRight (16).reduced (2, 4));
+            const int knobW = r.getWidth() / 3;
+            atk.place  (r.removeFromLeft (knobW).reduced (4, 0));
+            rel.place  (r.removeFromLeft (knobW).reduced (4, 0));
+            sens.place (r.reduced (4, 0));
+        };
+
+        layoutLfo (m.removeFromLeft (thirdW), kLfo1Rate, kLfo1Depth, cbLfo1Wave, lfo1Meter.get());
+        layoutLfo (m.removeFromLeft (thirdW), kLfo2Rate, kLfo2Depth, cbLfo2Wave, lfo2Meter.get());
+        layoutEnv (m,                          kEnvAttack, kEnvRelease, kEnvSens, envMeter.get());
+    }
 
     // Three columns.
     const int colAw = 252;
