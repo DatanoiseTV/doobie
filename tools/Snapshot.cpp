@@ -14,9 +14,16 @@
 // out, renders it to an image with the software renderer, and writes a PNG.
 // Useful for verifying the layout without a running DAW or screen access.
 //
-// Usage: doobie_snapshot [output.png] [presetIndex] [scale]
+// Usage: doobie_snapshot [output.png] [presetIndex] [scale] [reverbMode] [factoryIr]
+//
+// reverbMode (optional, -1 to leave preset's choice): overrides the reverb mode
+//   after the preset is loaded — useful for snapshotting modes the factory
+//   presets don't reach (e.g. Convolution = 7).
+// factoryIr  (optional, -1 = none): when reverbMode is Convolution (7), loads
+//   the named factory IR by index (0..N-1).
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "ParameterIDs.h"
 #include <cmath>
 
 int main (int argc, char* argv[])
@@ -26,11 +33,23 @@ int main (int argc, char* argv[])
     const juce::String outPath = argc > 1 ? juce::String (argv[1]) : juce::String ("/tmp/doobie_shots/ui.png");
     const int   presetIndex = argc > 2 ? juce::String (argv[2]).getIntValue() : -1;
     const float scale       = argc > 3 ? juce::jlimit (1.0f, 4.0f, (float) juce::String (argv[3]).getDoubleValue()) : 2.0f;
+    const int   reverbMode  = argc > 4 ? juce::String (argv[4]).getIntValue() : -1;
+    const int   factoryIr   = argc > 5 ? juce::String (argv[5]).getIntValue() : -1;
 
     DoobieAudioProcessor processor;
     processor.prepareToPlay (44100.0, 512);
     if (presetIndex >= 0)
         processor.getPresetManager().loadFactory (presetIndex);
+
+    auto applyOverrides = [&]
+    {
+        if (reverbMode >= 0)
+            if (auto* p = processor.getValueTreeState().getParameter (dID::reverbMode))
+                p->setValueNotifyingHost (p->convertTo0to1 ((float) reverbMode));
+        if (factoryIr >= 0)
+            processor.loadFactoryIR (factoryIr);
+    };
+    applyOverrides();
 
     // Audio health probe: push ~1 s of white noise (then silence) through the
     // processor and report output level / finiteness, so DSP-heavy presets
@@ -66,6 +85,7 @@ int main (int argc, char* argv[])
         processor.prepareToPlay (44100.0, 512);
         if (presetIndex >= 0)
             processor.getPresetManager().loadFactory (presetIndex);
+        applyOverrides();
     }
 
     std::unique_ptr<juce::AudioProcessorEditor> editor (processor.createEditor());

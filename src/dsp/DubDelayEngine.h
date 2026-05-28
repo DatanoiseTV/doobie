@@ -24,6 +24,8 @@
 #include "FftPitchShifter.h"
 #include "DcBlocker.h"
 #include "TapeAge.h"
+#include "ConvolutionReverb.h"
+#include "FactoryIRs.h"
 
 #include <juce_dsp/juce_dsp.h>
 #include <array>
@@ -87,6 +89,30 @@ public:
     const std::array<std::atomic<float>, 4>& headMagnitudes() const { return headMag; }
     float currentDelaySamples() const { return (float) smoothedDelay.getCurrentValue(); }
 
+    // Impulse-response convolution reverb access for the editor / processor.
+    // Loading is async (JUCE swaps the IR on a background thread), so calling
+    // these from the message thread is safe while audio is processing.
+    void       loadIR (const juce::File& f) { conv.loadFromFile (f); }
+    void       clearIR()                    { conv.clear(); }
+    bool       hasIR() const                { return conv.hasIR(); }
+    juce::File getLoadedIRFile() const      { return conv.getLoadedFile(); }
+
+    // Load one of the synthesised factory IRs. Generated on the message thread,
+    // installed atomically; safe to call while audio is processing.
+    bool loadFactoryIR (int index)
+    {
+        const auto& specs = factoryIRSpecs();
+        if (index < 0 || index >= (int) specs.size())
+            return false;
+        auto ir = generateFactoryIR (specs[(size_t) index], sampleRate);
+        conv.loadFromBuffer (std::move (ir), sampleRate, index, specs[(size_t) index].name);
+        return true;
+    }
+    int          getFactoryIRIndex() const { return conv.getFactoryIndex(); }
+    juce::String getIRDisplayName()  const { return conv.getDisplayName(); }
+    bool         irIsFactory()       const { return conv.getSource() == ConvolutionReverb::Source::Factory; }
+    bool         irIsFile()          const { return conv.getSource() == ConvolutionReverb::Source::File; }
+
 private:
     void applyReverb (float inL, float inR, float& outL, float& outR) noexcept;
     inline float whiteNoise() noexcept;
@@ -111,10 +137,11 @@ private:
     float bbdLpL = 0.0f, bbdLpR = 0.0f;   // SVF low-pass state
     float bbdBpL = 0.0f, bbdBpR = 0.0f;   // SVF band-pass state
 
-    SpringReverb  spring;
-    PlateReverb   plate;
-    FdnReverb     hall;
-    ShimmerReverb shimmer;
+    SpringReverb      spring;
+    PlateReverb       plate;
+    FdnReverb         hall;
+    ShimmerReverb     shimmer;
+    ConvolutionReverb conv;
 
     // Multiplicative smoothing glides the delay time at a constant ratio, which
     // sounds like a tape capstan easing to a new speed rather than a linear jump.

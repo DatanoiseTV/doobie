@@ -216,6 +216,182 @@ static void testDelayDecay()
     runDelayDecayCheck (3, 0.6f, "Diffuse delay decays at FB=0.6");
 }
 
+// Selecting Convolution before an IR is loaded must not break things: the
+// wrapper passes dry through with zero latency so the engine's mix collapses
+// to dry rather than dropping level / comb-filtering / blowing up.
+static void testConvolutionBypassWithoutIR()
+{
+    DoobieAudioProcessor proc;
+    constexpr int sr = 44100;
+    constexpr int blockSize = 512;
+    proc.prepareToPlay ((double) sr, blockSize);
+    auto& apvts = proc.getValueTreeState();
+
+    auto setReal = [&] (const char* id, float v)
+    {
+        if (auto* p = apvts.getParameter (id))
+            p->setValueNotifyingHost (p->convertTo0to1 (v));
+    };
+    setReal (dID::reverbMode, 7.0f); // Convolution
+    setReal (dID::reverbMix,  0.5f);
+    setReal (dID::feedback,   0.0f);  // no buildup, just measure pass-through
+    setReal (dID::mix,        0.5f);  // dry + wet so output is non-silent even short term
+    setReal (dID::syncMode,   0.0f);
+    setReal (dID::timeMs,     50.0f); // short tap so the wet contributes inside the test run
+
+    juce::AudioBuffer<float> buf (2, blockSize);
+    juce::MidiBuffer midi;
+    juce::Random rng (0x1234);
+
+    double sumSq = 0.0;
+    int    counted = 0;
+    bool   finite = true;
+    for (int b = 0; b < 20; ++b) // ~230 ms
+    {
+        for (int ch = 0; ch < 2; ++ch)
+        {
+            auto* d = buf.getWritePointer (ch);
+            for (int i = 0; i < blockSize; ++i)
+                d[i] = (rng.nextFloat() * 2.0f - 1.0f) * 0.3f;
+        }
+        proc.processBlock (buf, midi);
+        for (int ch = 0; ch < 2; ++ch)
+        {
+            auto* d = buf.getReadPointer (ch);
+            for (int i = 0; i < blockSize; ++i)
+            {
+                if (! std::isfinite (d[i])) finite = false;
+                sumSq += (double) d[i] * d[i];
+                ++counted;
+            }
+        }
+    }
+    const double rms = std::sqrt (sumSq / std::max (1, counted));
+
+    check (finite, "Convolution mode with no IR stays finite");
+    check (rms > 0.05 && rms < 0.5,
+           "Convolution mode with no IR passes audio (neither silent nor blown up)");
+    check (! proc.hasIR(), "Convolution mode without IR reports hasIR()==false");
+}
+
+// The IR selection lives on the APVTS state tree as a property pair (factory
+// index and custom file path, mutually exclusive). Verify the three states
+// (none, factory, file) all survive a getState/setState round-trip. We can't
+// reliably test the file branch without a sample file, so it asserts only that
+// the fresh state stays cleared after a round-trip there.
+static void testIRPathRoundTrip()
+{
+    {
+        DoobieAudioProcessor proc;
+        proc.prepareToPlay (44100.0, 512);
+
+        juce::MemoryBlock blob;
+        proc.getStateInformation (blob);
+        proc.setStateInformation (blob.getData(), (int) blob.getSize());
+
+        check (! proc.hasIR(), "fresh state round-trip leaves IR cleared");
+        check (proc.getLoadedIR() == juce::File(),
+               "fresh state round-trip leaves loaded-IR file empty");
+    }
+    {
+        DoobieAudioProcessor proc;
+        proc.prepareToPlay (44100.0, 512);
+        proc.loadFactoryIR (2); // "Hall"
+        check (proc.hasIR() && proc.irIsFactory() && proc.getFactoryIRIndex() == 2,
+               "loadFactoryIR(2) sets the factory IR");
+
+        juce::MemoryBlock blob;
+        proc.getStateInformation (blob);
+
+        DoobieAudioProcessor proc2;
+        proc2.prepareToPlay (44100.0, 512);
+        proc2.setStateInformation (blob.getData(), (int) blob.getSize());
+        check (proc2.hasIR() && proc2.irIsFactory() && proc2.getFactoryIRIndex() == 2,
+               "factory IR selection survives a getState/setState round-trip");
+    }
+}
+
+// A factory IR loaded at one sample rate must survive prepareToPlay being
+// re-invoked at a different rate — the engine regenerates the IR at the new
+// sample rate rather than letting JUCE resample a stale buffer.
+static void testFactoryIRFollowsSampleRate()
+{
+    DoobieAudioProcessor proc;
+    proc.prepareToPlay (44100.0, 512);
+    proc.loadFactoryIR (1); // Big Room
+    check (proc.hasIR() && proc.getFactoryIRIndex() == 1,
+           "factory IR loads at the original sample rate");
+
+    // Switch the host sample rate (and block size) the way a DAW would.
+    proc.prepareToPlay (96000.0, 256);
+    check (proc.hasIR() && proc.irIsFactory() && proc.getFactoryIRIndex() == 1,
+           "factory IR survives a sample-rate change (regenerated at new rate)");
+
+    // Run a short noise burst at the new sample rate to confirm the
+    // regenerated IR is actually active and stable.
+    juce::AudioBuffer<float> buf (2, 256);
+    juce::MidiBuffer midi;
+    juce::Random rng (0xABCD);
+    bool finite = true;
+    for (int b = 0; b < 20; ++b)
+    {
+        for (int ch = 0; ch < 2; ++ch)
+        {
+            auto* d = buf.getWritePointer (ch);
+            for (int i = 0; i < 256; ++i)
+                d[i] = (b < 4) ? (rng.nextFloat() * 2.0f - 1.0f) * 0.3f : 0.0f;
+        }
+        proc.processBlock (buf, midi);
+        for (int ch = 0; ch < 2; ++ch)
+        {
+            auto* d = buf.getReadPointer (ch);
+            for (int i = 0; i < 256; ++i)
+                if (! std::isfinite (d[i])) finite = false;
+        }
+    }
+    check (finite, "engine stays finite after a sample-rate change");
+}
+
+// Running the engine in Convolution mode with a factory IR loaded must stay
+// finite (the regression guard for any bugs in the generated-IR pipeline).
+static void testFactoryIRStability()
+{
+    DoobieAudioProcessor proc;
+    constexpr int sr = 44100;
+    constexpr int blockSize = 512;
+    proc.prepareToPlay ((double) sr, blockSize);
+    auto& apvts = proc.getValueTreeState();
+
+    if (auto* p = apvts.getParameter (dID::reverbMode))
+        p->setValueNotifyingHost (p->convertTo0to1 (7.0f)); // Convolution
+    if (auto* p = apvts.getParameter (dID::reverbMix))
+        p->setValueNotifyingHost (p->convertTo0to1 (0.5f));
+
+    proc.loadFactoryIR (3); // "Cathedral" — the longest tail in the bank
+
+    juce::AudioBuffer<float> buf (2, blockSize);
+    juce::MidiBuffer midi;
+    juce::Random rng (0xCA7);
+    bool finite = true;
+    for (int b = 0; b < 30; ++b)
+    {
+        for (int ch = 0; ch < 2; ++ch)
+        {
+            auto* d = buf.getWritePointer (ch);
+            for (int i = 0; i < blockSize; ++i)
+                d[i] = (b < 4) ? (rng.nextFloat() * 2.0f - 1.0f) * 0.3f : 0.0f;
+        }
+        proc.processBlock (buf, midi);
+        for (int ch = 0; ch < 2; ++ch)
+        {
+            auto* d = buf.getReadPointer (ch);
+            for (int i = 0; i < blockSize; ++i)
+                if (! std::isfinite (d[i])) finite = false;
+        }
+    }
+    check (finite, "Convolution + Cathedral factory IR stays finite under noise burst");
+}
+
 int main()
 {
     juce::ScopedJuceInitialiser_GUI guiInit;
@@ -225,6 +401,10 @@ int main()
     testCurrentStateUntouched();
     testStateRoundTrip();
     testDelayDecay();
+    testConvolutionBypassWithoutIR();
+    testIRPathRoundTrip();
+    testFactoryIRStability();
+    testFactoryIRFollowsSampleRate();
 
     if (failures == 0)
         std::printf ("All state tests passed.\n");

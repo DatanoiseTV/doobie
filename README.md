@@ -40,10 +40,12 @@ home as a modulated delay and ambience for any genre.
   and treble) shapes only the signal that gets echoed, leaving the dry output clean;
   a separate **feedback** filter (same four controls) darkens and dissolves each
   repeat the way real tape does. Each stage has its own dedicated knobs.
-- **Seven reverb modes** — a dispersive spring tank, a modulated plate, a dense
+- **Eight reverb modes** — a dispersive spring tank, a modulated plate, a dense
   16-line **hall**, an octave-up **shimmer**, plus spring→plate series and
-  spring+plate parallel. Route any of them **post**, **pre**, or **inside the
-  feedback loop** for washing dub textures and blooming ambient tails.
+  spring+plate parallel, and a **convolution** mode with six built-in spaces
+  (Small Room, Big Room, Hall, Cathedral, Cave, Tunnel) that also loads any
+  WAV/AIFF/FLAC impulse response. Route any of them **post**, **pre**, or
+  **inside the feedback loop** for washing dub textures and blooming ambient tails.
 - **Performance controls** — ping-pong feedback, freeze (infinite hold), wet ducking,
   stereo width.
 - **60+ factory presets** across dub/reggae, ambient/cinematic, rhythmic/electronic,
@@ -74,6 +76,25 @@ shows the active reverb's tail length and pre-delay at a glance.
   reverb builds across repeats. Ride REVERB MIX.
 - **Siren feedback:** push FEEDBACK to ~1.0 and ride the LOW CUT / HIGH CUT.
 - **Freeze a moment:** hit FREEZE to hold the buffer infinitely, then play over it.
+
+## Impulse responses
+
+Set REVERB to *Convolution*. Six built-in IRs (Small Room, Big Room, Hall,
+Cathedral, Cave, Tunnel) ship with the plugin — they're generated at runtime so
+they cost no binary size and have no third-party licensing. Pick one from the
+combo, or use **LOAD CUSTOM...** to load any WAV / AIFF / FLAC of your own.
+The session restores either choice automatically.
+
+A few permissively-licensed external IR collections that work well as a
+starting point for custom files:
+
+- **[Voxengo free impulses](https://www.voxengo.com/impulses/)** — royalty-free for
+  any use including commercial; the cleanest licensing of the lot. Halls, plates,
+  cabinets, springs.
+- **[Open AIR Library](https://openair.hosted.york.ac.uk/)** — large catalogue of
+  real-space IRs (cathedrals, halls, tunnels) under Creative Commons.
+- **[EchoThief](http://www.echothief.com/)** — over a hundred real-world spaces
+  sampled around North America.
 
 ## Building
 

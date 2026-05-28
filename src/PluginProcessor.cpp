@@ -223,10 +223,36 @@ juce::AudioProcessorEditor* DoobieAudioProcessor::createEditor()
     return new DoobieAudioProcessorEditor (*this);
 }
 
+void DoobieAudioProcessor::loadIR (const juce::File& f)
+{
+    if (! f.existsAsFile())
+        return;
+    engine.loadIR (f);
+    apvts.state.setProperty (dID::irPathProperty, f.getFullPathName(), nullptr);
+    apvts.state.setProperty (dID::factoryIrIndexProperty, -1, nullptr); // file IR wins
+}
+
+void DoobieAudioProcessor::loadFactoryIR (int index)
+{
+    if (! engine.loadFactoryIR (index))
+        return;
+    apvts.state.setProperty (dID::factoryIrIndexProperty, index, nullptr);
+    apvts.state.setProperty (dID::irPathProperty, juce::String(), nullptr);  // factory IR wins
+}
+
+void DoobieAudioProcessor::clearIR()
+{
+    engine.clearIR();
+    apvts.state.setProperty (dID::irPathProperty, juce::String(), nullptr);
+    apvts.state.setProperty (dID::factoryIrIndexProperty, -1, nullptr);
+}
+
 void DoobieAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
     state.setProperty ("presetName", presetManager.getCurrentName(), nullptr);
+    // The IR path is already on apvts.state (set by loadIR), so copyState
+    // carries it. No extra work needed here.
     if (auto xml = state.createXml())
         copyXmlToBinary (*xml, destData);
 }
@@ -239,6 +265,22 @@ void DoobieAudioProcessor::setStateInformation (const void* data, int sizeInByte
             auto tree = juce::ValueTree::fromXml (*xml);
             apvts.replaceState (tree);
             PresetManager::migrateLegacyState (apvts, tree); // old "modeSel" -> head matrix
+
+            // Restore the IR. Factory takes precedence (no file dependencies);
+            // fall back to a file path if no factory index was stored. If the
+            // saved file no longer exists the engine just stays in bypass.
+            const int factoryIdx = (int) apvts.state.getProperty (dID::factoryIrIndexProperty, -1);
+            const auto irPath = apvts.state.getProperty (dID::irPathProperty).toString();
+            if (factoryIdx >= 0)
+            {
+                engine.loadFactoryIR (factoryIdx);
+            }
+            else if (irPath.isNotEmpty())
+            {
+                const juce::File f (irPath);
+                if (f.existsAsFile())
+                    engine.loadIR (f);
+            }
         }
 }
 

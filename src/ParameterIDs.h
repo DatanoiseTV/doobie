@@ -132,10 +132,20 @@ namespace dID
     }
 
     // New algorithms are appended so existing presets keep their stored index
-    // (Off=0, Spring=1, Plate=2, Spring>Plate=3, Spring+Plate=4, Hall=5, Shimmer=6).
+    // (Off=0, Spring=1, Plate=2, Spring>Plate=3, Spring+Plate=4, Hall=5, Shimmer=6,
+    // Convolution=7 — uses the user-loaded impulse response).
     inline const juce::StringArray reverbModeChoices {
-        "Off", "Spring", "Plate", "Spring > Plate", "Spring + Plate", "Hall", "Shimmer"
+        "Off", "Spring", "Plate", "Spring > Plate", "Spring + Plate", "Hall", "Shimmer", "Convolution"
     };
+
+    // Properties on the APVTS state tree carrying the loaded IR. Convolution
+    // mode reads them back on session restore. Not automatable parameters —
+    // file paths and indices don't belong in a knob.
+    //   irPath          -> custom file path (string), empty if not custom.
+    //   factoryIrIndex  -> built-in IR index (int >= 0), -1 if not factory.
+    // The two are mutually exclusive; whichever is set wins on restore.
+    inline constexpr auto irPathProperty        = "irPath";
+    inline constexpr auto factoryIrIndexProperty = "factoryIrIndex";
 
     inline const juce::StringArray reverbRouteChoices {
         "Post", "Pre", "In Feedback"

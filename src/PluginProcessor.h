@@ -51,6 +51,23 @@ public:
     juce::AudioProcessorValueTreeState& getValueTreeState() { return apvts; }
     PresetManager& getPresetManager() { return presetManager; }
 
+    // Convolution IR control (called from the editor's LOAD / CLEAR buttons and
+    // from setStateInformation when restoring a session). Loading is async via
+    // JUCE's Convolution background loader, so safe to call while audio runs.
+    void loadIR (const juce::File& f);
+    void clearIR();
+    bool hasIR() const            { return engine.hasIR(); }
+    juce::File getLoadedIR() const { return engine.getLoadedIRFile(); }
+
+    // Factory (built-in) IR selection. Factory IRs are synthesised at runtime
+    // (see FactoryIRs.h) so they cost no binary and have no third-party
+    // licensing. Index -1 means "no factory IR loaded".
+    void         loadFactoryIR (int index);
+    int          getFactoryIRIndex() const  { return engine.getFactoryIRIndex(); }
+    juce::String getIRDisplayName() const   { return engine.getIRDisplayName(); }
+    bool         irIsFactory() const        { return engine.irIsFactory(); }
+    bool         irIsFile() const           { return engine.irIsFile(); }
+
     // For the editor's echo visualiser.
     const doobie::DubDelayEngine& getEngine() const { return engine; }
     double getCurrentBpm() const { return currentBpm.load(); }

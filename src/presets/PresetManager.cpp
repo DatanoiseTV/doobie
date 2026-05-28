@@ -34,7 +34,7 @@ namespace
     //             level (0..1), pan (-1..1) and time ratio (fraction of repeat).
     //   delayMode:   0 digital, 1 tape, 2 BBD, 3 diffuse, 4 pitch
     //   reverbMode:  0 off, 1 spring, 2 plate, 3 spring>plate, 4 spring+plate,
-    //                5 hall, 6 shimmer
+    //                5 hall, 6 shimmer, 7 convolution (user-loaded IR)
     //   reverbRoute: 0 post, 1 pre, 2 in-feedback
     //   hiss is the AGE macro (0..1): hiss + dropouts + HF loss + instability.
     std::vector<PresetManager::Preset> buildFactory()

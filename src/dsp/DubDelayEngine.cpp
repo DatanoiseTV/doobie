@@ -37,6 +37,18 @@ void DubDelayEngine::prepare (double sr, int maxBlockSize)
     plate.prepare (sr);
     hall.prepare (sr, 40.0f, 115.0f);
     shimmer.prepare (sr);
+    conv.prepare (sr, maxBlockSize);
+
+    // If a factory IR was loaded at a previous sample rate, regenerate it at
+    // the new one — preferable to letting JUCE resample a stale buffer. A
+    // user-loaded file IR is left alone; JUCE handles its resampling from the
+    // file's own sample rate.
+    if (conv.getSource() == ConvolutionReverb::Source::Factory)
+    {
+        const int idx = conv.getFactoryIndex();
+        if (idx >= 0)
+            (void) loadFactoryIR (idx);
+    }
 
     diffuseL.prepare (sr);
     diffuseR.prepare (sr);
@@ -92,6 +104,7 @@ void DubDelayEngine::reset()
     plate.reset();
     hall.reset();
     shimmer.reset();
+    conv.reset();
     diffuseL.reset();
     diffuseR.reset();
     pitchL.reset();
@@ -153,6 +166,7 @@ void DubDelayEngine::applyReverb (float inL, float inR, float& outL, float& outR
         }
         case 5: hall.process    (inL, inR, outL, outR); break;
         case 6: shimmer.process (inL, inR, outL, outR); break;
+        case 7: conv.process    (inL, inR, outL, outR); break; // user-loaded IR
         default: outL = inL; outR = inR; break;
     }
 }

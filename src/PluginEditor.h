@@ -95,6 +95,15 @@ private:
     Combo cbReverbMode, cbReverbRoute;
     Knob kRevMix, kSpringDecay, kSpringTone, kPlateDecay, kPlateSize, kPlateDamp, kPlatePre, kRevMod;
 
+    // Convolution IR controls — visible only when REVERB == Convolution.
+    // The combo selects a built-in IR ("Small Room", "Hall", "Cathedral", ...)
+    // and the LOAD CUSTOM... button opens a file chooser to use a user IR.
+    juce::ComboBox   cbFactoryIr;
+    juce::TextButton btnLoadIr   { "LOAD CUSTOM..." };
+    juce::TextButton btnClearIr  { "X" };
+    juce::Label      irLabel;
+    std::unique_ptr<juce::FileChooser> irChooser;
+
     // Output.
     Knob kInput, kMix, kOutput, kWidth, kDuck;
 

@@ -166,6 +166,58 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
     kRevMod.attach      (*this, state, dID::reverbMod,     "MOD",     teal());
 
     // Output.
+    // IR controls for the Convolution reverb mode.
+    //   * cbFactoryIr  — picks a built-in synthesised IR or "(none)".
+    //   * btnLoadIr    — opens a file chooser to load a custom WAV/AIFF/FLAC.
+    //   * btnClearIr   — clears the current IR (any kind).
+    //   * irLabel      — shows the currently-loaded IR name.
+    cbFactoryIr.addItem ("(none)", 1);
+    {
+        const auto names = doobie::factoryIRNames();
+        for (int i = 0; i < names.size(); ++i)
+            cbFactoryIr.addItem (names[i], i + 2); // ids start at 1; reserve 1 for (none)
+    }
+    cbFactoryIr.setSelectedId (1, juce::dontSendNotification);
+    addChildComponent (cbFactoryIr);
+    addChildComponent (btnLoadIr);
+    addChildComponent (btnClearIr);
+    addChildComponent (irLabel);
+    irLabel.setJustificationType (juce::Justification::centredLeft);
+    irLabel.setColour (juce::Label::textColourId, teal());
+    irLabel.setFont (juce::Font (juce::FontOptions (12.0f)).withExtraKerningFactor (0.04f));
+
+    cbFactoryIr.onChange = [this]
+    {
+        const int id = cbFactoryIr.getSelectedId();
+        if (id <= 1) audioProcessor.clearIR();
+        else         audioProcessor.loadFactoryIR (id - 2);
+    };
+
+    btnLoadIr.onClick = [this]
+    {
+        irChooser = std::make_unique<juce::FileChooser> (
+            "Choose an impulse response",
+            juce::File::getSpecialLocation (juce::File::userMusicDirectory),
+            "*.wav;*.aif;*.aiff;*.flac");
+        irChooser->launchAsync (juce::FileBrowserComponent::openMode
+                                | juce::FileBrowserComponent::canSelectFiles,
+            [this] (const juce::FileChooser& fc)
+            {
+                const auto f = fc.getResult();
+                if (f.existsAsFile())
+                {
+                    audioProcessor.loadIR (f);
+                    // A custom file IR isn't in the factory list, so deselect.
+                    cbFactoryIr.setSelectedId (0, juce::dontSendNotification);
+                }
+            });
+    };
+    btnClearIr.onClick = [this]
+    {
+        audioProcessor.clearIR();
+        cbFactoryIr.setSelectedId (1, juce::dontSendNotification); // back to (none)
+    };
+
     kInput.attach  (*this, state, dID::inputDrive, "INPUT",  amber());
     kMix.attach    (*this, state, dID::mix,        "MIX",    amber());
     kOutput.attach (*this, state, dID::outputGain, "OUTPUT", amber());
@@ -245,6 +297,35 @@ void DoobieAudioProcessorEditor::timerCallback()
     kTime.slider.setEnabled (! synced);
     cbDivision.box.setAlpha (synced ? 1.0f : 0.4f);
     kTime.slider.setAlpha (synced ? 0.4f : 1.0f);
+
+    // Convolution mode swaps the reverb decay view for an IR loader. The
+    // algorithmic knobs stay visible but are greyed since they do nothing here.
+    const bool conv = state.getRawParameterValue (dID::reverbMode)->load() > 6.5f;
+    cbFactoryIr.setVisible (conv);
+    btnLoadIr.setVisible (conv);
+    btnClearIr.setVisible (conv && audioProcessor.hasIR());
+    irLabel.setVisible (conv);
+    reverbView.setVisible (! conv);
+    if (conv)
+    {
+        const juce::String name = audioProcessor.getIRDisplayName();
+        irLabel.setText (audioProcessor.hasIR() ? name : "(no IR loaded)",
+                         juce::dontSendNotification);
+        // Reflect the engine's current selection so a session-restored factory
+        // IR or programmatic load shows in the combo without re-triggering its
+        // onChange.
+        int target = 1; // (none)
+        if (audioProcessor.irIsFactory()) target = 2 + audioProcessor.getFactoryIRIndex();
+        else if (audioProcessor.irIsFile()) target = 0; // deselected (custom isn't in the list)
+        if (cbFactoryIr.getSelectedId() != target)
+            cbFactoryIr.setSelectedId (target, juce::dontSendNotification);
+    }
+    const float convAlpha = conv ? 0.4f : 1.0f;
+    for (auto* k : { &kSpringDecay, &kSpringTone, &kPlateDecay, &kPlateSize, &kPlateDamp, &kPlatePre, &kRevMod })
+    {
+        k->slider.setEnabled (! conv);
+        k->slider.setAlpha (convAlpha);
+    }
 
     // Keep the preset box reflecting external/program changes.
     const auto current = audioProcessor.getPresetManager().getCurrentName();
@@ -468,7 +549,23 @@ void DoobieAudioProcessorEditor::resized()
         cbReverbMode.place  (comboRow.removeFromLeft (comboRow.getWidth() / 2).reduced (4, 2));
         cbReverbRoute.place (comboRow.reduced (4, 2));
 
-        reverbView.setBounds (rv.removeFromBottom (70));
+        auto bottomArea = rv.removeFromBottom (70);
+        reverbView.setBounds (bottomArea);
+        // The IR controls share the reverb-view footprint; visibility decides
+        // which one shows at any time (toggled in timerCallback). Two rows:
+        //   row 1: factory-IR combo (full width)
+        //   row 2: LOAD CUSTOM... | clear | currently-loaded IR name
+        {
+            auto irArea = bottomArea.reduced (6);
+            const int rowH = (irArea.getHeight() - 4) / 2;
+            cbFactoryIr.setBounds (irArea.removeFromTop (rowH));
+            irArea.removeFromTop (4);
+            btnLoadIr.setBounds (irArea.removeFromLeft (118));
+            irArea.removeFromLeft (6);
+            btnClearIr.setBounds (irArea.removeFromRight (28));
+            irArea.removeFromRight (6);
+            irLabel.setBounds (irArea);
+        }
         rv.removeFromBottom (6);
 
         auto r1 = rv.removeFromTop (rv.getHeight() / 2);

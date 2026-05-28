@@ -4,6 +4,24 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] — 2026-05-28
+
+### Added
+- **Convolution reverb mode** (REVERB → `Convolution`). Implemented on JUCE's
+  partitioned `dsp::Convolution`; the per-sample engine wraps it with a
+  64-sample buffer (~1.5 ms latency on the reverb tail only — the dry path is
+  untouched). Works in all three reverb routes (Post, Pre, In-Feedback).
+- **Six built-in factory IRs**: Small Room, Big Room, Hall, Cathedral, Cave,
+  Tunnel. Synthesised deterministically at runtime — early reflections plus a
+  decorrelated stereo diffuse tail with a closing low-pass — so they ship with
+  zero binary cost and no third-party licensing. Picked from a combo in the
+  reverb panel.
+- **LOAD CUSTOM...** button loads any WAV/AIFF/FLAC into the same convolution
+  slot. State persistence stores either the factory index or the file path on
+  the APVTS state tree, so sessions restore the choice automatically.
+- README points to three free, royalty-free external IR collections (Voxengo,
+  OpenAIR, EchoThief) for users who want to bring their own spaces.
+
 ## [0.4.1] — 2026-05-28
 
 ### Fixed
