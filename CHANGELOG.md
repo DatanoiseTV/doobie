@@ -4,6 +4,42 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.10.0] — 2026-05-28
+
+### Added
+- **Eight mod-matrix slots** (was four). Existing slot indices 1–4 stay where
+  they were; slots 5–8 default to off.
+- **Per-head pan and time** are now mod-matrix destinations alongside the
+  existing per-head Level: route Env → Head 1 Pan for a sidechain-driven
+  auto-panner, or LFO 2 → Head 3 Time for an evolving multi-tap pattern.
+  Destinations appended at the end of the list, so existing saved slots
+  keep their meaning.
+
+### Changed
+- **LFO rate goes down to 0.001 Hz** (was 0.05). At the slow end one cycle
+  takes ~17 minutes, perfect for slow filter-cutoff sweeps and pad-style
+  evolution; the existing 20 Hz top end is unchanged. 1 Hz still sits at
+  the centre of the dial. The rate readout adapts: "Hz" up top, "s" or
+  "min" at the slow end, so "0.005 Hz" reads as "3.3 min" instead.
+- **TIME knob goes down to 0.5 ms** (was 20 ms). The free-mode delay now
+  covers the full short-time territory: sub-millisecond flanger, ~5-30 ms
+  chorus, ~80-200 ms slapback, all the way up to the existing 8 s long-tail
+  range. The dial is log-skewed so 100 ms sits at the centre, and the value
+  popup shows "0.50 ms" / "375 ms" / "1.20 s" depending on magnitude.
+- Knob step is now 0.01 ms (was 0.1) so sub-ms values can be dialled in
+  precisely. The engine already supported fractional-sample reads through
+  Catmull-Rom interpolation, so sub-ms delays sound clean rather than
+  quantised.
+
+### Wired with the rest of the plugin
+- Combine with the mod matrix: route LFO 1 → Delay Time at low LFO rates
+  (0.1-1 Hz, sine or triangle, depth 1.0) for chorus-style detuning on top
+  of a 10 ms base. The existing 450 ms master-time capstan smoother
+  intentionally limits how fast delay-time modulation lands — gentle
+  chorus rates work; aggressive flanger rates (>2 Hz LFO) get smoothed.
+  A separate fast-mod path that bypasses the capstan smoother is queued
+  for a follow-up commit if needed.
+
 ## [0.9.0] — 2026-05-28
 
 ### Added

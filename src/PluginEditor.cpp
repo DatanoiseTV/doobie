@@ -102,12 +102,14 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
     kTime.attach     (*this, state, dID::timeMs,   "TIME",     amber());
     kFeedback.attach (*this, state, dID::feedback, "FEEDBACK", amber());
 
-    // Show the TIME knob's value as "375 ms" or "1.20 s" rather than a raw
-    // float — useful in free mode where the user is dialling milliseconds in.
+    // Show the TIME knob's value as a friendly string: "0.50 ms" for flanger
+    // / chorus territory, "375 ms" for slapback / dub, "1.20 s" for long
+    // tails. Sub-ms gets two decimal places so the dial reads meaningfully
+    // down to 0.5 ms (the minimum since v0.10).
     kTime.slider.textFromValueFunction = [] (double ms)
     {
-        if (ms < 1000.0)
-            return juce::String ((int) std::round (ms)) + " ms";
+        if (ms < 1.0)    return juce::String (ms, 2) + " ms";
+        if (ms < 1000.0) return juce::String ((int) std::round (ms)) + " ms";
         return juce::String (ms / 1000.0, 2) + " s";
     };
     kTime.slider.updateText();
@@ -242,6 +244,22 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
     kLfo2Rate.attach    (*this, state, dID::lfo2Rate,   "RATE",  teal());
     kLfo2Depth.attach   (*this, state, dID::lfo2Depth,  "DEPTH", teal());
     cbLfo2Wave.attach   (*this, state, dID::lfo2Wave,   "WAVE",  dID::lfoWaveChoices);
+
+    // Friendly rate display: Hz for fast LFOs, seconds / minutes for the very
+    // slow end (where reading "0.005 Hz" is less useful than "3.3 min").
+    auto rateFormat = [] (double hz)
+    {
+        if (hz >= 1.0)  return juce::String (hz, 2) + " Hz";
+        if (hz >= 0.1)  return juce::String (hz, 3) + " Hz";
+        if (hz >= 0.01) return juce::String (hz, 4) + " Hz";
+        const double periodSec = 1.0 / juce::jmax (hz, 1.0e-5);
+        if (periodSec < 60.0) return juce::String (periodSec, 1) + " s";
+        return juce::String (periodSec / 60.0, 1) + " min";
+    };
+    kLfo1Rate.slider.textFromValueFunction = rateFormat;
+    kLfo2Rate.slider.textFromValueFunction = rateFormat;
+    kLfo1Rate.slider.updateText();
+    kLfo2Rate.slider.updateText();
     kEnvAttack.attach   (*this, state, dID::envAttack,  "ATK",   teal());
     kEnvRelease.attach  (*this, state, dID::envRelease, "REL",   teal());
     kEnvSens.attach     (*this, state, dID::envSens,    "SENS",  teal());

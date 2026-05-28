@@ -37,7 +37,15 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     // ---- Delay --------------------------------------------------------------
     layout.add (std::make_unique<ChoiceParam> (pid (dID::delayMode), "Character", dID::delayModeChoices, 1));
     layout.add (std::make_unique<BoolParam> (pid (dID::syncMode), "Sync", true));
-    layout.add (std::make_unique<FloatParam> (pid (dID::timeMs), "Time", Range (20.0f, 8000.0f, 0.1f, 0.30f), 375.0f));
+    {
+        // 0.5..8000 ms covers flanger (sub-millisecond up to ~10 ms),
+        // chorus (10..30 ms), slapback (~100 ms) and the long dub-delay
+        // territory in one log-skewed knob. The skew is set so 100 ms sits
+        // at the centre of the dial.
+        Range timeRange (0.5f, 8000.0f, 0.01f);
+        timeRange.setSkewForCentre (100.0f);
+        layout.add (std::make_unique<FloatParam> (pid (dID::timeMs), "Time", timeRange, 375.0f));
+    }
     layout.add (std::make_unique<ChoiceParam> (pid (dID::syncDiv), "Division", dID::syncDivChoices, 10));
     layout.add (std::make_unique<FloatParam> (pid (dID::feedback), "Feedback", Range (0.0f, 1.2f, 0.001f), 0.4f));
     layout.add (std::make_unique<BoolParam> (pid (dID::pingPong), "Ping-Pong", false));
@@ -93,7 +101,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
 
     // ---- Modulation matrix --------------------------------------------------
     {
-        Range lfoRateRange  (0.05f, 20.0f, 0.001f);
+        // 0.001..20 Hz: at the slow end one cycle takes ~17 minutes (multi-
+        // minute pad-style sweeps), at the fast end 50 ms (tremolo / fast
+        // flanger LFO). 1 Hz sits at the centre of the dial.
+        Range lfoRateRange  (0.001f, 20.0f, 0.0001f);
         lfoRateRange.setSkewForCentre (1.0f);
         Range envAtkRange   (0.1f, 500.0f, 0.1f);
         envAtkRange.setSkewForCentre (20.0f);
@@ -112,7 +123,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
 
         const juce::StringArray sourceChoices = doobie::modSourceNames();
         const juce::StringArray destChoices   = doobie::modDestNames();
-        for (int i = 0; i < 4; ++i)
+        for (int i = 0; i < doobie::kNumModSlots; ++i)
         {
             const auto n = juce::String (i + 1);
             layout.add (std::make_unique<ChoiceParam> (pid (dID::modSlotSrc[(size_t) i]), "Mod " + n + " Source",      sourceChoices, 0));

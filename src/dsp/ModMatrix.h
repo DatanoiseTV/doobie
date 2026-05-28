@@ -32,7 +32,7 @@ namespace doobie
 // the envelope follower (0..1). The amount knob (-1..+1) flips polarity for
 // the env source, so a positive amount on Env → Duck gives the obvious
 // sidechain feel: louder input ⇒ more duck ⇒ quieter wet.
-constexpr int kNumModSlots = 4;
+constexpr int kNumModSlots = 8;
 
 enum class ModSource : int { Off = 0, Lfo1, Lfo2, Env, Count };
 
@@ -66,6 +66,10 @@ enum class ModDest : int
     SpringDecay,       // ±0.5
     SpringTone,        // ±0.5
     IRGain,            // ±12 dB
+    // Per-head pan / time appended last so existing saved slot indices
+    // (Off=0..IRGain) keep their meaning.
+    Head1Pan,   Head2Pan,   Head3Pan,   Head4Pan,    // ±1.0
+    Head1Ratio, Head2Ratio, Head3Ratio, Head4Ratio,  // ±0.3 around base, clamped
     Count
 };
 
@@ -85,7 +89,9 @@ inline juce::StringArray modDestNames()
         "Head 1 Level", "Head 2 Level", "Head 3 Level", "Head 4 Level",
         "Reverb Mix", "Reverb Mod",
         "Plate Decay", "Plate Size", "Plate Damp", "Plate Predelay",
-        "Spring Decay", "Spring Tone", "IR Gain"
+        "Spring Decay", "Spring Tone", "IR Gain",
+        "Head 1 Pan", "Head 2 Pan", "Head 3 Pan", "Head 4 Pan",
+        "Head 1 Time", "Head 2 Time", "Head 3 Time", "Head 4 Time"
     };
 }
 
@@ -156,6 +162,14 @@ inline void applyModSlot (EngineParams& p, const ModSlot& slot, const ModSourceV
         case ModDest::SpringDecay:   add (p.springDecay, 0.5f * k, 0.0f, 1.0f); break;
         case ModDest::SpringTone:    add (p.springTone,  0.5f * k, 0.0f, 1.0f); break;
         case ModDest::IRGain:        p.irGain *= juce::Decibels::decibelsToGain (12.0f * k); break;
+        case ModDest::Head1Pan:      add (p.headPan[0],  1.0f * k, -1.0f, 1.0f); break;
+        case ModDest::Head2Pan:      add (p.headPan[1],  1.0f * k, -1.0f, 1.0f); break;
+        case ModDest::Head3Pan:      add (p.headPan[2],  1.0f * k, -1.0f, 1.0f); break;
+        case ModDest::Head4Pan:      add (p.headPan[3],  1.0f * k, -1.0f, 1.0f); break;
+        case ModDest::Head1Ratio:    add (p.headRatio[0], 0.3f * k, 0.05f, 1.0f); break;
+        case ModDest::Head2Ratio:    add (p.headRatio[1], 0.3f * k, 0.05f, 1.0f); break;
+        case ModDest::Head3Ratio:    add (p.headRatio[2], 0.3f * k, 0.05f, 1.0f); break;
+        case ModDest::Head4Ratio:    add (p.headRatio[3], 0.3f * k, 0.05f, 1.0f); break;
         case ModDest::Off:
         case ModDest::Count:
         default: break;

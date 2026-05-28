@@ -97,14 +97,18 @@ namespace dID
     inline constexpr auto envRelease = "envRelease";  // ms
     inline constexpr auto envSens    = "envSens";     // dB
 
-    // Per-slot triples (source, destination, amount). kNumModSlots in
-    // ModMatrix.h must match the array size here.
-    inline constexpr std::array<const char*, 4> modSlotSrc {
-        "mod1Src", "mod2Src", "mod3Src", "mod4Src" };
-    inline constexpr std::array<const char*, 4> modSlotDst {
-        "mod1Dst", "mod2Dst", "mod3Dst", "mod4Dst" };
-    inline constexpr std::array<const char*, 4> modSlotAmt {
-        "mod1Amt", "mod2Amt", "mod3Amt", "mod4Amt" };
+    // Per-slot triples (source, destination, amount). The array size MUST
+    // match kNumModSlots in dsp/ModMatrix.h. Appending here (mod5..8) keeps
+    // existing saved slot indices for slots 1..4 stable.
+    inline constexpr std::array<const char*, 8> modSlotSrc {
+        "mod1Src", "mod2Src", "mod3Src", "mod4Src",
+        "mod5Src", "mod6Src", "mod7Src", "mod8Src" };
+    inline constexpr std::array<const char*, 8> modSlotDst {
+        "mod1Dst", "mod2Dst", "mod3Dst", "mod4Dst",
+        "mod5Dst", "mod6Dst", "mod7Dst", "mod8Dst" };
+    inline constexpr std::array<const char*, 8> modSlotAmt {
+        "mod1Amt", "mod2Amt", "mod3Amt", "mod4Amt",
+        "mod5Amt", "mod6Amt", "mod7Amt", "mod8Amt" };
 
     inline const juce::StringArray lfoWaveChoices {
         "Sine", "Triangle", "Saw Up", "Saw Down", "Square", "Random S&H"
