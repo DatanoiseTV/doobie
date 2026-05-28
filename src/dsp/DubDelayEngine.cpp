@@ -63,6 +63,9 @@ void DubDelayEngine::prepare (double sr, int maxBlockSize)
     smoothedOut.reset (sr, 0.02);
     smoothedInGain.reset (sr, 0.02);
     smoothedWidth.reset (sr, 0.05);
+    smoothedRevMix.reset (sr, 0.02);   // reverb wet/dry knob — click-prone
+    smoothedDrive.reset  (sr, 0.03);   // saturation drive — tanh curve step
+    smoothedAge.reset    (sr, 0.05);   // AGE macro fans out to several places
 
     for (int i = 0; i < 4; ++i)
     {
@@ -77,6 +80,9 @@ void DubDelayEngine::prepare (double sr, int maxBlockSize)
     smoothedOut.setCurrentAndTargetValue (params.outGain);
     smoothedInGain.setCurrentAndTargetValue (params.inputGain);
     smoothedWidth.setCurrentAndTargetValue (params.width);
+    smoothedRevMix.setCurrentAndTargetValue (params.reverbMix);
+    smoothedDrive.setCurrentAndTargetValue  (params.drive);
+    smoothedAge.setCurrentAndTargetValue    (params.age);
 
     // Gentle (5 Hz) in the feedback loop so dub sub-bass survives many passes
     // while DC still can't accumulate; the wet output is single-pass, so 8 Hz.
@@ -190,17 +196,19 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
     smoothedOut.setTargetValue (params.outGain);
     smoothedInGain.setTargetValue (params.inputGain);
     smoothedWidth.setTargetValue (params.width);
+    smoothedRevMix.setTargetValue (params.reverbMix);
+    smoothedDrive.setTargetValue  (params.drive);
+    smoothedAge.setTargetValue    (params.age);
 
     toneL.update (params.bass, params.treble, params.hpFreq, params.lpFreq);
     toneR.update (params.bass, params.treble, params.hpFreq, params.lpFreq);
     preToneL.update (params.preBass, params.preTreble, params.preHp, params.preLp);
     preToneR.update (params.preBass, params.preTreble, params.preHp, params.preLp);
-    satL.setDrive (params.drive);
-    satR.setDrive (params.drive);
-
-    // AGE feeds extra transport instability into wow/flutter on top of their
-    // own knobs, so an old tape wobbles even when wow/flutter are low.
-    tapeAge.setAmount (params.age);
+    // satL/R drive and tapeAge amount are pulled from their smoothers inside
+    // the per-sample loop so knob twiddles ramp instead of stepping. The
+    // wowFlutter targets are set per block (its own internal smoothing is
+    // slow enough that block-rate updates are imperceptible).
+    tapeAge.setAmount (params.age);  // initialise for wowBoost computation below
     wowFlutter.setAmounts (std::clamp (params.wow     + tapeAge.wowBoost(),     0.0f, 1.5f),
                            std::clamp (params.flutter + tapeAge.flutterBoost(), 0.0f, 1.5f));
 
@@ -209,6 +217,8 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
     hall.setParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
     // In shimmer mode the MOD control sets the octave regeneration amount.
     shimmer.setParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
+    // IR makeup gain (per-sample smoothed inside the wrapper).
+    conv.setGain (params.irGain);
 
     // Per-head targets. A head that is off (or at zero level) targets zero gain
     // and the smoother ramps it out instead of cutting it dead.
@@ -222,8 +232,8 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
     }
 
     const bool  reverbOn  = params.reverbMode != 0;
-    const float revMix    = params.reverbMix;
-    const float hissLevel = tapeAge.hissLevel();
+    // revMix and hissLevel are now pulled per-sample (the smoothed reverb mix
+    // and the AGE-driven hiss level) so they ramp on knob changes.
 
     // Per-character filter coefficients.
     const float tapeWarmCoef = 1.0f - std::exp (-6.2831853f * 180.0f  / (float) sampleRate); // head-bump band
@@ -303,6 +313,16 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
 
         const float dryL = L[n];
         const float dryR = stereo ? R[n] : L[n];
+
+        // Pull the per-sample smoothed values for the click-prone params and
+        // push them into their consumers, so knob changes ramp instead of
+        // stepping. setDrive / setAmount are cheap (a handful of float ops).
+        const float driveNow = smoothedDrive.getNextValue();
+        satL.setDrive (driveNow);
+        satR.setDrive (driveNow);
+        tapeAge.setAmount (smoothedAge.getNextValue());
+        const float revMix    = smoothedRevMix.getNextValue();
+        const float hissLevel = tapeAge.hissLevel();
 
         // Pre-delay tone shaping applies in both modes: it shapes the input
         // going into the delay, or directly into the character chain when the

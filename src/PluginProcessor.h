@@ -19,11 +19,12 @@
 // Top-level plugin. Owns the parameter tree, resolves tempo-synced delay times
 // from the host transport, converts raw parameters into engine units, and hands
 // audio to the DubDelayEngine.
-class DoobieAudioProcessor : public juce::AudioProcessor
+class DoobieAudioProcessor : public juce::AudioProcessor,
+                             private juce::AudioProcessorValueTreeState::Listener
 {
 public:
     DoobieAudioProcessor();
-    ~DoobieAudioProcessor() override = default;
+    ~DoobieAudioProcessor() override;
 
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override {}
@@ -82,6 +83,11 @@ public:
 private:
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     void updateEngineParams();
+
+    // IR-speed changes need to re-load the IR with a different effective
+    // sample rate. That allocates inside JUCE Convolution, so it runs from
+    // the message thread via this listener rather than from processBlock.
+    void parameterChanged (const juce::String& parameterID, float newValue) override;
 
     juce::AudioProcessorValueTreeState apvts;
     doobie::DubDelayEngine engine;

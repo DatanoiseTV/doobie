@@ -13,8 +13,10 @@
 #pragma once
 
 #include <juce_dsp/juce_dsp.h>
+#include <juce_audio_formats/juce_audio_formats.h>
 #include <atomic>
 #include <array>
+#include <memory>
 #include <vector>
 
 namespace doobie
@@ -22,19 +24,29 @@ namespace doobie
 // Convolution-reverb wrapper that fits the per-sample API the engine's reverb
 // switch uses, on top of JUCE's block-oriented partitioned dsp::Convolution.
 //
-// The engine processes one sample at a time; partitioned convolution is much
-// happier with a block. We buffer kBlockSamples of incoming samples, run a
-// single convolution per block, and return one sample at a time from the
-// previous block's output. The cost is one block of latency on the reverb tail
-// (~1.5 ms at 44.1 kHz) — inaudible against a reverb tail of hundreds of ms,
-// and only on the wet path (the dry signal is unaffected).
+// The wrapper internally buffers kBlockSamples of incoming samples and runs a
+// single convolution per block, returning one sample at a time from the
+// previous block's output. That introduces one block of latency on the reverb
+// tail (~1.5 ms at 44.1 kHz) — inaudible against a reverb tail of hundreds of
+// ms, and only on the wet path (the dry signal is unaffected).
+//
+// Extras over a plain Convolution:
+//   * IR caching. The decoded IR samples + source rate are kept in memory so
+//     the speed control can re-load the IR without re-decoding the source.
+//   * IR gain. A smoothed multiplier on the wet output, so a quiet
+//     peak-normalised IR can be brought up to a useful level without leaning
+//     hard on the reverb MIX knob.
+//   * IR speed. The convolution is re-loaded with a lying source sample rate
+//     so JUCE's resampler stretches or compresses the IR (-2 .. +2 octaves):
+//     longer / shorter, lower / higher pitched. Cool FX, dirt-cheap.
 //
 // When no IR is loaded the wrapper returns the dry signal instantaneously, so
-// the engine's wet/dry mix collapses to dry rather than dropping level or
-// comb-filtering against a delayed pass-through.
+// the engine's wet/dry mix collapses to dry rather than dropping level.
 class ConvolutionReverb
 {
 public:
+    enum class Source { None, Factory, File };
+
     static constexpr int kBlockSamples = 64;
 
     ConvolutionReverb()
@@ -53,6 +65,15 @@ public:
             outBuf[(size_t) ch].assign ((size_t) kBlockSamples, 0.0f);
         }
         pos = 0;
+
+        smoothedGain.reset (sr, 0.02);            // ~20 ms: click-free gain ramps
+        smoothedGain.setCurrentAndTargetValue (1.0f);
+
+        if (! formatsRegistered)
+        {
+            formatManager.registerBasicFormats();  // WAV / AIFF / FLAC
+            formatsRegistered = true;
+        }
     }
 
     void reset() noexcept
@@ -66,66 +87,88 @@ public:
         pos = 0;
     }
 
-    enum class Source { None, Factory, File };
+    // ---- IR loading ---------------------------------------------------------
 
-    // Async / thread-safe: JUCE's Convolution swaps the IR atomically on a
-    // background loader thread, so this can be called from the message thread
-    // while audio is processing.
-    void loadFromFile (const juce::File& f)
+    bool loadFromFile (const juce::File& f)
     {
-        conv.loadImpulseResponse (f,
-                                  juce::dsp::Convolution::Stereo::yes,
-                                  juce::dsp::Convolution::Trim::yes,
-                                  0,
-                                  juce::dsp::Convolution::Normalise::yes);
+        std::unique_ptr<juce::AudioFormatReader> reader (formatManager.createReaderFor (f));
+        if (reader == nullptr || ! decodeFrom (*reader))
+            return false;
         loadedFile  = f;
         factoryIdx  = -1;
         displayName = f.getFileName();
         source.store (Source::File, std::memory_order_release);
-        loaded.store (true,         std::memory_order_release);
+        reloadFromCache();
+        return true;
     }
 
-    // Load from a raw WAV/AIFF/FLAC byte block (factory IRs come in through
-    // JUCE BinaryData). JUCE parses the audio format header itself, handles
-    // resampling to the processing rate, and swaps the IR atomically on its
-    // background loader thread. The data only needs to live until this call
-    // returns; for BinaryData blobs that's the lifetime of the executable.
-    void loadFromBinary (const void* sourceData, size_t sourceSize,
+    bool loadFromBinary (const void* data, size_t size,
                          int factoryIndex, const juce::String& label)
     {
-        conv.loadImpulseResponse (sourceData, sourceSize,
-                                  juce::dsp::Convolution::Stereo::yes,
-                                  juce::dsp::Convolution::Trim::yes,
-                                  0,
-                                  juce::dsp::Convolution::Normalise::yes);
+        auto stream = std::make_unique<juce::MemoryInputStream> (data, size, false);
+        std::unique_ptr<juce::AudioFormatReader> reader (formatManager.createReaderFor (std::move (stream)));
+        if (reader == nullptr || ! decodeFrom (*reader))
+            return false;
         loadedFile  = juce::File();
         factoryIdx  = factoryIndex;
         displayName = label;
         source.store (Source::Factory, std::memory_order_release);
-        loaded.store (true,            std::memory_order_release);
+        reloadFromCache();
+        return true;
     }
 
     void clear() noexcept
     {
-        loaded.store (false, std::memory_order_release);
         source.store (Source::None, std::memory_order_release);
         loadedFile  = juce::File();
         factoryIdx  = -1;
         displayName = juce::String();
+        cachedBuffer.setSize (0, 0);
     }
 
-    bool         hasIR()           const noexcept { return loaded.load (std::memory_order_acquire); }
+    // Reload the current IR with a different playback speed multiplier
+    // (0.25 = half speed = an octave down + double length; 4.0 = quad speed =
+    // two octaves up + quarter length). 1.0 is normal. Not real-time safe: do
+    // not call from the audio thread — wire it through an APVTS listener.
+    bool setSpeed (float speed)
+    {
+        const float clamped = juce::jlimit (0.25f, 4.0f, speed);
+        if (std::abs (clamped - currentSpeed) < 1.0e-4f)
+            return false;
+        currentSpeed = clamped;
+        if (source.load (std::memory_order_acquire) == Source::None)
+            return false;
+        reloadFromCache();
+        return true;
+    }
+    float getSpeed() const noexcept { return currentSpeed; }
+
+    // Output gain on the wet (post-convolution) signal, in linear units.
+    // Smoothed per-sample so knob twiddling doesn't click. Real-time safe.
+    void setGain (float linearGain) noexcept
+    {
+        smoothedGain.setTargetValue (linearGain);
+    }
+
+    // ---- Queries ------------------------------------------------------------
+
+    bool         hasIR()           const noexcept { return source.load (std::memory_order_acquire) != Source::None; }
     Source       getSource()       const noexcept { return source.load (std::memory_order_acquire); }
     int          getFactoryIndex() const noexcept { return factoryIdx; }
     juce::File   getLoadedFile()   const          { return loadedFile; }
     juce::String getDisplayName()  const          { return displayName; }
 
+    // ---- Audio process ------------------------------------------------------
+
     inline void process (float l, float r, float& outL, float& outR) noexcept
     {
-        if (! loaded.load (std::memory_order_relaxed))
+        // Advance the gain smoother every sample regardless, so it tracks the
+        // host's parameter changes even when bypassed.
+        const float g = smoothedGain.getNextValue();
+
+        if (source.load (std::memory_order_relaxed) == Source::None)
         {
-            // No IR: dry pass-through with zero latency so the engine's mix
-            // formula collapses to dry instead of dropping level / comb-filtering.
+            // No IR: dry pass-through with zero latency.
             outL = l;
             outR = r;
             return;
@@ -133,8 +176,8 @@ public:
 
         inBuf[0][(size_t) pos] = l;
         inBuf[1][(size_t) pos] = r;
-        outL = outBuf[0][(size_t) pos];
-        outR = outBuf[1][(size_t) pos];
+        outL = outBuf[0][(size_t) pos] * g;
+        outR = outBuf[1][(size_t) pos] * g;
         ++pos;
 
         if (pos >= kBlockSamples)
@@ -143,7 +186,7 @@ public:
             juce::dsp::AudioBlock<float> block (channels, 2, (size_t) kBlockSamples);
             juce::dsp::ProcessContextReplacing<float> ctx (block);
             conv.process (ctx);
-            // The block was processed in-place; swap so next round overwrites it.
+            // Result is in-place in inBuf; swap so the next round overwrites it.
             std::swap (inBuf[0], outBuf[0]);
             std::swap (inBuf[1], outBuf[1]);
             pos = 0;
@@ -151,11 +194,47 @@ public:
     }
 
 private:
+    bool decodeFrom (juce::AudioFormatReader& reader)
+    {
+        const auto len   = (int) juce::jmax<juce::int64> (0, reader.lengthInSamples);
+        const int  numCh = (int) juce::jmin<unsigned int> (2u, reader.numChannels);
+        if (len <= 0 || numCh < 1)
+            return false;
+        cachedBuffer.setSize (numCh, len, false, true, true);
+        reader.read (&cachedBuffer, 0, len, 0, true, numCh > 1);
+        cachedSourceSr = reader.sampleRate;
+        return true;
+    }
+
+    void reloadFromCache()
+    {
+        if (cachedBuffer.getNumSamples() == 0)
+            return;
+        // loadImpulseResponse takes the buffer by rvalue (consumes it); we want
+        // to keep the cache so the next speed change can re-load.
+        juce::AudioBuffer<float> copy (cachedBuffer.getNumChannels(), cachedBuffer.getNumSamples());
+        copy.makeCopyOf (cachedBuffer);
+        const double effectiveSr = cachedSourceSr * (double) currentSpeed;
+        conv.loadImpulseResponse (std::move (copy), effectiveSr,
+                                  juce::dsp::Convolution::Stereo::yes,
+                                  juce::dsp::Convolution::Trim::yes,
+                                  juce::dsp::Convolution::Normalise::yes);
+    }
+
     juce::dsp::Convolution conv;
     double sampleRate = 44100.0;
     std::array<std::vector<float>, 2> inBuf, outBuf;
     int pos = 0;
-    std::atomic<bool>   loaded { false };
+
+    juce::AudioFormatManager formatManager;
+    bool formatsRegistered = false;
+
+    juce::AudioBuffer<float> cachedBuffer;
+    double cachedSourceSr = 44100.0;
+    float  currentSpeed   = 1.0f;
+
+    juce::SmoothedValue<float> smoothedGain { 1.0f };
+
     std::atomic<Source> source { Source::None };
     juce::File          loadedFile;
     int                 factoryIdx  = -1;

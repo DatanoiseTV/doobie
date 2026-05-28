@@ -91,6 +91,17 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     layout.add (std::make_unique<FloatParam> (pid (dID::platePredelay), "Plate Pre-delay", Range (0.0f, 200.0f, 0.1f), 20.0f));
     layout.add (std::make_unique<FloatParam> (pid (dID::reverbMod),     "Reverb Mod", Range (0.0f, 1.0f, 0.001f), 0.3f));
 
+    // ---- IR controls (Convolution mode) -------------------------------------
+    // Gain compensates for peak-normalised IRs that sound quiet against the
+    // dry signal; speed lies about the source sample rate to stretch / squash
+    // the IR through JUCE's resampler — a -2 / +2 octave IR-playback effect.
+    {
+        Range irSpeedRange (0.25f, 4.0f, 0.001f);
+        irSpeedRange.setSkewForCentre (1.0f);
+        layout.add (std::make_unique<FloatParam> (pid (dID::irGain),  "IR Gain",  Range (-24.0f, 24.0f, 0.1f), 6.0f));
+        layout.add (std::make_unique<FloatParam> (pid (dID::irSpeed), "IR Speed", irSpeedRange, 1.0f));
+    }
+
     return layout;
 }
 
@@ -101,6 +112,20 @@ DoobieAudioProcessor::DoobieAudioProcessor()
       apvts (*this, nullptr, "PARAMS", createParameterLayout()),
       presetManager (apvts)
 {
+    apvts.addParameterListener (dID::irSpeed, this);
+}
+
+DoobieAudioProcessor::~DoobieAudioProcessor()
+{
+    apvts.removeParameterListener (dID::irSpeed, this);
+}
+
+void DoobieAudioProcessor::parameterChanged (const juce::String& parameterID, float newValue)
+{
+    // Called on the message thread when irSpeed moves. Reload the IR at the
+    // new effective sample rate so the rest of the chain hears the new length.
+    if (parameterID == dID::irSpeed)
+        engine.setIRSpeed (newValue);
 }
 
 bool DoobieAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -183,6 +208,7 @@ void DoobieAudioProcessor::updateEngineParams()
     p.hpFreq = raw (dID::hpFreq);
     p.lpFreq = raw (dID::lpFreq);
 
+    p.irGain      = juce::Decibels::decibelsToGain (raw (dID::irGain));
     p.reverbMode  = (int) raw (dID::reverbMode);
     p.reverbRoute = (int) raw (dID::reverbRoute);
     p.reverbMix   = raw (dID::reverbMix);
@@ -230,6 +256,9 @@ void DoobieAudioProcessor::loadIR (const juce::File& f)
     if (! f.existsAsFile())
         return;
     engine.loadIR (f);
+    // Apply the current speed setting to the freshly-loaded IR.
+    if (auto* p = apvts.getRawParameterValue (dID::irSpeed))
+        engine.setIRSpeed (p->load());
     apvts.state.setProperty (dID::irPathProperty, f.getFullPathName(), nullptr);
     apvts.state.setProperty (dID::factoryIrIndexProperty, -1, nullptr); // file IR wins
 }
@@ -238,6 +267,8 @@ void DoobieAudioProcessor::loadFactoryIR (int index)
 {
     if (! engine.loadFactoryIR (index))
         return;
+    if (auto* p = apvts.getRawParameterValue (dID::irSpeed))
+        engine.setIRSpeed (p->load());
     apvts.state.setProperty (dID::factoryIrIndexProperty, index, nullptr);
     apvts.state.setProperty (dID::irPathProperty, juce::String(), nullptr);  // factory IR wins
 }

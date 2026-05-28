@@ -79,6 +79,8 @@ namespace dID
     inline constexpr auto plateDamp     = "plateDamp";
     inline constexpr auto platePredelay = "platePredelay";
     inline constexpr auto reverbMod     = "reverbMod";
+    inline constexpr auto irGain        = "irGain";    // dB, makeup gain on the convolution wet
+    inline constexpr auto irSpeed       = "irSpeed";   // playback speed multiplier (0.25..4.0)
 
     // ---- Fixed option lists (UI and DSP read the same arrays) --------------
     inline const juce::StringArray syncModeChoices { "Free", "Sync" };

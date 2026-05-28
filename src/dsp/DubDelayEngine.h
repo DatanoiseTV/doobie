@@ -70,6 +70,7 @@ struct EngineParams
     float reverbMix   = 0.25f;
     float springDecay = 0.5f, springTone = 0.5f;
     float plateDecay = 0.6f, plateSize = 0.6f, plateDamp = 0.4f, platePredelay = 20.0f, plateMod = 0.3f;
+    float irGain     = 1.0f;  // linear makeup gain on the convolution wet
 };
 
 // The complete dub delay: a stereo multi-head tape echo whose feedback path
@@ -97,6 +98,11 @@ public:
     void       clearIR()                    { conv.clear(); }
     bool       hasIR() const                { return conv.hasIR(); }
     juce::File getLoadedIRFile() const      { return conv.getLoadedFile(); }
+
+    // Message-thread only (allocates inside JUCE Convolution): reload the
+    // currently-loaded IR at a new playback speed (0.25..4.0). Cheap if the
+    // speed hasn't actually moved.
+    void setIRSpeed (float speed)           { conv.setSpeed (speed); }
 
     // Load one of the bundled factory IRs (Voxengo's free pack). Decoded from
     // a BinaryData WAV blob on the message thread, then installed atomically
@@ -149,6 +155,10 @@ private:
     // sounds like a tape capstan easing to a new speed rather than a linear jump.
     juce::SmoothedValue<double, juce::ValueSmoothingTypes::Multiplicative> smoothedDelay;
     juce::SmoothedValue<float>  smoothedFeedback, smoothedMix, smoothedOut, smoothedInGain, smoothedWidth;
+    // Smoothers for the params most prone to clicks/zipper noise when twiddled:
+    // the reverb wet/dry (used three times per sample), the saturation drive
+    // (a tanh curve step is audible) and the AGE macro (hiss + dropouts).
+    juce::SmoothedValue<float>  smoothedRevMix, smoothedDrive, smoothedAge;
 
     // Per-head smoothing kills the clicks that raw control steps would cause:
     // gain ramps a head in/out when the matrix toggles (no on/off click), pan

@@ -4,6 +4,38 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] — 2026-05-28
+
+### Added
+- **IR GAIN** (-24 dB ... +24 dB, default +6 dB). JUCE Convolution normalises
+  IRs to peak=1, which makes long reverb tails sit quietly relative to the
+  dry signal; this makeup gain brings the wet up to a useful level without
+  leaning on the reverb MIX. Smoothed per-sample inside the convolution
+  wrapper so twiddling doesn't click.
+- **IR SPEED** (0.25x ... 4x, default 1x). Re-loads the current IR with a
+  lying source sample rate so JUCE's resampler stretches or compresses it
+  — a -2 / +2 octave IR-playback FX. 0.5x = an octave down + double length;
+  2x = an octave up + half length. Triggered via APVTS listener on the
+  message thread (loading inside JUCE Convolution allocates, so not
+  real-time safe).
+- Both knobs appear in the reverb panel only when REVERB == Convolution;
+  they share the slots normally occupied by MOD and PRE (which are inactive
+  in convolution mode anyway).
+
+### Changed
+- **Smoothed the click-prone params.** REVERB MIX, SATURATION drive and the
+  AGE macro are now pulled per-sample from smoothers (20-50 ms ramp) instead
+  of stepping per block. Twiddling these knobs (or automating them) no
+  longer clicks. The tone-filter cutoffs and shelves still update per block
+  — that smoothing is queued for the planned mod-matrix work, which will
+  need finer filter modulation anyway.
+
+### Note
+- Two larger features were explicitly requested in the same conversation but
+  are NOT in this release: (a) full filter-param smoothing on a sub-block
+  cadence, (b) a 2-LFO + envelope-follower modulation matrix. Both are queued
+  for follow-up commits.
+
 ## [0.6.0] — 2026-05-28
 
 ### Added

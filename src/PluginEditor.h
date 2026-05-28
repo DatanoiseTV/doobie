@@ -94,6 +94,9 @@ private:
     // Reverb.
     Combo cbReverbMode, cbReverbRoute;
     Knob kRevMix, kSpringDecay, kSpringTone, kPlateDecay, kPlateSize, kPlateDamp, kPlatePre, kRevMod;
+    // Convolution-mode knobs that swap into the kRevMod / kPlatePre slots when
+    // REVERB == Convolution (those algorithmic knobs do nothing in that mode).
+    Knob kIrGain, kIrSpeed;
 
     // Convolution IR controls — visible only when REVERB == Convolution.
     // The combo selects a built-in IR ("Small Room", "Hall", "Cathedral", ...)

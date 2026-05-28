@@ -166,6 +166,8 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
     kPlateDamp.attach   (*this, state, dID::plateDamp,     "DAMP",    teal());
     kPlatePre.attach    (*this, state, dID::platePredelay, "PRE",     teal());
     kRevMod.attach      (*this, state, dID::reverbMod,     "MOD",     teal());
+    kIrGain.attach      (*this, state, dID::irGain,        "IR GAIN", teal());
+    kIrSpeed.attach     (*this, state, dID::irSpeed,       "IR SPEED", teal());
 
     // Output.
     // IR controls for the Convolution reverb mode.
@@ -323,10 +325,22 @@ void DoobieAudioProcessorEditor::timerCallback()
             cbFactoryIr.setSelectedId (target, juce::dontSendNotification);
     }
     const float convAlpha = conv ? 0.4f : 1.0f;
-    for (auto* k : { &kSpringDecay, &kSpringTone, &kPlateDecay, &kPlateSize, &kPlateDamp, &kPlatePre, &kRevMod })
+    for (auto* k : { &kSpringDecay, &kSpringTone, &kPlateDecay, &kPlateSize, &kPlateDamp })
     {
         k->slider.setEnabled (! conv);
         k->slider.setAlpha (convAlpha);
+    }
+    // The MOD / PRE slots host the convolution-mode IR GAIN / IR SPEED knobs —
+    // swap visibility instead of just greying.
+    for (auto* k : { &kRevMod, &kPlatePre })
+    {
+        k->slider.setVisible (! conv);
+        k->caption.setVisible (! conv);
+    }
+    for (auto* k : { &kIrGain, &kIrSpeed })
+    {
+        k->slider.setVisible (conv);
+        k->caption.setVisible (conv);
     }
 
     // Keep the preset box reflecting external/program changes.
@@ -573,8 +587,28 @@ void DoobieAudioProcessorEditor::resized()
         rv.removeFromBottom (6);
 
         auto r1 = rv.removeFromTop (rv.getHeight() / 2);
-        rowOf (r1, { &kRevMix, &kSpringDecay, &kSpringTone, &kRevMod });
-        rowOf (rv, { &kPlateDecay, &kPlateSize, &kPlateDamp, &kPlatePre });
+        // Place the algorithmic knobs and the convolution-mode knobs in the
+        // same slots — visibility (toggled in timerCallback) picks which one
+        // renders. The kIrGain knob shares kRevMod's slot, kIrSpeed shares
+        // kPlatePre's. The two pairs never display simultaneously.
+        const int slotW1 = r1.getWidth() / 4;
+        kRevMix.place      (r1.removeFromLeft (slotW1).reduced (3, 0));
+        kSpringDecay.place (r1.removeFromLeft (slotW1).reduced (3, 0));
+        kSpringTone.place  (r1.removeFromLeft (slotW1).reduced (3, 0));
+        {
+            auto slot = r1.reduced (3, 0);
+            kRevMod.place  (slot);
+            kIrGain.place  (slot);
+        }
+        const int slotW2 = rv.getWidth() / 4;
+        kPlateDecay.place (rv.removeFromLeft (slotW2).reduced (3, 0));
+        kPlateSize.place  (rv.removeFromLeft (slotW2).reduced (3, 0));
+        kPlateDamp.place  (rv.removeFromLeft (slotW2).reduced (3, 0));
+        {
+            auto slot = rv.reduced (3, 0);
+            kPlatePre.place (slot);
+            kIrSpeed.place  (slot);
+        }
     }
 
     // ---- Output bar ---------------------------------------------------------
