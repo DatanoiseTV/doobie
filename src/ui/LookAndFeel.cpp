@@ -14,21 +14,33 @@
 
 namespace doobie
 {
+// The cassette-deck look: near-black panels, cream-rim controls echoing the
+// cassette's reel flanges + idler rollers, amber kept only as a small
+// "lit LED" accent (knob value-tick, toggle dot, head-pad fill) so live
+// state still pops against the monochrome chrome.
+
 DoobieLookAndFeel::DoobieLookAndFeel()
 {
     setColour (juce::ResizableWindow::backgroundColourId, colours::panel());
-    setColour (juce::Slider::textBoxTextColourId, colours::amber());
+    setColour (juce::Slider::textBoxTextColourId, colours::cream());
     setColour (juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
     setColour (juce::Label::textColourId, colours::cream());
-    setColour (juce::ComboBox::textColourId, colours::amber());
-    setColour (juce::ComboBox::backgroundColourId, colours::panelShadow());
+    setColour (juce::ComboBox::textColourId, colours::cream());
+    setColour (juce::ComboBox::backgroundColourId, colours::panelLight());
+    setColour (juce::ComboBox::outlineColourId, colours::line());
+    setColour (juce::ComboBox::arrowColourId, colours::cream());
     setColour (juce::PopupMenu::backgroundColourId, colours::panelLight());
-    setColour (juce::PopupMenu::highlightedBackgroundColourId, colours::amberDim());
+    setColour (juce::PopupMenu::highlightedBackgroundColourId,
+               colours::cream().withAlpha (0.18f));
     setColour (juce::PopupMenu::textColourId, colours::cream());
+    setColour (juce::PopupMenu::highlightedTextColourId, colours::cream());
 }
 
 juce::Colour DoobieLookAndFeel::accentFor (const juce::Component& c)
 {
+    // The accent is the lit-LED highlight. Default is amber (= a cassette
+    // deck's PLAY/REC LED); per-control overrides come from a "accent"
+    // property still set on the head pads so they keep their per-head tint.
     if (c.getProperties().contains ("accent"))
         return juce::Colour ((juce::uint32) (int) c.getProperties()["accent"]);
     return colours::amber();
@@ -42,72 +54,73 @@ void DoobieLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, int w
     const float radius = juce::jmin (bounds.getWidth(), bounds.getHeight()) * 0.5f;
     const auto  centre = bounds.getCentre();
     const float angle  = startAngle + sliderPos * (endAngle - startAngle);
-    const auto  accent = accentFor (slider);
+    juce::ignoreUnused (slider);
 
-    // Recessed seat the knob sits in.
-    g.setColour (colours::panelShadow());
-    g.fillEllipse (centre.x - radius, centre.y - radius, radius * 2.0f, radius * 2.0f);
-
-    // Value arc: dim track, then the lit portion with a soft glow underneath.
-    const float arcR = radius - 2.0f;
+    // ---- Value arc (faint outside the rim) ----------------------------------
+    const float arcR = radius - 1.5f;
     juce::Path track;
     track.addCentredArc (centre.x, centre.y, arcR, arcR, 0.0f, startAngle, endAngle, true);
     g.setColour (colours::line());
-    g.strokePath (track, juce::PathStrokeType (3.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    g.strokePath (track, juce::PathStrokeType (1.2f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
     juce::Path value;
     value.addCentredArc (centre.x, centre.y, arcR, arcR, 0.0f, startAngle, angle, true);
-    g.setColour (accent.withAlpha (0.28f));
-    g.strokePath (value, juce::PathStrokeType (8.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-    g.setColour (accent);
-    g.strokePath (value, juce::PathStrokeType (3.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    g.setColour (colours::cream().withAlpha (0.85f));
+    g.strokePath (value, juce::PathStrokeType (1.6f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
 
-    // Brushed-metal knob body, lit from the top-left.
-    const float knobR = radius * 0.72f;
-    juce::ColourGradient grad (colours::metal().brighter (0.35f), centre.x - knobR, centre.y - knobR,
-                               colours::metal().darker (0.55f),   centre.x + knobR, centre.y + knobR, false);
-    g.setGradientFill (grad);
+    // ---- Knob body: cassette-style cream rim with a dark inset --------------
+    const float knobR = radius * 0.78f;
+    g.setColour (colours::panel());
     g.fillEllipse (centre.x - knobR, centre.y - knobR, knobR * 2.0f, knobR * 2.0f);
 
-    g.setColour (juce::Colours::white.withAlpha (0.05f));
-    g.fillEllipse (centre.x - knobR * 0.8f, centre.y - knobR * 0.95f, knobR * 1.6f, knobR);
+    // Slight dome shading so the knob doesn't read as a flat hole — very subtle.
+    juce::ColourGradient dome (juce::Colour (0xff1a1814), centre.x - knobR * 0.3f, centre.y - knobR * 0.6f,
+                               juce::Colour (0xff050403), centre.x, centre.y + knobR, true);
+    g.setGradientFill (dome);
+    g.fillEllipse (centre.x - knobR * 0.95f, centre.y - knobR * 0.95f, knobR * 1.9f, knobR * 1.9f);
 
-    g.setColour (colours::panelShadow());
-    g.drawEllipse (centre.x - knobR, centre.y - knobR, knobR * 2.0f, knobR * 2.0f, 1.5f);
+    g.setColour (colours::cream());
+    g.drawEllipse (centre.x - knobR, centre.y - knobR, knobR * 2.0f, knobR * 2.0f, 1.2f);
+    g.setColour (colours::cream().withAlpha (0.18f));
+    g.drawEllipse (centre.x - knobR * 0.88f, centre.y - knobR * 0.88f, knobR * 1.76f, knobR * 1.76f, 0.8f);
 
-    // Pointer with a faint glowing tip.
+    // ---- Pointer (cream line + small amber lit tip) ------------------------
     juce::Path pointer;
-    const float pl = knobR * 0.94f;
-    pointer.startNewSubPath (0.0f, -knobR * 0.28f);
+    const float pl  = knobR * 0.86f;
+    const float pin = knobR * 0.30f;
+    pointer.startNewSubPath (0.0f, -pin);
     pointer.lineTo (0.0f, -pl);
     pointer.applyTransform (juce::AffineTransform::rotation (angle).translated (centre));
-    g.setColour (accent.withAlpha (0.35f));
-    g.strokePath (pointer, juce::PathStrokeType (6.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
     g.setColour (colours::cream());
-    g.strokePath (pointer, juce::PathStrokeType (2.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+    g.strokePath (pointer, juce::PathStrokeType (1.8f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+
+    // Centre dot, matching the cassette spindle / roller centres.
+    const float ctrR = 1.6f;
+    g.setColour (colours::cream());
+    g.fillEllipse (centre.x - ctrR, centre.y - ctrR, ctrR * 2.0f, ctrR * 2.0f);
 }
 
 void DoobieLookAndFeel::drawComboBox (juce::Graphics& g, int width, int height, bool,
                                       int, int, int, int, juce::ComboBox& box)
 {
     const auto bounds = juce::Rectangle<float> (0.0f, 0.0f, (float) width, (float) height).reduced (1.0f);
-    g.setColour (colours::panelShadow());
-    g.fillRoundedRectangle (bounds, 4.0f);
-    g.setColour (box.hasKeyboardFocus (false) ? colours::amberDim() : colours::line());
-    g.drawRoundedRectangle (bounds, 4.0f, 1.2f);
+    g.setColour (colours::panelLight());
+    g.fillRoundedRectangle (bounds, 3.0f);
+    g.setColour (box.hasKeyboardFocus (false) ? colours::cream() : colours::line());
+    g.drawRoundedRectangle (bounds, 3.0f, 1.0f);
 
-    // Amber drop arrow.
+    // Small cream drop arrow — no amber here, this is a passive selector.
     const float cx = (float) width - 14.0f;
     const float cy = (float) height * 0.5f;
     juce::Path arrow;
-    arrow.addTriangle (cx - 5.0f, cy - 3.0f, cx + 5.0f, cy - 3.0f, cx, cy + 4.0f);
-    g.setColour (colours::amber());
+    arrow.addTriangle (cx - 4.0f, cy - 2.5f, cx + 4.0f, cy - 2.5f, cx, cy + 3.5f);
+    g.setColour (colours::cream());
     g.fillPath (arrow);
 }
 
 juce::Font DoobieLookAndFeel::getComboBoxFont (juce::ComboBox&)
 {
-    return juce::Font (juce::FontOptions (14.0f)).withExtraKerningFactor (0.04f);
+    return juce::Font (juce::FontOptions (13.0f)).withExtraKerningFactor (0.06f);
 }
 
 void DoobieLookAndFeel::positionComboBoxText (juce::ComboBox& box, juce::Label& label)
@@ -120,71 +133,72 @@ void DoobieLookAndFeel::positionComboBoxText (juce::ComboBox& box, juce::Label& 
 void DoobieLookAndFeel::drawToggleButton (juce::Graphics& g, juce::ToggleButton& button,
                                           bool shouldDrawButtonAsHighlighted, bool)
 {
-    // Head-matrix pads: a square lit button with a big centred letter, glowing
-    // when the head is on. Flagged with the "pad" property by the editor.
+    // Head-matrix pads: square button, off = thin cream outline on black,
+    // on = solid cream fill with dark letter (mirrors how a cassette deck
+    // shows a selected source — flipped contrast, no amber wash).
     if (button.getProperties().contains ("pad"))
     {
-        const auto pad    = button.getLocalBounds().toFloat().reduced (3.0f);
+        auto       pad    = button.getLocalBounds().toFloat().reduced (3.0f);
         const auto accent = accentFor (button);
         const bool on     = button.getToggleState();
 
-        g.setColour (colours::panelShadow());
-        g.fillRoundedRectangle (pad.expanded (1.5f), 7.0f);
+        g.setColour (colours::panel());
+        g.fillRoundedRectangle (pad, 4.0f);
 
         if (on)
         {
-            g.setColour (accent.withAlpha (0.30f));
-            g.fillRoundedRectangle (pad.expanded (2.5f), 8.0f); // outer glow
+            // Solid cream face with a subtle amber inner glow at the top edge
+            // (= the "lit" LED reading through the face).
+            g.setColour (colours::cream());
+            g.fillRoundedRectangle (pad, 4.0f);
+            g.setColour (accent.withAlpha (0.18f));
+            auto top = pad;
+            g.fillRoundedRectangle (top.removeFromTop (pad.getHeight() * 0.4f), 4.0f);
         }
 
-        juce::ColourGradient face = on
-            ? juce::ColourGradient (accent.brighter (0.30f), pad.getTopLeft(),
-                                    accent.darker (0.30f),   pad.getBottomLeft(), false)
-            : juce::ColourGradient (colours::metal().brighter (0.18f), pad.getTopLeft(),
-                                    colours::metal().darker (0.45f),   pad.getBottomLeft(), false);
-        g.setGradientFill (face);
-        g.fillRoundedRectangle (pad, 6.0f);
-
         g.setColour (shouldDrawButtonAsHighlighted ? colours::cream()
-                                                   : (on ? accent.brighter (0.4f) : colours::line()));
-        g.drawRoundedRectangle (pad.reduced (0.5f), 6.0f, 1.4f);
+                                                   : (on ? colours::panel() : colours::line()));
+        g.drawRoundedRectangle (button.getLocalBounds().toFloat().reduced (3.0f), 4.0f, 1.2f);
 
         const auto letter = button.getProperties().getWithDefault ("headLetter", button.getButtonText()).toString();
-        g.setColour (on ? colours::panelShadow() : colours::cream().withAlpha (0.55f));
-        g.setFont (juce::Font (juce::FontOptions (pad.getHeight() * 0.42f)).withExtraKerningFactor (0.04f).boldened());
-        g.drawText (letter, pad, juce::Justification::centred, false);
+        const auto fullPad = button.getLocalBounds().toFloat().reduced (3.0f);
+        g.setColour (on ? colours::panel() : colours::cream().withAlpha (0.65f));
+        g.setFont (juce::Font (juce::FontOptions (fullPad.getHeight() * 0.42f)).withExtraKerningFactor (0.04f).boldened());
+        g.drawText (letter, fullPad, juce::Justification::centred, false);
 
-        g.setColour (on ? colours::panelShadow().withAlpha (0.7f) : colours::cream().withAlpha (0.35f));
-        g.setFont (juce::Font (juce::FontOptions (10.0f)).withExtraKerningFactor (0.12f));
-        g.drawText (on ? "ON" : "OFF", pad.reduced (0.0f, 6.0f).removeFromBottom (14.0f),
+        g.setColour (on ? colours::panel().withAlpha (0.7f) : colours::cream().withAlpha (0.35f));
+        g.setFont (juce::Font (juce::FontOptions (9.0f)).withExtraKerningFactor (0.14f));
+        g.drawText (on ? "ON" : "OFF", fullPad.reduced (0.0f, 6.0f).removeFromBottom (12.0f),
                     juce::Justification::centred, false);
         return;
     }
 
+    // Indicator-lamp toggles: small cassette-style roller — cream rim circle,
+    // dark inside when off, amber-lit dot when on. Label in cream beside it.
     const auto bounds = button.getLocalBounds().toFloat();
-    const float lampD = juce::jmin (16.0f, bounds.getHeight() - 4.0f);
+    const float lampD = juce::jmin (14.0f, bounds.getHeight() - 4.0f);
     const auto  lamp  = juce::Rectangle<float> (bounds.getX(), bounds.getCentreY() - lampD * 0.5f, lampD, lampD);
     const auto  accent = accentFor (button);
+    const bool  on     = button.getToggleState();
 
-    g.setColour (colours::panelShadow());
-    g.fillEllipse (lamp.expanded (1.5f));
-
-    if (button.getToggleState())
-    {
-        g.setColour (accent.withAlpha (0.30f));
-        g.fillEllipse (lamp.expanded (4.0f));
-        g.setColour (accent);
-    }
-    else
-    {
-        g.setColour (colours::metal().darker (0.2f));
-    }
+    g.setColour (colours::panel());
     g.fillEllipse (lamp);
-    g.setColour (juce::Colours::white.withAlpha (0.10f));
-    g.fillEllipse (lamp.reduced (lampD * 0.3f).translated (-1.0f, -1.0f));
+    g.setColour (colours::cream().withAlpha (on ? 1.0f : 0.65f));
+    g.drawEllipse (lamp, 1.2f);
 
-    g.setColour (shouldDrawButtonAsHighlighted ? colours::cream() : colours::cream().withAlpha (0.85f));
-    g.setFont (juce::Font (juce::FontOptions (13.0f)).withExtraKerningFactor (0.05f));
+    if (on)
+    {
+        const float dotD = lampD * 0.55f;
+        const auto dot = juce::Rectangle<float> (lamp.getCentreX() - dotD * 0.5f,
+                                                 lamp.getCentreY() - dotD * 0.5f, dotD, dotD);
+        g.setColour (accent.withAlpha (0.45f));
+        g.fillEllipse (dot.expanded (2.0f));
+        g.setColour (accent);
+        g.fillEllipse (dot);
+    }
+
+    g.setColour (shouldDrawButtonAsHighlighted ? colours::cream() : colours::cream().withAlpha (on ? 1.0f : 0.7f));
+    g.setFont (juce::Font (juce::FontOptions (12.0f)).withExtraKerningFactor (0.08f));
     g.drawText (button.getButtonText().toUpperCase(),
                 bounds.withTrimmedLeft (lampD + 8.0f), juce::Justification::centredLeft, false);
 }
@@ -193,25 +207,23 @@ void DoobieLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& b
                                               const juce::Colour&, bool highlighted, bool down)
 {
     const auto bounds = button.getLocalBounds().toFloat().reduced (1.0f);
-    juce::ColourGradient grad (colours::metal().brighter (down ? 0.0f : 0.25f), bounds.getTopLeft(),
-                               colours::metal().darker (0.4f), bounds.getBottomLeft(), false);
-    g.setGradientFill (grad);
-    g.fillRoundedRectangle (bounds, 4.0f);
-    g.setColour (highlighted ? colours::amber() : colours::line());
-    g.drawRoundedRectangle (bounds, 4.0f, 1.2f);
+    g.setColour (down ? colours::panelLight().brighter (0.10f) : colours::panelLight());
+    g.fillRoundedRectangle (bounds, 3.0f);
+    g.setColour (highlighted ? colours::cream() : colours::line());
+    g.drawRoundedRectangle (bounds, 3.0f, 1.0f);
 }
 
 juce::Label* DoobieLookAndFeel::createSliderTextBox (juce::Slider& slider)
 {
     auto* l = juce::LookAndFeel_V4::createSliderTextBox (slider);
-    l->setColour (juce::Label::textColourId, colours::amber());
-    l->setFont (juce::Font (juce::FontOptions (13.0f)));
+    l->setColour (juce::Label::textColourId, colours::cream());
+    l->setFont (juce::Font (juce::FontOptions (12.0f)));
     l->setJustificationType (juce::Justification::centred);
     return l;
 }
 
 juce::Font DoobieLookAndFeel::getLabelFont (juce::Label& label)
 {
-    return juce::Font (juce::FontOptions ((float) label.getFont().getHeight())).withExtraKerningFactor (0.04f);
+    return juce::Font (juce::FontOptions ((float) label.getFont().getHeight())).withExtraKerningFactor (0.06f);
 }
 } // namespace doobie

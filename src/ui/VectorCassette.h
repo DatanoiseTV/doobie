@@ -55,8 +55,14 @@ public:
 
     void paint (juce::Graphics& g) override
     {
-        // Background: a deep panel-shadow rectangle so the white linework reads.
-        g.fillAll (juce::Colour (0xff0d0c0a));
+        // Pure black background + neutral-grey frame matching the SVG source
+        // — no warm tint. The surrounding panels paint the same black so the
+        // cassette reads as part of the chassis, not a window onto it.
+        const auto bgCol    = juce::Colour (0xff000000);
+        const auto frameCol = juce::Colour (0xff3a3a3a);
+        g.fillAll (bgCol);
+        g.setColour (frameCol);
+        g.drawRect (getLocalBounds().toFloat(), 1.0f);
 
         // Aspect-fit the 680x307 design viewbox into the component bounds.
         const auto bounds = getLocalBounds().toFloat();
@@ -70,7 +76,10 @@ public:
         const auto ty = [=] (float y) { return oy + (y - kViewY) * s; };
         const auto ts = [=] (float v) { return v * s; };
 
-        const auto white = juce::Colours::white;
+        // SVG-source palette: pure white linework, neutral light-grey tape
+        // pack. The whole UI now adopts the same black + white scheme so
+        // the cassette no longer feels foreign to its surroundings.
+        const auto white = juce::Colour (0xffffffff);
         const auto rim   = white;
         const auto fill  = juce::Colour (0xffd8d8d8);
 
@@ -96,7 +105,7 @@ public:
             g.setColour (fill);
             g.fillEllipse (cx - rFill, cy - rFill, rFill * 2.0f, rFill * 2.0f);
             // Punch out the hub housing so the pack reads as an annulus.
-            g.setColour (juce::Colour (0xff0d0c0a));
+            g.setColour (bgCol);
             g.fillEllipse (cx - rHub, cy - rHub, rHub * 2.0f, rHub * 2.0f);
 
             // Pack edge ring (thin white outline at the current pack radius).
@@ -205,7 +214,7 @@ private:
         g.addTransform (juce::AffineTransform::rotation (juce::degreesToRadians (angleDeg), cx, cy));
 
         const auto white = juce::Colours::white;
-        const auto black = juce::Colour (0xff0d0c0a);
+        const auto black = juce::Colour (0xff000000);
 
         // Three spokes radiating from centre, 120° apart.
         g.setColour (white);
@@ -248,7 +257,7 @@ private:
 
     void drawSmallRoller (juce::Graphics& g, float cx, float cy, float r, float s)
     {
-        g.setColour (juce::Colour (0xff0d0c0a));
+        g.setColour (juce::Colour (0xff000000));
         g.fillEllipse (cx - r, cy - r, r * 2.0f, r * 2.0f);
         g.setColour (juce::Colours::white);
         g.drawEllipse (cx - r, cy - r, r * 2.0f, r * 2.0f, 1.4f * s);
@@ -258,25 +267,41 @@ private:
 
     void drawHead (juce::Graphics& g, float cx, float cy, float s)
     {
-        const auto white = juce::Colours::white;
+        const auto white = juce::Colour (0xffffffff);
         g.setColour (white);
         g.drawLine (cx - 7.0f * s, cy - 30.0f * s, cx - 7.0f * s, cy - 8.0f * s, 1.2f * s);
         g.drawLine (cx + 7.0f * s, cy - 30.0f * s, cx + 7.0f * s, cy - 8.0f * s, 1.2f * s);
         const float r = 1.2f * s;
         g.fillEllipse (cx - 7.0f * s - r, cy - 20.0f * s - r, r * 2.0f, r * 2.0f);
         g.fillEllipse (cx + 7.0f * s - r, cy - 20.0f * s - r, r * 2.0f, r * 2.0f);
-        // Head body rectangle.
+        // Head body: dark when idle, amber-glow when the tape is moving — same
+        // amber as the knob arcs, so the head visibly "lights up" when the
+        // delay path is active and goes dark when bypassed / frozen.
         const juce::Rectangle<float> headBox (cx - 9.0f * s, cy - 8.0f * s, 18.0f * s, 16.0f * s);
-        g.setColour (juce::Colour (0xff0d0c0a));
-        g.fillRect (headBox);
-        g.setColour (white);
-        g.drawRect (headBox, 1.4f * s);
+        if (playing)
+        {
+            g.setColour (juce::Colour (0xff5a3a10));        // dim amber body
+            g.fillRect (headBox);
+            g.setColour (juce::Colour (0xfff4a024));        // amber()
+            g.drawRect (headBox, 1.4f * s);
+            // Small bright slit on the front face where the tape contacts.
+            g.setColour (juce::Colour (0xfff4a024).withAlpha (0.85f));
+            g.fillRect (juce::Rectangle<float> (cx - 6.0f * s, cy + 5.0f * s,
+                                                12.0f * s, 1.4f * s));
+        }
+        else
+        {
+            g.setColour (juce::Colour (0xff000000));
+            g.fillRect (headBox);
+            g.setColour (white);
+            g.drawRect (headBox, 1.4f * s);
+        }
     }
 
     void drawPinchRoller (juce::Graphics& g, float cx, float cy, float s)
     {
         const float r = 9.0f * s;
-        g.setColour (juce::Colour (0xff0d0c0a));
+        g.setColour (juce::Colour (0xff000000));
         g.fillEllipse (cx - r, cy - r, r * 2.0f, r * 2.0f);
         g.setColour (juce::Colours::white);
         g.drawEllipse (cx - r, cy - r, r * 2.0f, r * 2.0f, 1.4f * s);

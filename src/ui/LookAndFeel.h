@@ -20,20 +20,23 @@ namespace doobie
 // static contexts without ordering worries.
 namespace colours
 {
-    // Palette darkened on the vector-cassette branch so the surrounding
-    // chrome matches the white-on-black hardware aesthetic of the cassette.
-    // Amber/teal accents stay (lit head pads, REC, knob arcs) so important
-    // controls still read at a glance against the near-black panels.
-    inline juce::Colour panel()       { return juce::Colour (0xff0d0c0a); }
-    inline juce::Colour panelLight()  { return juce::Colour (0xff14120e); }
-    inline juce::Colour panelShadow() { return juce::Colour (0xff050403); }
-    inline juce::Colour cream()       { return juce::Colour (0xfff5ede0); }
-    inline juce::Colour amber()       { return juce::Colour (0xfff4a024); }
-    inline juce::Colour amberDim()    { return juce::Colour (0xff8a5e1e); }
-    inline juce::Colour teal()        { return juce::Colour (0xff3fb6a8); }
+    // Cassette-deck palette: pure black + near-white linework matching the
+    // SVG cassette source (Recordy). Amber kept only as a tiny "lit LED"
+    // accent for things that are actively on (head body when playing,
+    // head-matrix pad when selected, recording dot). Function names left
+    // as `cream`/`teal` for source compatibility — they resolve to white-
+    // neutral now, no warm tint.
+    inline juce::Colour panel()       { return juce::Colour (0xff000000); }
+    inline juce::Colour panelLight()  { return juce::Colour (0xff0a0a0a); }
+    inline juce::Colour panelShadow() { return juce::Colour (0xff000000); }
+    inline juce::Colour cream()       { return juce::Colour (0xffffffff); }   // white linework
+    inline juce::Colour creamDim()    { return juce::Colour (0xff808080); }
+    inline juce::Colour amber()       { return juce::Colour (0xfff4a024); }   // lit-LED accent
+    inline juce::Colour amberDim()    { return juce::Colour (0xff5a3a10); }
+    inline juce::Colour teal()        { return juce::Colour (0xffffffff); }   // legacy alias -> white
     inline juce::Colour red()         { return juce::Colour (0xffd8492e); }
-    inline juce::Colour metal()       { return juce::Colour (0xff1f1c18); }
-    inline juce::Colour line()        { return juce::Colour (0xff5a534a); }
+    inline juce::Colour metal()       { return juce::Colour (0xff0a0a0a); }   // knob inset = bg
+    inline juce::Colour line()        { return juce::Colour (0xff3a3a3a); }   // neutral grey rule
 }
 
 // The vintage tape-echo look: brushed-metal knobs with an amber pointer and a

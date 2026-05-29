@@ -295,11 +295,13 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
     kWidth.attach  (*this, state, dID::width,      "WIDTH",  teal());
     kDuck.attach   (*this, state, dID::duck,       "DUCK",   amber());
 
-    // Visualisers + meters.
+    // Visualisers + meters. The cassette is the transport-style hero at the
+    // top of the DELAY panel; the echoView is a thin strip just below it that
+    // shows the actual head taps along a 0 -> master-delay timeline with
+    // feedback fall-off. The pair gives you both at-a-glance "is the tape
+    // moving" *and* "where are the taps landing".
     addAndMakeVisible (cassetteView);
-    // echoView is kept as a member but not added to the layout for now —
-    // the cassette replaces it at the top of the DELAY panel (1:1 port from
-    // Recordy). Re-instate by swapping bounds in resized() if needed.
+    addAndMakeVisible (echoView);
     addAndMakeVisible (reverbView);
     addAndMakeVisible (vuL);
     addAndMakeVisible (vuR);
@@ -309,7 +311,7 @@ DoobieAudioProcessorEditor::DoobieAudioProcessorEditor (DoobieAudioProcessor& p)
     refreshPresetBox();
     timerCallback();          // initialise dynamic labels / enabled state at once
     startTimerHz (12);
-    setSize (1100, 960);
+    setSize (1100, 1024);
 }
 
 DoobieAudioProcessorEditor::~DoobieAudioProcessorEditor()
@@ -454,15 +456,9 @@ void DoobieAudioProcessorEditor::timerCallback()
 // ----------------------------------------------------------------------------
 void DoobieAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    // Brushed-metal panel: vertical gradient with faint horizontal grain.
-    juce::ColourGradient bg (doobie::colours::panel().brighter (0.04f), 0.0f, 0.0f,
-                             doobie::colours::panel().darker (0.18f), 0.0f, (float) getHeight(), false);
-    g.setGradientFill (bg);
-    g.fillRect (getLocalBounds());
-
-    g.setColour (juce::Colours::black.withAlpha (0.04f));
-    for (int y = 0; y < getHeight(); y += 3)
-        g.drawHorizontalLine (y, 0.0f, (float) getWidth());
+    // Flat near-black chassis matching the cassette interior. No brushed-
+    // metal gradient — we're a cassette deck now, not a guitar pedal.
+    g.fillAll (doobie::colours::panel());
 
     // Header bar.
     g.setColour (doobie::colours::panelShadow());
@@ -471,10 +467,10 @@ void DoobieAudioProcessorEditor::paint (juce::Graphics& g)
     g.drawLine (0.0f, (float) rHeader.getBottom(), (float) getWidth(), (float) rHeader.getBottom(), 1.0f);
 
     auto header = rHeader.reduced (16, 0);
-    g.setColour (amber());
+    g.setColour (cream());
     g.setFont (juce::Font (juce::FontOptions (30.0f)).withExtraKerningFactor (0.08f).boldened());
     g.drawText ("DOOBIE", header.removeFromLeft (175), juce::Justification::centredLeft);
-    g.setColour (cream().withAlpha (0.7f));
+    g.setColour (cream().withAlpha (0.55f));
     g.setFont (juce::Font (juce::FontOptions (12.5f)).withExtraKerningFactor (0.18f));
     g.drawText ("ANALOG DUB DELAY", header.removeFromLeft (190), juce::Justification::centredLeft);
 
@@ -514,8 +510,8 @@ void DoobieAudioProcessorEditor::paint (juce::Graphics& g)
     panel (rDelay,   "DELAY",  doobie::colours::line());
     panel (rTape,    "TAPE",   doobie::colours::line());
     panel (rFilters, "FILTERS", doobie::colours::line());
-    panel (rReverb,  "REVERB", teal().withAlpha (0.6f));
-    panel (rMod,     "MODULATION", teal().withAlpha (0.6f));
+    panel (rReverb,  "REVERB", doobie::colours::line());
+    panel (rMod,     "MODULATION", doobie::colours::line());
     panel (rOutput,  "OUTPUT", doobie::colours::line());
 
     // Sub-headers and dividers inside the MOD panel. The MATRIX... button on
@@ -562,9 +558,8 @@ void DoobieAudioProcessorEditor::paint (juce::Graphics& g)
         g.drawHorizontalLine (inArea.getBottom(), (float) rFilters.getX() + 8.0f, (float) rFilters.getRight() - 8.0f);
 
         g.setFont (juce::Font (juce::FontOptions (10.0f)).withExtraKerningFactor (0.1f));
-        g.setColour (teal().withAlpha (0.85f));
+        g.setColour (cream().withAlpha (0.85f));
         g.drawText ("INPUT", inArea.removeFromTop (12).withTrimmedLeft (2), juce::Justification::centredLeft);
-        g.setColour (amber().withAlpha (0.85f));
         g.drawText ("FEEDBACK", fbArea.removeFromTop (12).withTrimmedLeft (2), juce::Justification::centredLeft);
     }
 }
@@ -694,8 +689,12 @@ void DoobieAudioProcessorEditor::resized()
         auto d = rDelay.reduced (10).withTrimmedTop (24);
         // Cassette is the centerpiece of the DELAY panel — give it real
         // vertical space so the reels and tape path are readable, not a thin
-        // strip above the knobs.
+        // strip above the knobs. Below it sits the echo-tap strip showing
+        // the four heads along the 0->master-delay timeline; the two
+        // visuals complement each other (transport state vs tap pattern).
         cassetteView.setBounds (d.removeFromTop (180));
+        d.removeFromTop (4);
+        echoView.setBounds (d.removeFromTop (56));
         d.removeFromTop (6);
 
         auto bigRow = d.removeFromTop (132);
