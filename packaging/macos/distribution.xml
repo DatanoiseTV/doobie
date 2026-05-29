@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  productbuild distribution descriptor for the Doobie installer. Combines
+  the three component .pkg files (AU, VST3, Standalone) into a single
+  signed distribution package that drops each format into its system
+  location. Title / version are substituted in build-pkg.sh.
+-->
+<installer-gui-script minSpecVersion="2">
+    <title>Doobie</title>
+    <organization>com.datanoisetv</organization>
+    <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
+    <options customize="allow" require-scripts="false" hostArchitectures="arm64,x86_64"/>
+
+    <welcome    file="welcome.txt"    mime-type="text/plain"/>
+
+    <choices-outline>
+        <line choice="com.datanoisetv.doobie.au"/>
+        <line choice="com.datanoisetv.doobie.vst3"/>
+        <line choice="com.datanoisetv.doobie.standalone"/>
+    </choices-outline>
+
+    <choice id="com.datanoisetv.doobie.au"
+            title="Audio Unit (AU)"
+            description="Installs the Doobie.component plug-in to /Library/Audio/Plug-Ins/Components. Used by Logic Pro, GarageBand, and any AU-capable host.">
+        <pkg-ref id="com.datanoisetv.doobie.au"/>
+    </choice>
+
+    <choice id="com.datanoisetv.doobie.vst3"
+            title="VST3"
+            description="Installs the Doobie.vst3 plug-in to /Library/Audio/Plug-Ins/VST3. Used by Cubase, Reaper, Ableton Live, Studio One and most other DAWs.">
+        <pkg-ref id="com.datanoisetv.doobie.vst3"/>
+    </choice>
+
+    <choice id="com.datanoisetv.doobie.standalone"
+            title="Standalone application"
+            description="Installs Doobie.app to /Applications. Runs without a DAW for jamming and quick auditioning.">
+        <pkg-ref id="com.datanoisetv.doobie.standalone"/>
+    </choice>
+
+    <pkg-ref id="com.datanoisetv.doobie.au"         version="@DOOBIE_VERSION@">doobie-au.pkg</pkg-ref>
+    <pkg-ref id="com.datanoisetv.doobie.vst3"       version="@DOOBIE_VERSION@">doobie-vst3.pkg</pkg-ref>
+    <pkg-ref id="com.datanoisetv.doobie.standalone" version="@DOOBIE_VERSION@">doobie-standalone.pkg</pkg-ref>
+</installer-gui-script>

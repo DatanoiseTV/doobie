@@ -1,0 +1,13 @@
+Doobie — analog dub delay
+
+This installer adds the following formats to your system:
+
+  • Audio Unit (AU)  -> /Library/Audio/Plug-Ins/Components
+  • VST3             -> /Library/Audio/Plug-Ins/VST3
+  • Standalone app   -> /Applications
+
+You can deselect individual components on the next screen if you only
+want one or two formats.
+
+Requires macOS 11 (Big Sur) or newer. Universal binary — runs natively
+on Apple silicon and Intel.

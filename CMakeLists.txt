@@ -47,6 +47,12 @@ endif()
 # -----------------------------------------------------------------------------
 add_subdirectory(external/JUCE)
 
+# Local-install copy is on by default for developer iteration; CI builds set
+# -DDOOBIE_INSTALL_LOCAL=OFF so they don't try to write into
+# ~/Library/Audio/Plug-Ins (which doesn't exist on Linux runners and is the
+# wrong destination for a runner-built artefact anyway).
+option(DOOBIE_INSTALL_LOCAL "Copy built plugins into the user's plug-in dirs" ON)
+
 juce_add_plugin(Doobie
     COMPANY_NAME            "DatanoiseTV"
     BUNDLE_ID               "com.datanoisetv.doobie"
@@ -60,7 +66,7 @@ juce_add_plugin(Doobie
     NEEDS_MIDI_OUTPUT       FALSE
     IS_MIDI_EFFECT          FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
-    COPY_PLUGIN_AFTER_BUILD TRUE
+    COPY_PLUGIN_AFTER_BUILD ${DOOBIE_INSTALL_LOCAL}
     VST3_CATEGORIES         Fx Delay
     AU_MAIN_TYPE            kAudioUnitType_Effect)
 
