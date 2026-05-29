@@ -52,7 +52,10 @@ jobs:
           -DDOOBIE_INSTALL_LOCAL=OFF
 
       - name: build
-        run: cmake --build build --target Doobie_All -j
+        # Build the plug-in formats *and* the test executables in one pass --
+        # ctest below would otherwise report "Not Run" because the test
+        # binaries weren't part of the Doobie_All target.
+        run: cmake --build build --target Doobie_All doobie_tests doobie_state_tests -j
 
       - name: tests
         run: ctest --test-dir build --output-on-failure

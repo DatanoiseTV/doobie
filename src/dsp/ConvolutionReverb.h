@@ -202,8 +202,17 @@ public:
 private:
     bool decodeFrom (juce::AudioFormatReader& reader)
     {
-        const auto len   = (int) juce::jmax<juce::int64> (0, reader.lengthInSamples);
-        const int  numCh = (int) juce::jmin<unsigned int> (2u, reader.numChannels);
+        // Avoid `juce::jmax<juce::int64>(...)` / `juce::jmin<unsigned int>(...)`:
+        // since JUCE 8 those template lookups force the compiler to consider
+        // dsp::SIMDRegister overloads, which on Linux's SSE-only fallback
+        // forward-declares but doesn't specialise SIMDNativeOps<long long>
+        // — that explodes with "incomplete type" during overload resolution
+        // even when the SIMD path is never taken. Plain ternaries sidestep
+        // the SIMD overload set entirely.
+        const auto rawLen    = reader.lengthInSamples;
+        const auto rawNumCh  = reader.numChannels;
+        const int  len   = (int) (rawLen   > 0  ? rawLen   : 0);
+        const int  numCh = (int) (rawNumCh < 2u ? rawNumCh : 2u);
         if (len <= 0 || numCh < 1)
             return false;
         cachedBuffer.setSize (numCh, len, false, true, true);

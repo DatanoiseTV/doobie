@@ -117,7 +117,7 @@ jobs:
           "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
 
       - name: build
-        run: cmake --build build --target Doobie_All -j
+        run: cmake --build build --target Doobie_All doobie_tests doobie_state_tests -j
 
       - name: tests
         run: ctest --test-dir build --output-on-failure
@@ -180,7 +180,7 @@ jobs:
           -DDOOBIE_INSTALL_LOCAL=OFF
 
       - name: build
-        run: cmake --build build --target Doobie_All -j
+        run: cmake --build build --target Doobie_All doobie_tests doobie_state_tests -j
 
       - name: tests
         run: ctest --test-dir build --output-on-failure
