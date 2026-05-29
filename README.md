@@ -10,11 +10,13 @@ home as a modulated delay and ambience for any genre.
 
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Formats](https://img.shields.io/badge/formats-VST3%20%C2%B7%20AU%20%C2%B7%20Standalone-f4a024)
-![JUCE](https://img.shields.io/badge/JUCE-8.0-3fb6a8)
+![JUCE](https://img.shields.io/badge/JUCE-8.0-cccccc)
 ![C++](https://img.shields.io/badge/C%2B%2B-20-555)
-![Platform](https://img.shields.io/badge/macOS-universal-lightgrey)
+![macOS](https://img.shields.io/badge/macOS-universal%20%C2%B7%20signed%20%2B%20notarized-lightgrey)
+![Linux](https://img.shields.io/badge/Linux-x86__64-lightgrey)
+[![Release](https://img.shields.io/github/v/release/DatanoiseTV/doobie?include_prereleases&sort=semver&color=cccccc)](https://github.com/DatanoiseTV/doobie/releases)
 
-<img src="docs/screenshots/doobie.png" width="850" alt="Doobie — Classic Dub preset">
+<img src="docs/screenshots/doobie.png" width="850" alt="Doobie — Classic Dub preset, cassette transport at top of the DELAY panel">
 
 </div>
 
@@ -57,8 +59,39 @@ home as a modulated delay and ambience for any genre.
 - **60+ factory presets** across dub/reggae, ambient/cinematic, rhythmic/electronic,
   lo-fi/vintage, hall & shimmer, delay characters, sound-design FX and instrument
   patches, plus user save/load.
-- **Vintage UI** — brushed-metal panel, amber-lit knobs, analog VU meters, a live
-  per-head echo visualiser, and a reverb decay-curve display.
+- **Cassette-deck UI** — a vector cassette transport sits at the top of the DELAY
+  panel: both reels with their three-spoke spindles, the tape line threaded
+  through idler rollers + head + pinch roller, and a head body that lights
+  amber when the tape is "playing". Reel rotation **tracks the delay-time
+  knob** with proper physics (constant tape speed, inverse-radius scaling),
+  so a 30 ms flanger setting spins the reels visibly faster than an 8 s dub
+  delay; freeze + delay-bypass stop the capstan. Below it sits the
+  **echo-tap timeline strip** showing where the four heads land along
+  0 → master-delay with feedback fall-off. Monochrome white-on-black chrome
+  matching the cassette, amber kept only as the "this is live" accent on
+  lit toggles + VU peaks. Analog VU meters at the output and a reverb
+  decay-curve display on the right.
+
+## Install
+
+Grab the latest signed build from the
+[**Releases page**](https://github.com/DatanoiseTV/doobie/releases) — every push
+to `main` updates a rolling `nightly` prerelease, and `vX.Y.Z` tags cut stable
+versioned releases.
+
+- **macOS:** `Doobie-X.Y.Z-macOS.pkg`. Universal arm64 + x86_64, code-signed
+  with a Developer ID Application certificate and notarized through Apple's
+  notary service, so it installs without a Gatekeeper warning. Double-click
+  the `.pkg`; the installer lets you pick any subset of AU
+  (`/Library/Audio/Plug-Ins/Components`), VST3
+  (`/Library/Audio/Plug-Ins/VST3`) and the Standalone app (`/Applications`).
+- **Linux:** `Doobie-X.Y.Z-Linux-x86_64.tar.gz`. Contains the VST3 bundle and
+  the Standalone executable. Drop the `.vst3` into `~/.vst3/` (user) or
+  `/usr/local/lib/vst3/` (system); run the Standalone directly.
+
+Want the bleeding edge?
+[Releases → `nightly`](https://github.com/DatanoiseTV/doobie/releases/tag/nightly)
+gets a fresh signed build on every commit to `main`.
 
 ## Screenshots
 
@@ -70,9 +103,11 @@ home as a modulated delay and ambience for any genre.
 
 </div>
 
-The echo visualiser (top of the DELAY panel) shows each active head's tap pattern
-and the repeats decaying by the feedback amount. The reverb panel's decay curve
-shows the active reverb's tail length and pre-delay at a glance.
+The cassette transport (top of the DELAY panel) shows the reels rotating at a
+speed derived from the current delay time, with the head body lit when the tape
+is active. The strip below it visualises each active head's tap landing along
+the 0 → master-delay axis with feedback fall-off. The reverb panel's decay
+curve shows the active reverb's tail length and pre-delay at a glance.
 
 ## Getting dub sounds
 
@@ -114,7 +149,7 @@ starting points for custom files:
 - **[EchoThief](http://www.echothief.com/)** — over a hundred real-world spaces
   sampled around North America.
 
-## Building
+## Building from source
 
 Requires CMake ≥ 3.22 and a C++20 toolchain. JUCE is vendored as a git submodule.
 
@@ -127,10 +162,46 @@ cmake --build build --target Doobie_All
 
 Already cloned without submodules? `git submodule update --init --recursive`
 
-For a fast single-architecture build add `-DCMAKE_OSX_ARCHITECTURES=arm64` (or
-`x86_64`); the default produces a universal binary on macOS. Built plugins are
-copied to the system plugin folders, and the standalone app lands in
-`build/Doobie_artefacts/<config>/Standalone/`.
+For a fast single-architecture build on macOS add
+`-DCMAKE_OSX_ARCHITECTURES=arm64` (or `x86_64`); the default produces a
+universal binary. Built plugins are copied into your personal plug-in folders
+(`~/Library/Audio/Plug-Ins/...` on macOS) and the standalone app lands in
+`build/Doobie_artefacts/<config>/Standalone/`. Pass
+`-DDOOBIE_INSTALL_LOCAL=OFF` to opt out of the local install (matches what CI
+does).
+
+On Linux you'll need the JUCE GUI / audio prerequisites:
+
+```sh
+sudo apt-get install -y \
+    libasound2-dev libjack-jackd2-dev libcurl4-openssl-dev \
+    libfreetype6-dev libx11-dev libxcomposite-dev libxcursor-dev \
+    libxext-dev libxinerama-dev libxrandr-dev libxrender-dev \
+    libwebkit2gtk-4.0-dev libglu1-mesa-dev mesa-common-dev \
+    libgtk-3-dev ninja-build
+```
+
+## Release pipeline
+
+`.github/workflows/` defines two workflows:
+
+- **`ci.yml`** — runs on every PR + non-`main` branch push. Builds Doobie +
+  the test executables on macOS-14 and ubuntu-22.04, runs `ctest`. Fast
+  feedback, no signing.
+- **`release.yml`** — runs on `main` pushes and `v*` tags. macOS job imports
+  the Developer ID certs from GitHub Secrets, builds universal, runs tests,
+  then signs + notarizes + stapled-packages the artefacts into a `.pkg`
+  installer. Linux job builds + tarballs. Publish job uploads both to a
+  rolling `nightly` prerelease (main pushes) or a versioned release (tag
+  pushes).
+
+If you fork Doobie and want signed releases of your own builds:
+[`packaging/macos/`](packaging/macos/README.md) has a one-shot
+`bootstrap-signing.sh` that takes a fresh Apple Developer membership all the
+way to populated GitHub Secrets — generates RSA keys + CSRs locally, walks
+you through the two manual portal clicks Apple's API still doesn't expose
+(API key creation + Developer ID Installer cert), bundles each cert into a
+`.p12` with a random password, and pushes all 11 secrets via `gh secret set`.
 
 ## Tests
 
