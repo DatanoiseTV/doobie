@@ -4,6 +4,60 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.12.0] — 2026-05-29
+
+### Changed
+- **Whole UI restyled as a cassette deck.** Pure-black panels (`#000`) matching
+  the cassette interior, white linework everywhere, knobs redrawn as cassette
+  spindle / idler-roller analogues (dark inset + white rim + white pointer +
+  white centre dot), toggles as small white-rim circles with an amber LED dot
+  when lit, head-matrix pads flip to a solid white face with black letter when
+  selected. Teal dropped entirely; amber kept only as the single "this is
+  live" accent (head body when playing, lit toggle LED, VU bar). The
+  brushed-metal gradients and horizontal grain on the chassis are gone.
+- **Cassette grew to 180 px** as the centerpiece of the DELAY panel (was 98 px),
+  with the head, both reels including 3-spoke spindles, and the tape line
+  through all idler rollers clearly readable.
+- **Reel rotation now tracks delay time.** Real tape echoes have fixed
+  head-to-head distance, so longer delay → slower capstan. Mapping:
+  `speed = clamp(pow(0.375 s / t, 0.6), 0.15, 5.0)` — 1.0 × at the 375 ms
+  default, ~4.3 × at a 30 ms flanger, ~0.15 × at an 8 s dub. Sync mode
+  reapplies `quarters * 60 / bpm` so the visual tracks host tempo. Freeze
+  and delay-bypass stop the capstan.
+- **Window height 870 → 1024** to fit the bigger cassette + the echo-tap
+  strip without crushing the knob rows.
+
+### Added
+- **Echo-tap timeline strip** sitting below the cassette in the DELAY panel
+  (56 px). The cassette shows transport state; the strip shows where the four
+  heads land along 0 → master-delay with feedback fall-off. Complementary,
+  not replacing each other.
+- **macOS code-signed + notarized release pipeline.** `.github/workflows/`
+  builds Doobie on every push to `main` and every `vX.Y.Z` tag — universal
+  arm64 + x86_64, code-signed with the Developer ID Application cert, packaged
+  as a Distribution `.pkg` signed with the Developer ID Installer cert,
+  notarized via Apple's notary service, stapled. Versioned tags publish a
+  stable release; main pushes update a rolling `nightly` prerelease. End users
+  install with no Gatekeeper warning.
+- **Linux CI build** on `ubuntu-22.04`. Catches platform-specific build issues
+  at PR time (would have caught the SIMD bug below).
+- **`packaging/macos/`** with `bootstrap-signing.sh` that takes a fresh Apple
+  Developer membership all the way to populated GitHub Secrets in one pass:
+  generates RSA key + CSR locally, opens the developer portal for the cert
+  bits Apple's API refuses to issue, bundles each cert into a `.p12` with a
+  random password, derives the codesign identity CN from the cert subject,
+  and pushes all 11 secrets via `gh secret set` — cert bytes stream via
+  stdin so they never appear in shell history.
+
+### Fixed
+- **Linux build error** at `ConvolutionReverb.h:205` with
+  `juce::jmax<juce::int64>`. JUCE 8's maths overload set includes
+  `dsp::SIMDRegister<T>` variants, so the compiler considers
+  `SIMDRegister<long long>` during overload resolution — which requires a
+  complete type, which on Linux's SSE-only fallback is forward-declared but
+  never defined for `long long`. Replaced the templated call with a plain
+  ternary; same call now resolves on all platforms.
+
 ## [0.11.0] — 2026-05-28
 
 ### Added
