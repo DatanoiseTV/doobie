@@ -66,6 +66,7 @@ juce_add_plugin(Doobie
     NEEDS_MIDI_OUTPUT       FALSE
     IS_MIDI_EFFECT          FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
+    NEEDS_WEB_BROWSER       TRUE   # pulls webkit2gtk + gtk pkg-config on Linux
     COPY_PLUGIN_AFTER_BUILD ${DOOBIE_INSTALL_LOCAL}
     VST3_CATEGORIES         Fx Delay
     AU_MAIN_TYPE            kAudioUnitType_Effect)
