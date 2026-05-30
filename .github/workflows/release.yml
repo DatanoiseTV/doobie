@@ -180,7 +180,9 @@ jobs:
           -DDOOBIE_INSTALL_LOCAL=OFF
 
       - name: build
-        run: cmake --build build --target Doobie_All doobie_tests doobie_state_tests -j
+        # doobie_state_tests is Apple/Windows only — see tests/CMakeLists.txt
+        # for why; macOS CI exercises it instead.
+        run: cmake --build build --target Doobie_All doobie_tests -j
 
       - name: tests
         run: ctest --test-dir build --output-on-failure

@@ -55,7 +55,12 @@ jobs:
         # Build the plug-in formats *and* the test executables in one pass --
         # ctest below would otherwise report "Not Run" because the test
         # binaries weren't part of the Doobie_All target.
-        run: cmake --build build --target Doobie_All doobie_tests doobie_state_tests -j
+        run: |
+          if [ "${{ matrix.os }}" = "ubuntu-22.04" ]; then
+            cmake --build build --target Doobie_All doobie_tests -j
+          else
+            cmake --build build --target Doobie_All doobie_tests doobie_state_tests -j
+          fi
 
       - name: tests
         run: ctest --test-dir build --output-on-failure
