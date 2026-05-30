@@ -12,7 +12,7 @@
 
 #include "FactoryIRs.h"
 
-#include <BinaryData.h>
+#include <DoobieIRData.h>
 #include <algorithm>
 #include <vector>
 
@@ -23,7 +23,7 @@ namespace
     struct Entry
     {
         juce::String display;     // shown in the editor combo, e.g. "Block Inside"
-        const char*  binaryName;  // identifier for BinaryData::getNamedResource
+        const char*  binaryName;  // identifier for DoobieIRData::getNamedResource
     };
 
     // Built once on first access, then immutable. Auto-discovers every WAV in
@@ -33,13 +33,13 @@ namespace
         static const std::vector<Entry> list = []
         {
             std::vector<Entry> v;
-            v.reserve ((size_t) BinaryData::namedResourceListSize);
-            for (int i = 0; i < BinaryData::namedResourceListSize; ++i)
+            v.reserve ((size_t) DoobieIRData::namedResourceListSize);
+            for (int i = 0; i < DoobieIRData::namedResourceListSize; ++i)
             {
-                const auto raw = juce::String (BinaryData::originalFilenames[i]);
+                const auto raw = juce::String (DoobieIRData::originalFilenames[i]);
                 if (raw.endsWithIgnoreCase (".wav"))
                     v.push_back ({ raw.dropLastCharacters (4),
-                                   BinaryData::namedResourceList[i] });
+                                   DoobieIRData::namedResourceList[i] });
             }
             std::sort (v.begin(), v.end(),
                        [] (const Entry& a, const Entry& b)
@@ -74,7 +74,7 @@ juce::MemoryBlock factoryIRData (int index)
     if (! juce::isPositiveAndBelow (index, (int) e.size()))
         return {};
     int dataSize = 0;
-    const char* data = BinaryData::getNamedResource (e[(size_t) index].binaryName, dataSize);
+    const char* data = DoobieIRData::getNamedResource (e[(size_t) index].binaryName, dataSize);
     if (data == nullptr || dataSize <= 0)
         return {};
     return juce::MemoryBlock (data, (size_t) dataSize);

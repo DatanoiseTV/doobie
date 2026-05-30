@@ -12,6 +12,7 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "ui/WebEditor.h"
 #include "ParameterIDs.h"
 
 namespace
@@ -98,6 +99,20 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     layout.add (std::make_unique<FloatParam> (pid (dID::plateDamp),     "Plate Damp", Range (0.0f, 1.0f, 0.001f), 0.4f));
     layout.add (std::make_unique<FloatParam> (pid (dID::platePredelay), "Plate Pre-delay", Range (0.0f, 200.0f, 0.1f), 20.0f));
     layout.add (std::make_unique<FloatParam> (pid (dID::reverbMod),     "Reverb Mod", Range (0.0f, 1.0f, 0.001f), 0.3f));
+    // Gated-reverb controls. Threshold log-skewed toward sensitive end where
+    // most users live (a snare hit at -28 dBFS is the canonical 80s setting).
+    {
+        Range gtRange (-60.0f, 0.0f, 0.1f);
+        layout.add (std::make_unique<FloatParam> (pid (dID::gateThreshold), "Gate Threshold", gtRange, -28.0f));
+    }
+    {
+        Range gholdRange (1.0f, 1000.0f, 0.5f); gholdRange.setSkewForCentre (120.0f);
+        layout.add (std::make_unique<FloatParam> (pid (dID::gateHold),    "Gate Hold",    gholdRange, 180.0f));
+    }
+    {
+        Range grelRange (0.5f, 500.0f, 0.1f); grelRange.setSkewForCentre (30.0f);
+        layout.add (std::make_unique<FloatParam> (pid (dID::gateRelease), "Gate Release", grelRange, 6.0f));
+    }
 
     // ---- Modulation matrix --------------------------------------------------
     {
@@ -264,6 +279,10 @@ doobie::EngineParams DoobieAudioProcessor::buildEngineParams()
     p.platePredelay = raw (dID::platePredelay);
     p.plateMod    = raw (dID::reverbMod);
 
+    p.gateThresholdDb = raw (dID::gateThreshold);
+    p.gateHoldMs      = raw (dID::gateHold);
+    p.gateReleaseMs   = raw (dID::gateRelease);
+
     return p;
 }
 
@@ -310,6 +329,10 @@ void DoobieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
         const float* L = buffer.getReadPointer (0);
         const float* R = buffer.getNumChannels() > 1 ? buffer.getReadPointer (1) : L;
         envFollower.processBlock (L, R, numSamples);
+        // Pre-engine peak for the IN meter on the WebView UI.
+        const float magL = buffer.getMagnitude (0, 0, numSamples);
+        const float magR = buffer.getNumChannels() > 1 ? buffer.getMagnitude (1, 0, numSamples) : magL;
+        inputLevel.store (juce::jmax (magL, magR), std::memory_order_relaxed);
     }
 
     const doobie::ModSourceValues sources {
@@ -339,11 +362,23 @@ void DoobieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
     for (int ch = 0; ch < juce::jmin (2, buffer.getNumChannels()); ++ch)
         outputLevel[(size_t) ch].store (buffer.getMagnitude (ch, 0, buffer.getNumSamples()),
                                         std::memory_order_relaxed);
+
+    // Approximate stage levels for the meter bridge. The engine doesn't tap
+    // intermediate signals (would cost an extra accumulator per stage), so
+    // we infer them from the post-output peak weighted by the relevant
+    // routing knobs. Not laboratory-grade but matches what the user hears:
+    // delay activity tracks output × mix when delay is unbypassed; reverb
+    // activity tracks output × reverbMix when the reverb is on.
+    const float outMono = 0.5f * (outputLevel[0].load (std::memory_order_relaxed)
+                                  + outputLevel[1].load (std::memory_order_relaxed));
+    const float dlyOn = p.delayBypass ? 0.0f : 1.0f;
+    delayLevel.store  (outMono * dlyOn * juce::jlimit (0.0f, 1.0f, p.mix), std::memory_order_relaxed);
+    reverbLevel.store (outMono *         juce::jlimit (0.0f, 1.0f, p.reverbMix), std::memory_order_relaxed);
 }
 
 juce::AudioProcessorEditor* DoobieAudioProcessor::createEditor()
 {
-    return new DoobieAudioProcessorEditor (*this);
+    return new doobie::WebEditor (*this);
 }
 
 void DoobieAudioProcessor::loadIR (const juce::File& f)

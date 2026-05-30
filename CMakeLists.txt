@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(Doobie VERSION 0.12.0 LANGUAGES C CXX)
+project(Doobie VERSION 0.13.0 LANGUAGES C CXX)
 
 # -----------------------------------------------------------------------------
 # Project-wide settings
@@ -81,8 +81,29 @@ juce_generate_juce_header(Doobie)
 # -----------------------------------------------------------------------------
 file(GLOB DOOBIE_VOXENGO_IRS CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/external/voxengo-irs/*.wav")
-juce_add_binary_data(DoobieIRs SOURCES ${DOOBIE_VOXENGO_IRS})
+# Two BinaryData targets in this build (IRs + UI). Each needs its own
+# namespace + header name, otherwise both generate symbols in `BinaryData::`
+# and the linker silently picks whichever was linked first — UI lookups
+# then hit the IR table and return nothing (404 from the resource provider).
+juce_add_binary_data(DoobieIRs
+    SOURCES     ${DOOBIE_VOXENGO_IRS}
+    NAMESPACE   DoobieIRData
+    HEADER_NAME DoobieIRData.h)
 set_target_properties(DoobieIRs PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
+
+# -----------------------------------------------------------------------------
+# UI assets — index.html / CSS / JS / vendored React + Babel-standalone.
+# Served at runtime by WebBrowserComponent's resource provider. All bundled
+# as BinaryData so the plugin never reaches the network. The vendored React
+# UMDs are MIT-licensed; babel-standalone is also MIT.
+# -----------------------------------------------------------------------------
+file(GLOB DOOBIE_UI_SRC    CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/ui/src/*")
+file(GLOB DOOBIE_UI_VENDOR CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/ui/vendor/*")
+juce_add_binary_data(DoobieUI
+    SOURCES     ${DOOBIE_UI_SRC} ${DOOBIE_UI_VENDOR}
+    NAMESPACE   DoobieUIData
+    HEADER_NAME DoobieUIData.h)
+set_target_properties(DoobieUI PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 # -----------------------------------------------------------------------------
 # Sources
@@ -90,6 +111,7 @@ set_target_properties(DoobieIRs PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 target_sources(Doobie PRIVATE
     src/PluginProcessor.cpp
     src/PluginEditor.cpp
+    src/ui/WebEditor.cpp
     src/dsp/DubDelayEngine.cpp
     src/dsp/FactoryIRs.cpp
     src/dsp/SpringReverb.cpp
@@ -108,7 +130,7 @@ target_include_directories(Doobie PRIVATE
 
 target_compile_definitions(Doobie
     PUBLIC
-        JUCE_WEB_BROWSER=0
+        JUCE_WEB_BROWSER=1
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0
         JUCE_REPORT_APP_USAGE=0
@@ -119,8 +141,10 @@ target_compile_definitions(Doobie
 
 target_link_libraries(Doobie PRIVATE
     DoobieIRs
+    DoobieUI
     juce::juce_audio_utils
     juce::juce_dsp
+    juce::juce_gui_extra
     PUBLIC
     juce::juce_recommended_config_flags
     juce::juce_recommended_lto_flags

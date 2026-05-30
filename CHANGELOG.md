@@ -4,6 +4,88 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.13.0] — 2026-05-30
+
+### Added
+- **Full UI rebuild on JUCE 8's `WebBrowserComponent`** — the entire editor
+  is now an HTML/CSS/JS app served from BinaryData (no network), bridged to
+  the audio engine via `WebSliderRelay` / `WebToggleButtonRelay` /
+  `WebComboBoxRelay` + their matching `*ParameterAttachment`s. All 96 APVTS
+  parameters are two-way bound; host automation and preset loads flow
+  through the same path as user drags. React + Babel-standalone vendored
+  locally; the JUCE frontend JS is wrapped into a non-module IIFE that
+  exposes `window.Juce`. CSP + WKWebView native scheme (`juce://`)
+  configured correctly so the bundle loads fully offline.
+- **Gated reverb** — new `src/dsp/GatedReverb.{h}`: plate core with an
+  envelope-keyed sidechain gate. Classic 80s drum-gate sound — snare
+  triggers a bright bloom that snaps to silence at the gate boundary.
+  Surfaced as reverb mode #8 in the dropdown; three new APVTS params
+  (`gateThreshold`, `gateHold`, `gateRelease`) appear as a row in the
+  Reverb panel only when Gated is selected.
+- **Right-click knob context menu** — Reset to default, Copy value, Paste
+  value, Enter value… (the Enter-value path opens the styled modal). Per-
+  knob via `onContextMenu`. The browser's native context menu is suppressed
+  globally so the plugin reads as a native desktop app.
+- **Styled save-preset modal** — replaces the JUCE `AlertWindow` that
+  looked alien against the dark chrome. Cancel on Esc / scrim click; Enter
+  to confirm; payload travels through the existing
+  `Juce.backend.emitEvent('preset_save', {name})` channel.
+- **Per-stage live VU bridge** — engine now publishes `inputLevel`,
+  `delayLevel`, `reverbLevel` atomics in addition to the per-channel
+  `outputLevel`. The WebView's `levels` event ticks at 30 Hz with proper
+  20·log10 dBFS values; the digital meters do their own RMS / peak-hold
+  + clip indicator on top.
+- **Modulation indicators on every knob** — any knob whose APVTS id is a
+  matrix destination shows a dim outer arc + animated dot driven live by
+  `matrix amount × source depth`. Includes the per-head pan/time
+  destinations.
+- **Native-feel polish** — selection / drag-select / right-click-Inspect
+  suppressed via CSS + JS for everything except real `<input>` /
+  `<textarea>` elements (so the preset-rename modal still accepts typing).
+- **Reverb route selector** moved out of the top meter bridge into the
+  Reverb panel itself, where it belongs.
+
+### Changed
+- **DecayGraph wired to the decay knob** (was wired to size, which is
+  unrelated to tail length — graph looked decorative).
+- **REC indicator removed** from the cassette area (we're a tape echo, not
+  a recorder; the light was misleading).
+
+### Fixed
+- `WebBrowserComponent` use-after-free on close: the relays are
+  `WebViewLifetimeListener`s whose destruction order had to come *after*
+  the browser. Reordered class members.
+- WKWebView showed "Could not connect to the server" because we navigated
+  to `https://doobie.localhost`; JUCE only registers the `juce://` scheme
+  for served resources. Switched to `getResourceProviderRoot()`.
+- Two `juce_add_binary_data` targets (Voxengo IRs + UI assets) shared the
+  `BinaryData::` namespace, so the linker silently picked one and the UI
+  resource lookup ran against the WAV file table. Each target now lives in
+  its own namespace (`DoobieIRData::` and `DoobieUIData::`).
+- Vendored JUCE frontend JS still had an `import` at the top — illegal in
+  a non-module script — so the IIFE never executed, `window.Juce` was
+  undefined, and React threw on first render. The check-native-interop
+  file is now inlined into the IIFE; verifier asserts no `import`/`export`
+  survives the wrap.
+- Hooks (`useState`, `useEffect`, etc.) were re-declared in multiple
+  babel-script files → redeclaration `SyntaxError`. Hoisted to globals in
+  the HTML shell so each .jsx can reference them directly.
+
+### Known issues (next iteration)
+- **Window scaling** — the editor is 1520 × 960 native pixels and doesn't
+  scale to fit smaller displays. Pending: CSS `transform: scale()` driven
+  off the editor's actual bounds.
+- **Convolution-mode controls** — `irGain` / `irSpeed` and the factory IR
+  picker / "Load custom…" file dialog aren't surfaced; the Reverb panel
+  shows the plate knobs even when the mode is Convolution.
+- **DecayGraph is approximated**, not live. It draws an `exp(-t/τ)`
+  envelope from the decay knob rather than the actual reverb impulse
+  response. Live data would need an extra IR/RT60 emission from the
+  engine.
+- **WKWebView inspection** — patched the vendored JUCE source so
+  `developerExtrasEnabled` is set in Release and `setInspectable:YES` is
+  called on macOS 13.3+. Carry that patch forward when bumping JUCE.
+
 ## [0.12.0] — 2026-05-29
 
 ### Changed

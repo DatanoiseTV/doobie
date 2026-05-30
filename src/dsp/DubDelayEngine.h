@@ -20,6 +20,7 @@
 #include "PlateReverb.h"
 #include "FdnReverb.h"
 #include "ShimmerReverb.h"
+#include "GatedReverb.h"
 #include "Diffuser.h"
 #include "FftPitchShifter.h"
 #include "DcBlocker.h"
@@ -65,12 +66,20 @@ struct EngineParams
     float bass = 0.0f, treble = 0.0f;   // feedback shelves (-1..1)
     float hpFreq = 120.0f, lpFreq = 6500.0f;
 
-    int   reverbMode  = 1;   // 0 off, 1 spring, 2 plate, 3 series, 4 parallel
+    int   reverbMode  = 1;   // 0 off, 1 spring, 2 plate, 3 series, 4 parallel,
+                             // 5 hall, 6 shimmer, 7 convolution, 8 gated
     int   reverbRoute = 0;   // 0 post, 1 pre, 2 in feedback
     float reverbMix   = 0.25f;
     float springDecay = 0.5f, springTone = 0.5f;
     float plateDecay = 0.6f, plateSize = 0.6f, plateDamp = 0.4f, platePredelay = 20.0f, plateMod = 0.3f;
     float irGain     = 1.0f;  // linear makeup gain on the convolution wet
+
+    // Gated-reverb-only controls. The plate beneath the gate reuses the
+    // plate{Decay,Size,Damp,Mod,Predelay} so users don't have a second
+    // copy of those knobs to manage.
+    float gateThresholdDb = -28.0f;
+    float gateHoldMs      = 180.0f;
+    float gateReleaseMs   = 6.0f;
 };
 
 // The complete dub delay: a stereo multi-head tape echo whose feedback path
@@ -155,6 +164,7 @@ private:
     FdnReverb         hall;
     ShimmerReverb     shimmer;
     ConvolutionReverb conv;
+    GatedReverb       gated;
 
     // Multiplicative smoothing glides the delay time at a constant ratio, which
     // sounds like a tape capstan easing to a new speed rather than a linear jump.

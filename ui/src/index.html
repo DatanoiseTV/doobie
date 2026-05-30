@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doobie</title>
+  <link rel="stylesheet" href="doobie.css" />
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="juce-framework-frontend.js"></script>
+  <script src="react.production.min.js"></script>
+  <script src="react-dom.production.min.js"></script>
+  <script src="babel.min.js"></script>
+
+  <script>
+    // Native-app feel: kill the browser context menu + drag-select gestures.
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
+    document.addEventListener('dragstart',   (e) => e.preventDefault());
+    document.addEventListener('selectstart', (e) => {
+      // Allow selection in editable inputs only.
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      e.preventDefault();
+    });
+
+    // React hooks hoisted to globals so each .jsx file can reference them
+    // directly without each declaring `const { useState, ... } = React;` --
+    // every text/babel script runs in the same global scope and the
+    // duplicate declarations would otherwise SyntaxError.
+    window.useState    = React.useState;
+    window.useEffect   = React.useEffect;
+    window.useRef      = React.useRef;
+    window.useCallback = React.useCallback;
+    window.useMemo     = React.useMemo;
+  </script>
+
+  <script src="tape.js"></script>
+
+  <script type="text/babel" data-presets="react" src="juce-bridge.jsx"></script>
+  <script type="text/babel" data-presets="react" src="knob.jsx"></script>
+  <script type="text/babel" data-presets="react" src="viz.jsx"></script>
+  <script type="text/babel" data-presets="react" src="mounts.jsx"></script>
+  <script type="text/babel" data-presets="react" src="panels.jsx"></script>
+  <script type="text/babel" data-presets="react" src="app.jsx"></script>
+</body>
+</html>

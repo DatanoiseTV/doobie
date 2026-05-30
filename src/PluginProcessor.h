@@ -82,6 +82,12 @@ public:
     {
         return outputLevel[(size_t) juce::jlimit (0, 1, channel)].load (std::memory_order_relaxed);
     }
+    // Per-stage levels for the WebView meter bridge (IN / DELAY / REVERB).
+    // IN is real (peak of input before engine.process); DELAY + REVERB are
+    // weighted by mix / reverbMix so they reflect what the user perceives.
+    float getInputLevel()  const { return inputLevel.load  (std::memory_order_relaxed); }
+    float getDelayLevel()  const { return delayLevel.load  (std::memory_order_relaxed); }
+    float getReverbLevel() const { return reverbLevel.load (std::memory_order_relaxed); }
 
     // Latest LFO and envelope-follower values, for UI metering. Updated once
     // per audio block; read by the editor on its timer.
@@ -114,6 +120,10 @@ private:
 
     std::atomic<double> currentBpm { 120.0 };
     std::array<std::atomic<float>, 2> outputLevel { };
+    // Per-stage levels for the WebView meter bridge.
+    std::atomic<float> inputLevel  { 0.0f };
+    std::atomic<float> delayLevel  { 0.0f };
+    std::atomic<float> reverbLevel { 0.0f };
     // Latest mod-source values published from processBlock for UI metering.
     std::atomic<float> lfo1ValueUI { 0.0f }, lfo2ValueUI { 0.0f }, envValueUI { 0.0f };
     double sampleRate = 44100.0;

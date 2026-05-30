@@ -16,7 +16,7 @@ home as a modulated delay and ambience for any genre.
 ![Linux](https://img.shields.io/badge/Linux-x86__64-lightgrey)
 [![Release](https://img.shields.io/github/v/release/DatanoiseTV/doobie?include_prereleases&sort=semver&color=cccccc)](https://github.com/DatanoiseTV/doobie/releases)
 
-<img src="docs/screenshots/doobie.png" width="850" alt="Doobie — Classic Dub preset, cassette transport at top of the DELAY panel">
+<img src="docs/screenshots/doobie.png" width="850" alt="Doobie — Classic Dub preset">
 
 </div>
 
@@ -42,13 +42,15 @@ home as a modulated delay and ambience for any genre.
   and treble) shapes only the signal that gets echoed, leaving the dry output clean;
   a separate **feedback** filter (same four controls) darkens and dissolves each
   repeat the way real tape does. Each stage has its own dedicated knobs.
-- **Eight reverb modes** — a dispersive spring tank, a modulated plate, a dense
+- **Nine reverb modes** — a dispersive spring tank, a modulated plate, a dense
   16-line **hall**, an octave-up **shimmer**, plus spring→plate series and
-  spring+plate parallel, and a **convolution** mode bundled with **38 free
+  spring+plate parallel, a **convolution** mode bundled with **38 free
   Voxengo impulse responses** (concert halls, churches, rooms, cabinets and
   effect spaces) that also loads any WAV/AIFF/FLAC impulse response of your
-  own. Route any of them **post**, **pre**, or **inside the feedback loop**
-  for washing dub textures and blooming ambient tails.
+  own, **and an 80s-style gated reverb** (envelope-keyed sidechain gate
+  over a bright plate — classic Phil Collins / Hugh Padgham snare bloom-
+  then-snap). Route any of them **post**, **pre**, or **inside the
+  feedback loop** for washing dub textures and blooming ambient tails.
 - **Delay bypass** — flick the BYPASS toggle next to PING-PONG/FREEZE and the
   tape buffer goes silent, but the input still passes through the character
   chain (Tape/BBD/Diffuse/Pitch saturation, head-bump and HF loss) plus AGE
@@ -59,18 +61,17 @@ home as a modulated delay and ambience for any genre.
 - **60+ factory presets** across dub/reggae, ambient/cinematic, rhythmic/electronic,
   lo-fi/vintage, hall & shimmer, delay characters, sound-design FX and instrument
   patches, plus user save/load.
-- **Cassette-deck UI** — a vector cassette transport sits at the top of the DELAY
-  panel: both reels with their three-spoke spindles, the tape line threaded
-  through idler rollers + head + pinch roller, and a head body that lights
-  amber when the tape is "playing". Reel rotation **tracks the delay-time
-  knob** with proper physics (constant tape speed, inverse-radius scaling),
-  so a 30 ms flanger setting spins the reels visibly faster than an 8 s dub
-  delay; freeze + delay-bypass stop the capstan. Below it sits the
-  **echo-tap timeline strip** showing where the four heads land along
-  0 → master-delay with feedback fall-off. Monochrome white-on-black chrome
-  matching the cassette, amber kept only as the "this is live" accent on
-  lit toggles + VU peaks. Analog VU meters at the output and a reverb
-  decay-curve display on the right.
+- **HTML/CSS WebView UI** (JUCE 8 `WebBrowserComponent`). Modern-studio
+  analog look — warm-charcoal panels, amber knob arcs, **Space-Echo-style
+  continuous tape loop** with reel + capstan + pinch + multi-head block
+  embedded in the tape, **mixer-style faders** for the four playback heads,
+  **digital VU bridge** with proper RMS + peak-hold + dBFS readouts, big
+  analog needle VUs on the output, **mod-matrix indicators on every knob**
+  (any modulated control shows a live mod-range arc + animated dot),
+  feedback knob **reddens as it approaches self-oscillation**, slide-up
+  Mod drawer with LFO1/LFO2/Envelope sources + the 8-slot matrix, right-
+  click on any knob for Reset/Copy/Paste/Enter-value, styled save dialog.
+  All bundled and served locally — the plugin never reaches the network.
 
 ## Install
 

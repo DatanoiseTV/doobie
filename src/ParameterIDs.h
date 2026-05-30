@@ -81,6 +81,13 @@ namespace dID
     inline constexpr auto reverbMod     = "reverbMod";
     inline constexpr auto irGain        = "irGain";    // dB, makeup gain on the convolution wet
     inline constexpr auto irSpeed       = "irSpeed";   // playback speed multiplier (0.25..4.0)
+    // Gated-reverb-only controls. Only consulted when reverbMode == "Gated"
+    // (index 8); inert otherwise. Plate-shape knobs (size/decay/damp/mod) are
+    // reused for the gate's underlying reverb so users don't have a second
+    // duplicate set of those to manage.
+    inline constexpr auto gateThreshold = "gateThreshold";  // dBFS, sidechain threshold
+    inline constexpr auto gateHold      = "gateHold";       // ms, time fully open after trigger
+    inline constexpr auto gateRelease   = "gateRelease";    // ms, exponential close after hold
 
     // ---- Modulation matrix --------------------------------------------------
     // Two LFOs + one envelope follower feed a 4-slot matrix; each slot picks a
@@ -168,9 +175,10 @@ namespace dID
 
     // New algorithms are appended so existing presets keep their stored index
     // (Off=0, Spring=1, Plate=2, Spring>Plate=3, Spring+Plate=4, Hall=5, Shimmer=6,
-    // Convolution=7 — uses the user-loaded impulse response).
+    // Convolution=7 — uses the user-loaded impulse response. Gated=8 — classic
+    // 80s gated reverb: bright plate + envelope-keyed hold-then-snap gate).
     inline const juce::StringArray reverbModeChoices {
-        "Off", "Spring", "Plate", "Spring > Plate", "Spring + Plate", "Hall", "Shimmer", "Convolution"
+        "Off", "Spring", "Plate", "Spring > Plate", "Spring + Plate", "Hall", "Shimmer", "Convolution", "Gated"
     };
 
     // Properties on the APVTS state tree carrying the loaded IR. Convolution

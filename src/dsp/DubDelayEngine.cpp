@@ -38,6 +38,7 @@ void DubDelayEngine::prepare (double sr, int maxBlockSize)
     hall.prepare (sr, 40.0f, 115.0f);
     shimmer.prepare (sr);
     conv.prepare (sr, maxBlockSize);
+    gated.prepare (sr);
 
     // If a factory IR was loaded at a previous sample rate, regenerate it at
     // the new one — preferable to letting JUCE resample a stale buffer. A
@@ -111,6 +112,7 @@ void DubDelayEngine::reset()
     hall.reset();
     shimmer.reset();
     conv.reset();
+    gated.reset();
     diffuseL.reset();
     diffuseR.reset();
     pitchL.reset();
@@ -173,6 +175,7 @@ void DubDelayEngine::applyReverb (float inL, float inR, float& outL, float& outR
         case 5: hall.process    (inL, inR, outL, outR); break;
         case 6: shimmer.process (inL, inR, outL, outR); break;
         case 7: conv.process    (inL, inR, outL, outR); break; // user-loaded IR
+        case 8: gated.process   (inL, inR, outL, outR); break; // classic 80s gated reverb
         default: outL = inL; outR = inR; break;
     }
 }
@@ -217,6 +220,8 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
     hall.setParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
     // In shimmer mode the MOD control sets the octave regeneration amount.
     shimmer.setParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
+    gated.setPlateParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
+    gated.setGateParams (params.gateThresholdDb, params.gateHoldMs, params.gateReleaseMs);
     // IR makeup gain (per-sample smoothed inside the wrapper).
     conv.setGain (params.irGain);
 
