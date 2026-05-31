@@ -4,6 +4,24 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.13.1] — 2026-05-31
+
+### Added
+- **Diagnostic banner** at the top of the WebView (auto-hides as soon as
+  React mounts). When the UI fails to load on a user's machine the
+  banner stays visible and ticks off the stages we got past
+  (HTML → juce bridge → React → Babel → App mounted), plus shows any
+  uncaught JS error. Makes Linux WebKit-related bugs reportable
+  without needing the user to open dev tools.
+
+### Documentation
+- **Linux runtime dependencies** spelled out in the README's Install
+  section: `libwebkit2gtk-4.0-37 libgtk-3-0 libglib2.0-0 libsoup2.4-1
+  libasound2 libjack-jackd2-0` plus the WebKitGTK 4.0 vs 4.1
+  compatibility note for Ubuntu 24.04+. A Linux user reported a
+  white-window-after-install on 0.13.0; this is the documentation half
+  of the fix.
+
 ## [0.13.0] — 2026-05-30
 
 ### Added

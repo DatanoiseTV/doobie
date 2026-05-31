@@ -5,30 +5,79 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Doobie</title>
   <link rel="stylesheet" href="doobie.css" />
+  <style>
+    /* Diagnostic banner — shown until the React app mounts. If the user
+       sees a white window with no banner, the HTML itself never loaded
+       (resource-provider / custom-scheme issue). If they see the banner
+       but later stages don't tick, we know which script failed.
+
+       Once #root has a child (= React mounted) the banner hides itself
+       via CSS (so production users never see it). */
+    #diag {
+      position: fixed; top: 8px; left: 8px; right: 8px; z-index: 99999;
+      background: oklch(0.20 0.006 60); color: #f6efe1;
+      border: 1px solid oklch(0.32 0.006 60); border-radius: 8px;
+      padding: 14px 16px; font: 12px/1.55 ui-sans-serif, system-ui, sans-serif;
+      display: grid; grid-template-columns: 1fr; gap: 4px;
+      box-shadow: 0 18px 40px -10px rgba(0,0,0,.8);
+    }
+    #diag .row { display: flex; align-items: center; gap: 8px; opacity: 0.5; }
+    #diag .row.ok { opacity: 1; }
+    #diag .row.ok .tick { color: #6ec77a; }
+    #diag .row .tick { width: 14px; display: inline-block; text-align: center; }
+    #diag .row.ok .tick::before { content: "✓"; }
+    #diag .row:not(.ok) .tick::before { content: "·"; }
+    #diag .err {
+      background: #2a0e10; color: #ffb3b3; border-top: 1px solid #5a1c20;
+      margin: 8px -16px -14px; padding: 10px 16px; border-radius: 0 0 7px 7px;
+      font-family: ui-monospace, 'JetBrains Mono', monospace; font-size: 11px;
+      white-space: pre-wrap; word-break: break-word; display: none;
+    }
+    #diag .err.on { display: block; }
+    /* Once React mounts (root has children), hide the banner. */
+    body:has(#root > *) #diag { display: none; }
+  </style>
 </head>
 <body>
+  <div id="diag" aria-live="polite">
+    <div class="row ok" id="d-html"><span class="tick"></span>HTML loaded</div>
+    <div class="row" id="d-juce"><span class="tick"></span>juce bridge</div>
+    <div class="row" id="d-react"><span class="tick"></span>React</div>
+    <div class="row" id="d-babel"><span class="tick"></span>Babel</div>
+    <div class="row" id="d-mount"><span class="tick"></span>App mounted</div>
+    <div class="err" id="d-err"></div>
+  </div>
   <div id="root"></div>
 
-  <script src="juce-framework-frontend.js"></script>
-  <script src="react.production.min.js"></script>
-  <script src="react-dom.production.min.js"></script>
-  <script src="babel.min.js"></script>
-
   <script>
+    var ok = (id) => { var e = document.getElementById(id); if (e) e.classList.add('ok'); };
+    var fail = (msg) => {
+      var e = document.getElementById('d-err');
+      if (e) { e.textContent = msg; e.classList.add('on'); }
+    };
+    window.addEventListener('error',           (e) => fail('JS error: ' + (e.message || e.error) + ' @ ' + (e.filename || '?') + ':' + (e.lineno || '?')));
+    window.addEventListener('unhandledrejection', (e) => fail('unhandled rejection: ' + e.reason));
     // Native-app feel: kill the browser context menu + drag-select gestures.
     document.addEventListener('contextmenu', (e) => e.preventDefault());
     document.addEventListener('dragstart',   (e) => e.preventDefault());
     document.addEventListener('selectstart', (e) => {
-      // Allow selection in editable inputs only.
       const t = e.target;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
       e.preventDefault();
     });
+  </script>
 
-    // React hooks hoisted to globals so each .jsx file can reference them
-    // directly without each declaring `const { useState, ... } = React;` --
-    // every text/babel script runs in the same global scope and the
-    // duplicate declarations would otherwise SyntaxError.
+  <script src="juce-framework-frontend.js"></script>
+  <script>ok('d-juce');</script>
+
+  <script src="react.production.min.js"></script>
+  <script src="react-dom.production.min.js"></script>
+  <script>ok('d-react');</script>
+
+  <script src="babel.min.js"></script>
+  <script>
+    ok('d-babel');
+    // React hooks as globals so each .jsx file can use them without re-declaring.
     window.useState    = React.useState;
     window.useEffect   = React.useEffect;
     window.useRef      = React.useRef;
@@ -44,5 +93,6 @@
   <script type="text/babel" data-presets="react" src="mounts.jsx"></script>
   <script type="text/babel" data-presets="react" src="panels.jsx"></script>
   <script type="text/babel" data-presets="react" src="app.jsx"></script>
+  <script type="text/babel" data-presets="react">ok('d-mount');</script>
 </body>
 </html>

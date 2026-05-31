@@ -90,6 +90,20 @@ versioned releases.
   the Standalone executable. Drop the `.vst3` into `~/.vst3/` (user) or
   `/usr/local/lib/vst3/` (system); run the Standalone directly.
 
+  The WebView UI requires **WebKitGTK 4.0** runtime libraries on your
+  system. Debian / Ubuntu 22.04:
+  ```sh
+  sudo apt-get install libwebkit2gtk-4.0-37 libgtk-3-0 libglib2.0-0 \
+                       libsoup2.4-1 libasound2 libjack-jackd2-0
+  ```
+  Ubuntu 24.04 ships WebKitGTK 4.1 by default; for the 4.0-built binary
+  you also need a compat package (`libwebkit2gtk-4.0-37t64` from the
+  `mantic`/`jammy` archives, or build Doobie from source against 4.1).
+  If the window opens white with no UI, run the Standalone from a
+  terminal and post the stderr — the diagnostic banner at the top of
+  the window also shows which load stage failed (HTML / juce bridge /
+  React / Babel / App mounted).
+
 Want the bleeding edge?
 [Releases → `nightly`](https://github.com/DatanoiseTV/doobie/releases/tag/nightly)
 gets a fresh signed build on every commit to `main`.
