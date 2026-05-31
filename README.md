@@ -90,19 +90,40 @@ versioned releases.
   the Standalone executable. Drop the `.vst3` into `~/.vst3/` (user) or
   `/usr/local/lib/vst3/` (system); run the Standalone directly.
 
-  The WebView UI requires **WebKitGTK 4.0** runtime libraries on your
-  system. Debian / Ubuntu 22.04:
+  The WebView UI needs **either** WebKitGTK 4.0 (legacy, `libsoup-2.4`)
+  **or** 4.1 (modern, `libsoup-3.0`) on your system; the Doobie binary
+  `dlopen`s whichever it finds. We recommend the 4.1 set (4.0 is being
+  retired upstream in March 2026):
+
   ```sh
-  sudo apt-get install libwebkit2gtk-4.0-37 libgtk-3-0 libglib2.0-0 \
-                       libsoup2.4-1 libasound2 libjack-jackd2-0
+  # Recommended: WebKitGTK 4.1 (Ubuntu 24.04+, Fedora 40+, Debian 13+, Arch)
+  sudo apt-get install libwebkit2gtk-4.1-0 libsoup-3.0-0 libgtk-3-0 \
+                       libasound2 libjack-jackd2-0 libfreetype6 \
+                       libx11-6 libxext6 libxrandr2 libxrender1
+
+  # Legacy fallback: WebKitGTK 4.0 (Ubuntu 22.04, Debian 12)
+  sudo apt-get install libwebkit2gtk-4.0-37 libsoup2.4-1 libgtk-3-0 \
+                       libasound2 libjack-jackd2-0 libfreetype6 \
+                       libx11-6 libxext6 libxrandr2 libxrender1
   ```
-  Ubuntu 24.04 ships WebKitGTK 4.1 by default; for the 4.0-built binary
-  you also need a compat package (`libwebkit2gtk-4.0-37t64` from the
-  `mantic`/`jammy` archives, or build Doobie from source against 4.1).
+
+  **⚠ Don't install both 4.0 and 4.1 in the same system**, and don't
+  install GTK libs that drag in libsoup-2.4 if you're going with the 4.1
+  path. Mixing `libsoup-2.4` and `libsoup-3.0` in the same process aborts
+  WebKit's network process and you'll see a white window with a
+  `libsoup2 symbols detected` line in stderr.
+
+  **`/tmp` mounted `noexec`?** (Common on hardened RHEL / some snaps.)
+  The plugin extracts a small subprocess helper to `$TMPDIR` and runs
+  it; if it can't, the WebView won't render. Workaround:
+  ```sh
+  export TMPDIR="$HOME/.cache/doobie-tmp" && mkdir -p "$TMPDIR"
+  ```
+
   If the window opens white with no UI, run the Standalone from a
-  terminal and post the stderr — the diagnostic banner at the top of
-  the window also shows which load stage failed (HTML / juce bridge /
-  React / Babel / App mounted).
+  terminal — the diagnostic banner at the top shows which load stage
+  failed (HTML / juce bridge / React / Babel / App mounted), and stderr
+  carries any WebKit-side error.
 
 Want the bleeding edge?
 [Releases → `nightly`](https://github.com/DatanoiseTV/doobie/releases/tag/nightly)

@@ -18,6 +18,15 @@
 <dict>
     <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
     <true/>
+    <!-- allow-jit gates the modern MAP_JIT API JavaScriptCore (inside
+         WKWebView) uses on macOS Sequoia+. allow-unsigned-executable-memory
+         covers the older, broader exception (kept for juce_dsp's FFT JIT
+         path) but does not by itself satisfy the new check. Without
+         allow-jit, JSC silently falls back to the interpreter on some
+         Apple Silicon configurations and the WebView UI can refuse to
+         render JIT-heavy pages. -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
     <key>com.apple.security.cs.disable-library-validation</key>
     <true/>
     <key>com.apple.security.device.audio-input</key>

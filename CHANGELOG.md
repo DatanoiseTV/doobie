@@ -4,6 +4,32 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.13.2] — 2026-05-31
+
+### Fixed
+- **Linux builds now load on modern distros.** CI was installing only
+  `libwebkit2gtk-4.0-dev`, so the binary preferred libsoup-2 at runtime.
+  On distros that ship WebKitGTK 4.1 / libsoup-3 (Ubuntu 24.04+, Fedora
+  40+, Debian 13+, Arch, …) any other process-loaded library that pulled
+  in libsoup-2 aborted WebKit's network process with
+  `libsoup2 symbols detected. Using libsoup2 and libsoup3 in the same
+  process is not supported.` → white window. Now we build with both
+  4.1 + 4.0 dev packages so JUCE's pkg-config picks the modern path and
+  the binary dlopens whichever the user's distro provides. Aligns with
+  the WebKitGTK upstream deprecation of libsoup2 (final removal in
+  2.52.0, March 2026).
+- **macOS hardened-runtime: added `com.apple.security.cs.allow-jit`.**
+  Required for JavaScriptCore's modern `MAP_JIT` API on Sequoia+.
+  `allow-unsigned-executable-memory` (already present) covers the older
+  exception used by `juce_dsp`'s FFT JIT but doesn't satisfy the new
+  WKWebView check on its own.
+
+### Documentation
+- **README's Install section** now distinguishes the two Linux runtime
+  paths (WebKitGTK 4.1 vs 4.0), warns against mixing them in one
+  system, and documents the `TMPDIR` workaround for `/tmp` mounted
+  `noexec` (RHEL hardened images, some snap-confined hosts).
+
 ## [0.13.1] — 2026-05-31
 
 ### Added
