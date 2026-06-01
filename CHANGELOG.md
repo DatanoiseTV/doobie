@@ -4,6 +4,20 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.13.5] — 2026-06-01
+
+### Fixed (Linux)
+- **Restored GPU compositing on Linux.** v0.13.3/v0.13.4 unconditionally
+  set `WEBKIT_DISABLE_DMABUF_RENDERER=1` and
+  `WEBKIT_DISABLE_COMPOSITING_MODE=1` as a blanket fix for the
+  NVIDIA-proprietary-Wayland white-window class. That worked, but it
+  also turned off GPU compositing for **everyone else** -- a user on
+  Ubuntu 26.04 + Intel iGPU reported **1 fps** in Ardour because of
+  this. Both env vars removed from the defaults. Only `GDK_BACKEND=x11`
+  stays (correctness fix -- JUCE's WebKit child is an X11 client). The
+  README now documents these env vars as opt-in workarounds for users
+  who actually hit the NVIDIA-Wayland white window.
+
 ## [0.13.4] — 2026-06-01
 
 ### Changed (Linux)

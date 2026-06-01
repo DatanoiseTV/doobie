@@ -143,27 +143,19 @@ WebEditor::WebEditor (::DoobieAudioProcessor& proc)
 
    #if JUCE_LINUX
     // ---- WebKitGTK environment hardening --------------------------------
-    // Three env vars set defensively before any WebKit code runs:
+    // JUCE 8 has no Wayland support; the WebKit child is explicitly an X11
+    // client. Without GDK_BACKEND=x11, GTK in the same process tree can
+    // pick Wayland and break the XEmbed reparent into the plugin host's
+    // window. This is a correctness fix, not a performance one --
+    // XWayland is the JUCE path either way.
     //
-    // WEBKIT_DISABLE_DMABUF_RENDERER -- WebKitGTK 2.42+ defaults to a DMA-BUF
-    // / EGL renderer that fails silently (solid-white window, no log) on
-    // NVIDIA proprietary drivers under Wayland, in VMs without virgl, and
-    // in several sandbox configurations. Forcing the legacy renderer is the
-    // documented workaround (WebKit bug 262607). CSS performance impact at
-    // typical plugin UI sizes is negligible.
-    //
-    // WEBKIT_DISABLE_COMPOSITING_MODE -- belt-and-braces for the same class
-    // of GPU/driver issues.
-    //
-    // GDK_BACKEND=x11 -- JUCE 8 has no Wayland support; the WebKit child
-    // process is explicitly an X11 client. Without this, GTK in the same
-    // process tree can pick Wayland and break the XEmbed reparent into the
-    // plugin host's window.
-    //
-    // overwrite=0 so power users can override any of these. The standalone
-    // outside a DAW also sees these and that's intended.
-    ::setenv ("WEBKIT_DISABLE_DMABUF_RENDERER", "1", 0);
-    ::setenv ("WEBKIT_DISABLE_COMPOSITING_MODE", "1", 0);
+    // We deliberately do NOT touch WEBKIT_DISABLE_DMABUF_RENDERER or
+    // WEBKIT_DISABLE_COMPOSITING_MODE here. Setting them globally cripples
+    // GPU compositing for the WebView (the difference between 60 fps and
+    // 1 fps on healthy GPUs). Those are narrow workarounds for NVIDIA-
+    // proprietary + Wayland white-window, documented in the README for
+    // affected users to set themselves. overwrite=0 means a power user can
+    // still pre-export GDK_BACKEND.
     ::setenv ("GDK_BACKEND", "x11", 0);
 
     // ---- Subprocess helper location -------------------------------------

@@ -114,10 +114,20 @@ versioned releases.
   `libsoup2 symbols detected` line in stderr.
 
   **`/tmp` mounted `noexec`?** (Common on hardened RHEL / some snaps.)
-  The plugin extracts a small subprocess helper to `$TMPDIR` and runs
-  it; if it can't, the WebView won't render. Workaround:
+  Doobie ≥ 0.13.4 already points its WebKit helper at
+  `$XDG_RUNTIME_DIR/doobie` (= `/run/user/$UID/doobie`) rather than
+  `/tmp`, so this is no longer something most users need to think about.
+  Pre-export `TMPDIR` if you want to override that.
+
+  **White window on NVIDIA proprietary + Wayland?** The WebKitGTK DMA-BUF
+  renderer has known issues there (WebKit bug 262607). Doobie does
+  **not** disable it by default — turning it off would cripple GPU
+  compositing on healthy systems (1 fps on Intel/AMD iGPUs). If you
+  hit this specifically, set the workaround env vars yourself before
+  launching the DAW:
   ```sh
-  export TMPDIR="$HOME/.cache/doobie-tmp" && mkdir -p "$TMPDIR"
+  export WEBKIT_DISABLE_DMABUF_RENDERER=1
+  export WEBKIT_DISABLE_COMPOSITING_MODE=1
   ```
 
   If the window opens white with no UI, run the Standalone from a
