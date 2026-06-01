@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ macos-14, ubuntu-22.04 ]
+        os: [ macos-14, ubuntu-22.04, ubuntu-24.04 ]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,7 +31,7 @@ jobs:
           fetch-depth: 1
 
       - name: install linux deps
-        if: matrix.os == 'ubuntu-22.04'
+        if: startsWith(matrix.os, 'ubuntu')
         run: |
           # Both webkit2gtk 4.0 (legacy/libsoup-2) and 4.1 (modern/libsoup-3)
           # so JUCE's pkg-config picks 4.1 (preferred) at build time and the
@@ -60,11 +60,12 @@ jobs:
           -DDOOBIE_INSTALL_LOCAL=OFF
 
       - name: build
-        # Build the plug-in formats *and* the test executables in one pass --
-        # ctest below would otherwise report "Not Run" because the test
-        # binaries weren't part of the Doobie_All target.
+        # State tests need the full Doobie target which cascades juce_gui_extra
+        # sources into the test compile -- works on Apple/Win but on Linux
+        # requires the WebKit subprocess-helper-binary-data header from
+        # juceaide, which the test target doesn't get. Skip on any Linux.
         run: |
-          if [ "${{ matrix.os }}" = "ubuntu-22.04" ]; then
+          if [[ "${{ matrix.os }}" == ubuntu-* ]]; then
             cmake --build build --target Doobie_All doobie_tests -j
           else
             cmake --build build --target Doobie_All doobie_tests doobie_state_tests -j

@@ -141,6 +141,84 @@ WebEditor::WebEditor (::DoobieAudioProcessor& proc)
     setResizable (true, true);
     setResizeLimits (760, 480, 3040, 1920);
 
+   #if JUCE_LINUX
+    // ---- WebKitGTK environment hardening --------------------------------
+    // Three env vars set defensively before any WebKit code runs:
+    //
+    // WEBKIT_DISABLE_DMABUF_RENDERER -- WebKitGTK 2.42+ defaults to a DMA-BUF
+    // / EGL renderer that fails silently (solid-white window, no log) on
+    // NVIDIA proprietary drivers under Wayland, in VMs without virgl, and
+    // in several sandbox configurations. Forcing the legacy renderer is the
+    // documented workaround (WebKit bug 262607). CSS performance impact at
+    // typical plugin UI sizes is negligible.
+    //
+    // WEBKIT_DISABLE_COMPOSITING_MODE -- belt-and-braces for the same class
+    // of GPU/driver issues.
+    //
+    // GDK_BACKEND=x11 -- JUCE 8 has no Wayland support; the WebKit child
+    // process is explicitly an X11 client. Without this, GTK in the same
+    // process tree can pick Wayland and break the XEmbed reparent into the
+    // plugin host's window.
+    //
+    // overwrite=0 so power users can override any of these. The standalone
+    // outside a DAW also sees these and that's intended.
+    ::setenv ("WEBKIT_DISABLE_DMABUF_RENDERER", "1", 0);
+    ::setenv ("WEBKIT_DISABLE_COMPOSITING_MODE", "1", 0);
+    ::setenv ("GDK_BACKEND", "x11", 0);
+
+    // ---- Helper exec sanity check ---------------------------------------
+    // JUCE 8 extracts its WebKit helper to TMPDIR (/tmp by default), chmods
+    // it +x, and execv's it. That fails silently in Release on:
+    //   - /tmp mounted noexec (CIS-hardened RHEL/Rocky, Debian-13 server)
+    //   - AppArmor profiles on Snap-packaged DAWs (Ubuntu 24+ Bitwig snap)
+    //   - SELinux denying tmpfs exec (Fedora 41+ default)
+    //   - Flatpak/bubblewrap sandbox /tmp isolation
+    //   - musl libc systems (Alpine, Void) -- helper is glibc-linked
+    //
+    // Probe the directory first; if exec is blocked, relocate TMPDIR to
+    // $XDG_RUNTIME_DIR (always exec-allowed under systemd) or ~/.cache.
+    {
+        const auto probeExecOK = [] (const juce::File& dir)
+        {
+            auto probe = dir.getChildFile (".doobie-exec-probe-" + juce::String ((int) ::getpid()));
+            if (! probe.replaceWithText ("#!/bin/sh\nexit 0\n")) return false;
+            probe.setExecutePermission (true);
+            juce::ChildProcess cp;
+            const bool ok = cp.start (probe.getFullPathName())
+                         && cp.waitForProcessToFinish (1000)
+                         && cp.getExitCode() == 0;
+            probe.deleteFile();
+            return ok;
+        };
+
+        auto tmpDir = juce::File::getSpecialLocation (juce::File::tempDirectory);
+        if (! probeExecOK (tmpDir))
+        {
+            // Pick the best fallback: $XDG_RUNTIME_DIR if set + exec-allowed,
+            // else ~/.cache/doobie.
+            juce::File fallback;
+            if (const auto* xdg = ::getenv ("XDG_RUNTIME_DIR"))
+            {
+                juce::File xdgDir { juce::String (xdg) };
+                if (xdgDir.isDirectory() && probeExecOK (xdgDir))
+                    fallback = xdgDir;
+            }
+            if (fallback == juce::File())
+            {
+                fallback = juce::File::getSpecialLocation (juce::File::userHomeDirectory)
+                              .getChildFile (".cache/doobie");
+                fallback.createDirectory();
+            }
+            std::fprintf (stderr,
+                "[Doobie] %s is noexec/sandbox-blocked; relocating TMPDIR to %s.\n"
+                "         Symptom of NOT doing this: white plugin window with no UI.\n",
+                tmpDir.getFullPathName().toRawUTF8(),
+                fallback.getFullPathName().toRawUTF8());
+            ::setenv ("TMPDIR", fallback.getFullPathName().toRawUTF8(), 1);
+        }
+    }
+   #endif
+
     auto& apvts = doobieProcessor.getValueTreeState();
 
     // 1) Build all relays + their parameter attachments. We use ranged

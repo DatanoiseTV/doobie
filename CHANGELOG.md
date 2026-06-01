@@ -4,6 +4,39 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.13.3] — 2026-06-01
+
+### Fixed (Linux defensive hardening)
+A Linux user still reported a white window on v0.13.2 even after the
+webkit2gtk-4.1 fix. Deep audit surfaced three additional silent
+failure modes JUCE 8 has no host-side log for. All three are now
+guarded in `WebEditor.cpp` before the `WebBrowserComponent` is
+constructed:
+
+- **WebKitGTK DMA-BUF renderer**. WebKitGTK 2.42+ defaults to a
+  DMA-BUF/EGL path that fails silently (white window, no log) on
+  NVIDIA proprietary drivers under Wayland, in VMs without virgl,
+  and in several sandbox configs (WebKit bug 262607). Now we
+  pre-set `WEBKIT_DISABLE_DMABUF_RENDERER=1`,
+  `WEBKIT_DISABLE_COMPOSITING_MODE=1` and `GDK_BACKEND=x11` defensively
+  (only when those vars aren't already set, so power users can still
+  override).
+- **`/tmp` mounted noexec**. JUCE extracts a WebKit helper binary to
+  `$TMPDIR/_juce_linux_subprocess*` and `execv`s it; on hardened
+  RHEL/Rocky, Snap-packaged DAWs (AppArmor), Fedora 41+ (SELinux),
+  and Flatpak/bubblewrap-confined hosts the exec silently fails →
+  no WebKit process → blank window. We now probe with a tiny shell
+  script, and if exec is denied, relocate `$TMPDIR` to
+  `$XDG_RUNTIME_DIR` (always exec-allowed under systemd) or
+  `~/.cache/doobie` before JUCE looks at it. Either way a stderr
+  warning is logged so support reports become actionable.
+- **CI matrix now covers Ubuntu 24.04** alongside 22.04 — modern
+  distros catch webkit2gtk-4.1 regressions before users do.
+
+### Documentation
+- README + CHANGELOG both reference the new env-var workarounds
+  users on weird configs can fall back to.
+
 ## [0.13.2] — 2026-05-31
 
 ### Fixed
