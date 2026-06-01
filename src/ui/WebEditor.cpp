@@ -166,56 +166,39 @@ WebEditor::WebEditor (::DoobieAudioProcessor& proc)
     ::setenv ("WEBKIT_DISABLE_COMPOSITING_MODE", "1", 0);
     ::setenv ("GDK_BACKEND", "x11", 0);
 
-    // ---- Helper exec sanity check ---------------------------------------
-    // JUCE 8 extracts its WebKit helper to TMPDIR (/tmp by default), chmods
-    // it +x, and execv's it. That fails silently in Release on:
-    //   - /tmp mounted noexec (CIS-hardened RHEL/Rocky, Debian-13 server)
-    //   - AppArmor profiles on Snap-packaged DAWs (Ubuntu 24+ Bitwig snap)
-    //   - SELinux denying tmpfs exec (Fedora 41+ default)
-    //   - Flatpak/bubblewrap sandbox /tmp isolation
-    //   - musl libc systems (Alpine, Void) -- helper is glibc-linked
+    // ---- Subprocess helper location -------------------------------------
+    // JUCE 8 extracts its WebKit helper to $TMPDIR/_juce_linux_subprocess*
+    // and execv's it. Defaulting that to /tmp is fragile -- /tmp can be
+    // mounted noexec (CIS-hardened RHEL/Rocky, some Debian server installs),
+    // confined by AppArmor (Snap-packaged DAWs), denied tmpfs-exec by
+    // SELinux (Fedora 41+ default), or be the wrong filesystem entirely
+    // inside a Flatpak/bubblewrap sandbox.
     //
-    // Probe the directory first; if exec is blocked, relocate TMPDIR to
-    // $XDG_RUNTIME_DIR (always exec-allowed under systemd) or ~/.cache.
+    // The user-owned location for ephemeral runtime files is
+    // $XDG_RUNTIME_DIR (= /run/user/$UID under systemd; always
+    // exec-allowed, cleared at logout). Falling back to ~/.cache/doobie
+    // covers non-systemd systems. We never use /tmp -- a user-set $TMPDIR
+    // takes precedence, but otherwise we point JUCE at our own dir from
+    // the start.
+    if (::getenv ("TMPDIR") == nullptr)
     {
-        const auto probeExecOK = [] (const juce::File& dir)
+        juce::File chosen;
+        if (const auto* xdg = ::getenv ("XDG_RUNTIME_DIR"))
         {
-            auto probe = dir.getChildFile (".doobie-exec-probe-" + juce::String ((int) ::getpid()));
-            if (! probe.replaceWithText ("#!/bin/sh\nexit 0\n")) return false;
-            probe.setExecutePermission (true);
-            juce::ChildProcess cp;
-            const bool ok = cp.start (probe.getFullPathName())
-                         && cp.waitForProcessToFinish (1000)
-                         && cp.getExitCode() == 0;
-            probe.deleteFile();
-            return ok;
-        };
-
-        auto tmpDir = juce::File::getSpecialLocation (juce::File::tempDirectory);
-        if (! probeExecOK (tmpDir))
-        {
-            // Pick the best fallback: $XDG_RUNTIME_DIR if set + exec-allowed,
-            // else ~/.cache/doobie.
-            juce::File fallback;
-            if (const auto* xdg = ::getenv ("XDG_RUNTIME_DIR"))
+            juce::File xdgDir { juce::String (xdg) };
+            if (xdgDir.isDirectory())
             {
-                juce::File xdgDir { juce::String (xdg) };
-                if (xdgDir.isDirectory() && probeExecOK (xdgDir))
-                    fallback = xdgDir;
+                chosen = xdgDir.getChildFile ("doobie");
+                chosen.createDirectory();
             }
-            if (fallback == juce::File())
-            {
-                fallback = juce::File::getSpecialLocation (juce::File::userHomeDirectory)
-                              .getChildFile (".cache/doobie");
-                fallback.createDirectory();
-            }
-            std::fprintf (stderr,
-                "[Doobie] %s is noexec/sandbox-blocked; relocating TMPDIR to %s.\n"
-                "         Symptom of NOT doing this: white plugin window with no UI.\n",
-                tmpDir.getFullPathName().toRawUTF8(),
-                fallback.getFullPathName().toRawUTF8());
-            ::setenv ("TMPDIR", fallback.getFullPathName().toRawUTF8(), 1);
         }
+        if (chosen == juce::File())
+        {
+            chosen = juce::File::getSpecialLocation (juce::File::userHomeDirectory)
+                        .getChildFile (".cache/doobie");
+            chosen.createDirectory();
+        }
+        ::setenv ("TMPDIR", chosen.getFullPathName().toRawUTF8(), 0);
     }
    #endif
 

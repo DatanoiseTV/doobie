@@ -4,6 +4,18 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.13.4] — 2026-06-01
+
+### Changed (Linux)
+- **Never use `/tmp` for JUCE's WebKit subprocess helper.** Previous
+  release probed `/tmp` and relocated `$TMPDIR` only if exec was
+  denied. Cleaner approach: always point `$TMPDIR` at a user-owned
+  location from the start. We prefer `$XDG_RUNTIME_DIR/doobie`
+  (= `/run/user/$UID/doobie` under systemd — always exec-allowed,
+  cleared at logout), falling back to `~/.cache/doobie` for non-
+  systemd systems. A user-set `$TMPDIR` is still respected. Drops
+  the probe-and-warn branch in favour of always-correct.
+
 ## [0.13.3] — 2026-06-01
 
 ### Fixed (Linux defensive hardening)
