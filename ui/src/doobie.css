@@ -310,11 +310,17 @@ body{ font-family:var(--font); color:var(--c-txt); -webkit-font-smoothing:antial
   position:absolute; inset:0; pointer-events:none; opacity:0.4;
   background:repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,0.18) 3px 4px);
 }
-/* Stereo scope embedded in the empty middle of the tape loop. Sized to
-   sit between the upper/lower tape strands; pointer-events:none so the
-   tape SVG still receives any clicks the design wants on it. */
+/* Stereo scope embedded in the empty middle of the tape loop. Bounds
+   computed from the tape SVG geometry (viewBox 0 110 680 168, reels at
+   x=132 / x=558, top strand y=126, bottom strand y=232) so the scope
+   sits strictly INSIDE the tape rectangle rather than bleeding past
+   the reels. pointer-events:none so the tape SVG still owns clicks. */
 .tape-scope{
-  position:absolute; left:12%; right:12%; top:22%; height:42%;
+  position:absolute;
+  left:19.4%;       /* 132/680 — flush with the left reels */
+  right:17.9%;      /* (680-558)/680 — flush with the right reels */
+  top:17%;          /* just below the upper tape strand */
+  height:38%;       /* stops well above the playback head bodies */
   pointer-events:none; opacity:0.85;
   filter:drop-shadow(0 0 5px var(--accent-glow));
 }
