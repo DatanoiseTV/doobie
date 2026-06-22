@@ -42,15 +42,25 @@ home as a modulated delay and ambience for any genre.
   and treble) shapes only the signal that gets echoed, leaving the dry output clean;
   a separate **feedback** filter (same four controls) darkens and dissolves each
   repeat the way real tape does. Each stage has its own dedicated knobs.
+- **Input multimode resonant filter** — a TPT state-variable filter (LP / HP / BP)
+  on top of the tone stage, with its own cutoff and resonance. Cut bass before it
+  hits the tape, sweep a band-pass into self-oscillation, or carve a high-pass
+  that scoops the dry input — all pre-delay so the repeats inherit the shape.
+- **Six-stage analog phaser** — classic all-pass cascade with feedback, rate,
+  depth, mix, and an offset between channels for stereo movement. Routes **pre**
+  (phased signal feeds the delay), **in feedback** (every repeat deepens through
+  the chain — flange-y at high feedback), or **post** (on the wet echoes only).
 - **Nine reverb modes** — a dispersive spring tank, a modulated plate, a dense
-  16-line **hall**, an octave-up **shimmer**, plus spring→plate series and
-  spring+plate parallel, a **convolution** mode bundled with **38 free
-  Voxengo impulse responses** (concert halls, churches, rooms, cabinets and
-  effect spaces) that also loads any WAV/AIFF/FLAC impulse response of your
-  own, **and an 80s-style gated reverb** (envelope-keyed sidechain gate
-  over a bright plate — classic Phil Collins / Hugh Padgham snare bloom-
-  then-snap). Route any of them **post**, **pre**, or **inside the
-  feedback loop** for washing dub textures and blooming ambient tails.
+  16-line **hall**, a **shimmer** with **switchable pitch interval** (octave-up
+  by default; pick fifths, fourths, octave-down or two-octaves for darker /
+  brighter textures), plus spring→plate series and spring+plate parallel, a
+  **convolution** mode bundled with **38 free Voxengo impulse responses**
+  (concert halls, churches, rooms, cabinets and effect spaces) that also
+  loads any WAV/AIFF/FLAC impulse response of your own, **and an 80s-style
+  gated reverb** (envelope-keyed sidechain gate over a bright plate — classic
+  Phil Collins / Hugh Padgham snare bloom-then-snap). Route any of them
+  **post**, **pre**, or **inside the feedback loop** for washing dub textures
+  and blooming ambient tails.
 - **Delay bypass** — flick the BYPASS toggle next to PING-PONG/FREEZE and the
   tape buffer goes silent, but the input still passes through the character
   chain (Tape/BBD/Diffuse/Pitch saturation, head-bump and HF loss) plus AGE
@@ -58,7 +68,7 @@ home as a modulated delay and ambience for any genre.
   colouration insert.
 - **Performance controls** — ping-pong feedback, freeze (infinite hold), wet ducking,
   stereo width.
-- **60+ factory presets** across dub/reggae, ambient/cinematic, rhythmic/electronic,
+- **64 factory presets** across dub/reggae, ambient/cinematic, rhythmic/electronic,
   lo-fi/vintage, hall & shimmer, delay characters, sound-design FX and instrument
   patches, plus user save/load.
 - **HTML/CSS WebView UI** (JUCE 8 `WebBrowserComponent`). Modern-studio
@@ -69,9 +79,12 @@ home as a modulated delay and ambience for any genre.
   analog needle VUs on the output, **mod-matrix indicators on every knob**
   (any modulated control shows a live mod-range arc + animated dot),
   feedback knob **reddens as it approaches self-oscillation**, slide-up
-  Mod drawer with LFO1/LFO2/Envelope sources + the 8-slot matrix, right-
-  click on any knob for Reset/Copy/Paste/Enter-value, styled save dialog.
-  All bundled and served locally — the plugin never reaches the network.
+  Mod drawer with LFO1/LFO2/Envelope sources + the 8-slot matrix, **click
+  the preset name to open a searchable, category-tagged browser modal**
+  (filter by DUB / AMBIENT / VINTAGE / WIDE; the modal stays open so you
+  can audition through the bank in one pass), right-click on any knob for
+  Reset/Copy/Paste/Enter-value, styled save dialog. All bundled and served
+  locally — the plugin never reaches the network.
 
 ## Install
 

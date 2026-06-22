@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(Doobie VERSION 0.14.0 LANGUAGES C CXX)
+project(Doobie VERSION 0.14.1 LANGUAGES C CXX)
 
 # -----------------------------------------------------------------------------
 # Project-wide settings
