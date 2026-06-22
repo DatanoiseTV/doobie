@@ -260,6 +260,7 @@ private:
     // bus or get aggressively loud as repeats build. Linked stereo.
 public:
     OutputLeveler& getLeveler() noexcept { return outLeveler; }
+    const OutputLeveler& getLeveler() const noexcept { return outLeveler; }
 private:
     OutputLeveler outLeveler;
 

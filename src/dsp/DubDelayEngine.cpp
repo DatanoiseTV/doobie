@@ -453,10 +453,23 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
 
         float wetL = 0.0f, wetR = 0.0f;
 
+        // Pitch-shifter latency compensation. Both the FFT and granular
+        // shifters introduce inherent algorithm latency (half-window). When
+        // Pitch character is active and the shifter ON, subtract that
+        // many samples from every tape-read distance — the recirculating
+        // signal then passes through the shifter (adding latency back),
+        // and the round trip lands at exactly the knob-set delay time per
+        // repeat. Without this, each repeat compounds the latency and the
+        // wet drifts late vs the dry by hundreds of ms after a few echoes.
+        float pitchComp = 0.0f;
+        if (params.delayMode == 4 && params.pitchOn)
+            pitchComp = (float) (params.pitchAlgo == 1 ? granPitchL.getLatencySamples()
+                                                       : pitchL.getLatencySamples());
+
         if (! params.delayBypass)
         {
             // ---- Reads happen before the write so every tap sees prior state ----
-            const float fbDelay = std::max (2.0f, (float) (dly * m));
+            const float fbDelay = std::max (2.0f, (float) (dly * m) - pitchComp);
             float fbReadL = tapeL.read (fbDelay);
             float fbReadR = tapeR.read (fbDelay);
 
@@ -572,7 +585,10 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
                 // user's chosen alignment shift, not part of the tape
                 // capstan's pitch variation.
                 const float offsetSamples = offMs * 0.001f * (float) sampleRate;
-                const float hd = std::max (2.0f, (float) (dly * ratio * m) + offsetSamples);
+                // Same shifter-latency compensation as the feedback tap
+                // above — keeps each head's wet aligned to its ratio
+                // target regardless of the shifter's internal delay.
+                const float hd = std::max (2.0f, (float) (dly * ratio * m) + offsetSamples - pitchComp);
                 const float tL = tapeL.read (hd);
                 const float tR = tapeR.read (hd);
 

@@ -79,6 +79,12 @@ public:
         ratio = std::pow (2.0f, clamped / 12.0f);
     }
 
+    // Inherent algorithm latency in samples. Half the Hann-window length —
+    // that's where the crossfade reaches full amplitude on the second head.
+    // Used to compensate the tape read position so the wet output aligns
+    // with the dry at the mix point.
+    int getLatencySamples() const noexcept { return (int) (windowSize * 0.5f); }
+
     float process (float in) noexcept
     {
         // Write into the circular buffer first so a unity-ratio readback

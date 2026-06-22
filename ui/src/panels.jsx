@@ -255,11 +255,15 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
              action={<PowerBtn on={p.bypass} onClick={() => setP('bypass', !p.bypass)} title="Bypass delay" />} />
       <div className="tape-screen" style={{ padding: '6px 4px' }}>
         <div className="scan" />
-        <TapeDeck heads={heads} playing={!p.bypass && !p.freeze} recording={false} speed={tapeSpeed} accent={accent} />
-        {/* Stereo waveform scope embedded in the empty centre of the tape
-            loop — same idea as the original doobie firmware. Driven by
-            the existing peak-level event so no extra audio plumbing. */}
-        <StereoScope levels={levels} />
+        {/* Stage owns the tape SVG's aspect ratio so the scope (positioned
+            at percentages of this stage) lines up with the SVG reels even
+            when the panel column is height-constrained and the tape SVG
+            shrinks to letterbox. Without this the scope was sized to the
+            tape-screen's width and overflowed the tape on either side. */}
+        <div className="tape-stage">
+          <TapeDeck heads={heads} playing={!p.bypass && !p.freeze} recording={false} speed={tapeSpeed} accent={accent} />
+          <StereoScope levels={levels} />
+        </div>
       </div>
       <div className="bigknobs" style={{ marginTop: 14 }}>
         <Knob size="lg" label="Time" value={p.time} lit mod={mods ? mods.timeMs || 0 : 0}

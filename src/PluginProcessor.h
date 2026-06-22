@@ -92,6 +92,11 @@ public:
     // whether MIDI is reaching the plugin at all (diagnostic when wiring up
     // a MIDI source in the host). -1 if no note has been received yet.
     int getLastMidiNote() const { return lastMidiNote.load (std::memory_order_relaxed); }
+
+    // Output leveler's current gain-reduction in dB (negative = reducing).
+    // Surfaced to the main VU meters so the user can see what auto-gain
+    // is doing.
+    float getOutputGrDb() const { return engine.getLeveler().getGainReductionDb(); }
     float getReverbLevel() const { return reverbLevel.load (std::memory_order_relaxed); }
 
     // Latest LFO and envelope-follower values, for UI metering. Updated once

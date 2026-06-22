@@ -317,10 +317,15 @@ body{ font-family:var(--font); color:var(--c-txt); -webkit-font-smoothing:antial
    the reels. pointer-events:none so the tape SVG still owns clicks. */
 .tape-scope{
   position:absolute;
-  left:19.4%;       /* 132/680 — flush with the left reels */
-  right:17.9%;      /* (680-558)/680 — flush with the right reels */
-  top:17%;          /* just below the upper tape strand */
-  height:38%;       /* stops well above the playback head bodies */
+  /* Stage coordinates map to the tape SVG's reel positions:
+     reels at x=132/558 of 680  → 19.4% / 17.9% insets.
+     upper strand at y=126, lower at y=232, viewBox y starts at 110.
+     Scope sits centred between strands: top 24%, height 28%
+     (mid at y≈174, halfway between 126 and 232). Narrower than
+     the previous bounds so the scope reads as "inside the tape"
+     rather than "filling the entire tape area". */
+  left:22%; right:22%;
+  top:24%; height:28%;
   pointer-events:none; opacity:0.85;
   filter:drop-shadow(0 0 5px var(--accent-glow));
 }
@@ -514,8 +519,19 @@ body{ font-family:var(--font); color:var(--c-txt); -webkit-font-smoothing:antial
 .vu-route .seg button[data-on="1"]{ background:var(--c-raise); color:var(--accent); }
 
 /* ============================================================ TAPE DECK */
-.tape-deck{ width:100%; aspect-ratio:680 / 168; }
+.tape-deck{ width:100%; height:100%; }
 .tape-deck svg{ width:100%; height:100%; display:block; }
+/* Wrapper that holds the tape SVG and its overlays (stereo scope). Owns
+   the SVG's aspect ratio so any absolutely-positioned children using %
+   coordinates land on the SVG's actual reel positions even when the
+   parent column is height-constrained (the stage shrinks horizontally
+   to fit, instead of the SVG shrinking inside a wider container). */
+.tape-stage{
+  position:relative;
+  width:100%; max-width:100%;
+  aspect-ratio:680 / 168;
+  margin:0 auto;
+}
 .tape-tap{ animation:tappulse 1.9s ease-in-out infinite; }
 @keyframes tappulse{ 0%,100%{ opacity:.5 } 50%{ opacity:1 } }
 

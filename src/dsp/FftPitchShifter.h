@@ -38,6 +38,12 @@ public:
     // 2^(n/12) ratio). Useful for callers that think musically.
     void setIntervalSemitones (float semitones) noexcept;
 
+    // Inherent algorithm latency in samples. The first non-trivial output
+    // sample corresponds to the input from this many samples ago. Used to
+    // compensate the tape read position so the wet output aligns with the
+    // dry signal at the mix point (no perceptible "pre-delay" on the wet).
+    int getLatencySamples() const noexcept { return N - hop; }
+
     float process (float x) noexcept;
 
 private:

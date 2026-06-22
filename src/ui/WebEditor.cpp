@@ -444,6 +444,9 @@ void WebEditor::emitLevels()
     // Surfaced so the user can confirm MIDI is reaching the plugin while
     // wiring up a source in the host.
     root->setProperty ("midiNote", doobieProcessor.getLastMidiNote());
+    // Output leveler gain-reduction in dB (0 = no GR, negative = reducing).
+    // Shown as a marker on the main L/R VU meters.
+    root->setProperty ("grDb",     doobieProcessor.getOutputGrDb());
     // Mod-source live values for the Sources tab visualisers (env follower
     // bar + LED, LFO scopes).
     root->setProperty ("env",   doobieProcessor.getEnvValue());
