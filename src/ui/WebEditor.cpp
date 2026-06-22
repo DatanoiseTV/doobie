@@ -143,6 +143,7 @@ namespace
         "mod1Src", "mod2Src", "mod3Src", "mod4Src", "mod5Src", "mod6Src", "mod7Src", "mod8Src",
         "mod1Dst", "mod2Dst", "mod3Dst", "mod4Dst", "mod5Dst", "mod6Dst", "mod7Dst", "mod8Dst",
         "inFilterType", "phaserRoute",
+        "pitchAlgo", "pitchRoute",
     };
 }
 

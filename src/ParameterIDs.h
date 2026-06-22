@@ -132,6 +132,22 @@ namespace dID
     // comparison or to mute the shifter's latency during arrangement.
     inline constexpr auto pitchOn       = "pitchOn";        // bool, default ON
 
+    // Pitch shifter algorithm selector. Two algorithms ship:
+    //   0 = FFT phase vocoder (smooth on sustained pitched material, slight
+    //       smearing on transients, harmonic at every interval).
+    //   1 = Granular dual-head (Eventide-style, very low latency, cleaner
+    //       on transients, clean ±24 st with no bin-shift aliasing — but
+    //       a touch more phasey on long held notes).
+    // Per-instance switch in the Pitch interval picker.
+    inline constexpr auto pitchAlgo     = "pitchAlgo";      // choice, 0..1
+    // Pitch shifter routing. Default "Feedback" — the Pitch character
+    // sits inside the feedback loop, so each repeat shifts again
+    // (compounds into the climbing-octave classic). "Pre" applies the
+    // shift ONCE on the input before the delay, so the delay sees a
+    // pre-shifted signal and repeats it without further pitching.
+    inline constexpr auto pitchRoute    = "pitchRoute";     // choice, 0..1
+    inline const juce::StringArray pitchRouteChoices { "Feedback", "Pre" };
+
     // Stereo spread for the pitch shifter: L shifts by (semis - spread),
     // R by (semis + spread). At interval=0 this becomes a detune chorus
     // (the classic "two pitch shifters dialled ±10 cents" thickening);
@@ -295,6 +311,9 @@ namespace dID
 
     // Input multimode filter type choices (Svf core, ported from hardware).
     inline const juce::StringArray inFilterTypeChoices { "LP", "HP", "BP" };
+
+    // Pitch-shifter algorithm names — choice param pitchAlgo indexes here.
+    inline const juce::StringArray pitchAlgoChoices    { "FFT", "Granular" };
 
     // Phaser route choices: same insert-point options as the reverb so users
     // can re-think the signal flow in one mental model.

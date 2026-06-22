@@ -26,6 +26,7 @@
 #include "GatedReverb.h"
 #include "Diffuser.h"
 #include "FftPitchShifter.h"
+#include "GranularPitchShifter.h"
 #include "DcBlocker.h"
 #include "TapeAge.h"
 #include "ConvolutionReverb.h"
@@ -106,6 +107,12 @@ struct EngineParams
     // (semis + spread/100). At interval=0 this is a detune chorus; at any
     // interval it widens the harmony's stereo image.
     float pitchSpread  = 0.0f;
+    // 0 = FFT phase vocoder; 1 = dual-head granular (Eventide-style).
+    int   pitchAlgo    = 0;
+    // 0 = Feedback (the shifter sits inside the loop, repeats compound
+    // into climbing octaves); 1 = Pre (shift once on input, delay repeats
+    // the pitched signal at a fixed interval).
+    int   pitchRoute   = 0;
     // Momentary kill — when held, recirculating feedback is fast-faded to
     // zero (~8 ms) and the existing tail rings out naturally. Live dub
     // move to chop repeats cleanly without touching the FEEDBACK knob.
@@ -198,7 +205,8 @@ private:
 
     // Per-character feedback processors (used depending on the delay mode).
     Diffuser        diffuseL, diffuseR; // Diffuse mode
-    FftPitchShifter pitchL, pitchR;     // Pitch mode (octave up)
+    FftPitchShifter pitchL, pitchR;     // Pitch mode (FFT algo)
+    GranularPitchShifter granPitchL, granPitchR;  // Pitch mode (Granular algo)
 
     // Tape head-bump (low-mid lift) + HF loss, and the BBD resonant dark filter.
     float tapeWarmL = 0.0f, tapeWarmR = 0.0f;

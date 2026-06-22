@@ -81,6 +81,8 @@ const PARAM_MAP = {
   pitchSemis:  { kind: 'slider', id: 'pitchSemis' },
   pitchOn:     { kind: 'toggle', id: 'pitchOn' },
   pitchSpread: { kind: 'slider', id: 'pitchSpread' },
+  pitchAlgo:   { kind: 'choice', id: 'pitchAlgo',  opts: ['FFT', 'Granular'] },
+  pitchRoute:  { kind: 'choice', id: 'pitchRoute', opts: ['Feedback', 'Pre'] },
   // MIDI Note Mode: incoming notes drive shimmer+pitch intervals.
   midiPitchMode: { kind: 'toggle', id: 'midiPitchMode' },
   midiPortaOn:   { kind: 'toggle', id: 'midiPortaOn'   },

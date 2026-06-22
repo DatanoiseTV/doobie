@@ -321,6 +321,27 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
                        onChange={(e) => setP ('pitchSpread', parseFloat (e.target.value))} />
                 <span className="porta-val">{Math.round (p.pitchSpread * 100)} c</span>
               </div>
+              {/* Algo + route pickers. FFT = phase vocoder (smoother on
+                  sustained pitched material). Granular = dual-head
+                  Eventide-style (lower latency, cleaner transients, full
+                  ±24 st without bin-shift aliasing). Route Feedback (the
+                  classic): shifter sits inside the loop, repeats compound
+                  octaves. Route Pre: shift once on input, delay repeats
+                  the pre-shifted signal at a fixed interval. */}
+              <div className="route-row" style={{ marginTop: 4 }}>
+                <span className="route-lab">Algo</span>
+                <div className="seg">
+                  <button data-on={p.pitchAlgo === 'FFT' ? '1' : '0'}      onClick={() => setP('pitchAlgo', 'FFT')}>FFT</button>
+                  <button data-on={p.pitchAlgo === 'Granular' ? '1' : '0'} onClick={() => setP('pitchAlgo', 'Granular')}>Granular</button>
+                </div>
+              </div>
+              <div className="route-row" style={{ marginTop: 4 }}>
+                <span className="route-lab">Route</span>
+                <div className="seg">
+                  <button data-on={p.pitchRoute === 'Pre' ? '1' : '0'}      onClick={() => setP('pitchRoute', 'Pre')}>Pre</button>
+                  <button data-on={p.pitchRoute === 'Feedback' ? '1' : '0'} onClick={() => setP('pitchRoute', 'Feedback')}>In Feedback</button>
+                </div>
+              </div>
               <div className="shimmer-int-chips" style={p.midiPitchMode ? { opacity: 0.45, pointerEvents: 'none' } : null}>
                 {pSemiChips.map (s =>
                   <button key={s} data-on={pSemis === s ? '1' : '0'} onClick={() => setPSemis (s)}>

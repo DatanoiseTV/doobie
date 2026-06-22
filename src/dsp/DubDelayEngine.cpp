@@ -60,6 +60,8 @@ void DubDelayEngine::prepare (double sr, int maxBlockSize)
     diffuseR.prepare (sr);
     pitchL.prepare (sr);
     pitchR.prepare (sr);
+    granPitchL.prepare (sr);
+    granPitchR.prepare (sr);
 
     // A longer glide on the master time makes large jumps (a division change, a
     // big TIME sweep) ease in like a tape capstan instead of zipping.
@@ -133,6 +135,8 @@ void DubDelayEngine::reset()
     diffuseR.reset();
     pitchL.reset();
     pitchR.reset();
+    granPitchL.reset();
+    granPitchR.reset();
     tapeWarmL = tapeWarmR = tapeDarkL = tapeDarkR = 0.0f;
     bbdLpL = bbdLpR = bbdBpL = bbdBpR = 0.0f;
     fbLimEnv = 0.0f;
@@ -253,6 +257,8 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
     const float spreadSemis = params.pitchSpread < 0.5f ? 0.0f : (params.pitchSpread * 0.01f);
     pitchL.setIntervalSemitones (params.pitchSemis - spreadSemis);
     pitchR.setIntervalSemitones (params.pitchSemis + spreadSemis);
+    granPitchL.setIntervalSemitones (params.pitchSemis - spreadSemis);
+    granPitchR.setIntervalSemitones (params.pitchSemis + spreadSemis);
     gated.setPlateParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
     gated.setGateParams (params.gateThresholdDb, params.gateHoldMs, params.gateReleaseMs);
     // IR makeup gain (per-sample smoothed inside the wrapper).
@@ -338,14 +344,23 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
                 r = diffuseR.process (satR.process (r));
                 break;
 
-            case 4: // Pitch: an FFT shifter lifts everything by `pitchSemis`
-                // pitchOn=false bypasses the FFT entirely — saturation
-                // still runs (so the character mode still colours), but
-                // the shifter latency and effect are gone. A/B toggle.
-                if (params.pitchOn)
+            case 4: // Pitch character — shifter selected by pitchAlgo
+                // pitchOn=false bypasses the shifter entirely.
+                // pitchRoute=Pre runs the shift on the INPUT (above) so the
+                // feedback loop just saturates the already-pitched signal —
+                // skip the shifter here in that case.
+                if (params.pitchOn && params.pitchRoute == 0)
                 {
-                    l = pitchL.process (satL.process (l));
-                    r = pitchR.process (satR.process (r));
+                    if (params.pitchAlgo == 1)
+                    {
+                        l = granPitchL.process (satL.process (l));
+                        r = granPitchR.process (satR.process (r));
+                    }
+                    else
+                    {
+                        l = pitchL.process (satL.process (l));
+                        r = pitchR.process (satR.process (r));
+                    }
                 }
                 else
                 {
@@ -408,6 +423,26 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
             inFilterR.copyCoefsFrom (inFilterL);
             inL = inFilterL.process (inL, params.inFilterType);
             inR = inFilterR.process (inR, params.inFilterType);
+        }
+
+        // Pre-route pitch shift: when delayMode == Pitch and pitchRoute == Pre,
+        // the shifter sits on the INPUT, before the delay writer. The delay
+        // then repeats the pre-pitched signal cleanly (no compounding into
+        // climbing octaves). The character chain inside the feedback loop
+        // becomes pass-through for Pitch mode in this case (see `case 4`
+        // above). Algo selected by pitchAlgo as elsewhere.
+        if (params.delayMode == 4 && params.pitchOn && params.pitchRoute == 1)
+        {
+            if (params.pitchAlgo == 1)
+            {
+                inL = granPitchL.process (inL);
+                inR = granPitchR.process (inR);
+            }
+            else
+            {
+                inL = pitchL.process (inL);
+                inR = pitchR.process (inR);
+            }
         }
 
         float wetL = 0.0f, wetR = 0.0f;

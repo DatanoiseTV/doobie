@@ -627,12 +627,16 @@ input, textarea, [contenteditable="true"] {
 .shimmer-int-val{
   font-family:var(--mono); font-size:11px; color:var(--accent);
 }
-.shimmer-int-chips{ display:flex; flex-wrap:wrap; gap:4px; }
+.shimmer-int-chips{ display:flex; flex-wrap:wrap; gap:3px; }
 .shimmer-int-chips button{
-  height:24px; padding:0 9px; border-radius:6px;
+  /* Compact so the full -24..+24 chip row (11 chips at the widest) fits
+     in the Delay column without wrapping onto a second line. */
+  height:20px; padding:0 5px; min-width:0;
+  border-radius:5px;
   background:var(--c-well); color:var(--c-txt-2);
   border:1px solid var(--c-line-2); cursor:pointer;
-  font:inherit; font-size:10.5px; font-family:var(--mono);
+  font:inherit; font-size:9.5px; font-family:var(--mono);
+  line-height:1; flex:0 0 auto;
 }
 .shimmer-int-chips button[data-on="1"]{
   background:var(--c-raise); color:var(--c-txt); border-color:var(--accent-dim);
