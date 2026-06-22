@@ -39,7 +39,14 @@ function DecayGraph({ decay = 0.6, type = 'Plate', height = 116 }){
 }
 
 /* ---------- LFO waveform mini ---------- */
-function WaveMini({ shape = 'Sine', rate = 0.4, depth = 0.6, value = null }){
+function WaveMini({ shape = 'Sine', rate = 0.4, depth = 0.6 }){
+  // Static reference preview of the LFO's SHAPE — purely a visual cue
+  // for "which wave is selected". The actual live motion now lives on
+  // every knob's mod-indicator dot (which traces the real source value
+  // each frame), so this scope doesn't need to animate. Removing the
+  // CSS scroll also fixes a perceived "flipping" of the shape at
+  // certain rates (the scroll wrapping discontinuity crossed the
+  // viewport in step with the rate-derived duration).
   const W = 120, H = 40, mid = H/2, amp = (H/2 - 4) * Math.max(0.15, depth);
   const cycles = 2;
   // Static shape preview — drawn as a single SVG path so the user sees the
@@ -68,37 +75,21 @@ function WaveMini({ shape = 'Sine', rate = 0.4, depth = 0.6, value = null }){
       default: return Math.sin (x * Math.PI * 2);
     }
   };
+  // Draw exactly `cycles` periods at the FULL viewBox width — no
+  // off-viewport extension, no scroll animation, no flipping.
   let d = '';
   const N = 240;
   for (let i = 0; i <= N; i++){
-    const px = (i / N) * W * 2;
+    const px = (i / N) * W;
     const p  = (i / N) * cycles;
     const py = mid - fn(p) * amp;
     d += (i ? 'L' : 'M') + px.toFixed(1) + ' ' + py.toFixed(1) + ' ';
   }
-  const dur = Math.max(0.6, 4.5 - rate * 3.5).toFixed(2);
-
-  // Live-value indicator: when the caller passes the LFO's current value
-  // (post-depth, in [-1, +1]) we plot it as a moving dot on the centre
-  // line. The dot's Y motion is the actual waveform shape — sine moves
-  // smoothly, triangle linearly, square JUMPs, S&H teleports. Without
-  // this the user only saw the static shape and the CSS scroll motion
-  // (which looks the same regardless of wave).
-  const liveOn = value != null && isFinite (value);
-  const liveY  = liveOn ? (mid - Math.max(-1, Math.min(1, value)) * amp) : mid;
   return (
     <div className="wave">
       <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
         <line x1="0" y1={mid} x2={W} y2={mid} stroke="var(--c-line-2)" strokeWidth="0.5" />
-        <g className="wave-scroll" style={{ animationDuration: dur + 's', transformOrigin: 'center' }}>
-          <path d={d} fill="none" stroke="var(--accent-dim, var(--accent))" strokeWidth="1.4" opacity="0.55" />
-        </g>
-        {liveOn && (
-          <>
-            <line x1={W/2} y1={mid} x2={W/2} y2={liveY} stroke="var(--accent)" strokeWidth="1" opacity="0.4" />
-            <circle cx={W/2} cy={liveY} r="3" fill="var(--accent)" />
-          </>
-        )}
+        <path d={d} fill="none" stroke="var(--accent)" strokeWidth="1.4" opacity="0.85" />
       </svg>
     </div>
   );

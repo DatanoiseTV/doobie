@@ -334,8 +334,14 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
                     bbdLpL = bbdBpL = 0.0f;
                 if (! std::isfinite (bbdLpR) || ! std::isfinite (bbdBpR))
                     bbdLpR = bbdBpR = 0.0f;
-                l = bbdLpL + whiteNoise() * 0.006f;
-                r = bbdLpR + whiteNoise() * 0.006f;
+                // BBD clock noise is now AGE-scaled (was a fixed -44 dBFS that
+                // was audible even at AGE=0 and made BBD feel "hissy by
+                // default"). 0.0005 floor keeps a hint of MN3005-era clock
+                // residue at AGE=0; the rest fades in as AGE rises so the
+                // user can dial the noise level via the existing AGE knob.
+                const float bbdNoise = 0.0005f + 0.003f * tapeAge.hissLevel();
+                l = bbdLpL + whiteNoise() * bbdNoise;
+                r = bbdLpR + whiteNoise() * bbdNoise;
                 break;
             }
 

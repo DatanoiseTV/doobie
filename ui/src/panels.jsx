@@ -616,7 +616,7 @@ function VUStrip({ stages }) {
 // toggle swaps the rate readout between a free Hz knob and a tempo
 // division choice; the Smooth slider is only meaningful when the wave is
 // Random S&H, but we keep it visible always so users know it's there.
-function LfoCard({ n, p, setP, live }) {
+function LfoCard({ n, p, setP }) {
   const rateK   = 'lfo' + n + 'Rate';
   const depthK  = 'lfo' + n + 'Depth';
   const waveK   = 'lfo' + n + 'Wave';
@@ -656,7 +656,7 @@ function LfoCard({ n, p, setP, live }) {
             </select>
           </div>
           <div style={{ height: 8 }} />
-          <WaveMini shape={p[waveK]} rate={p[rateK]} depth={p[depthK]} value={live} />
+          <WaveMini shape={p[waveK]} rate={p[rateK]} depth={p[depthK]} />
         </div>
       </div>
     </div>
@@ -707,10 +707,10 @@ function ModDrawer({ open, onClose, p, setP, matrix, setMx, numSlots, levels }) 
         <div className="dbody">
           {tab === 'sources' ?
             <div className="modgrid">
-              <LfoCard n={1} p={p} setP={setP} live={levels && levels.lfo1v} />
-              <LfoCard n={2} p={p} setP={setP} live={levels && levels.lfo2v} />
-              <LfoCard n={3} p={p} setP={setP} live={levels && levels.lfo3v} />
-              <LfoCard n={4} p={p} setP={setP} live={levels && levels.lfo4v} />
+              <LfoCard n={1} p={p} setP={setP} />
+              <LfoCard n={2} p={p} setP={setP} />
+              <LfoCard n={3} p={p} setP={setP} />
+              <LfoCard n={4} p={p} setP={setP} />
               <div className="modcard">
                 <div className="subhead">Envelope Follower</div>
                 <EnvViz level={levels && levels.env} />
