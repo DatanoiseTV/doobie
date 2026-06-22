@@ -108,12 +108,18 @@ function StereoScope({ levels }){
   }, [levels]);
 
   const ampPx = mid - 6;
+  // Run NEWEST on the LEFT — matches the tape transport in the panel
+  // (record head "R" is on the left, playback "A" further right, so audio
+  // enters the loop on the left side). The history's last entry is the
+  // most recent sample; map it to x=0 and walk older samples rightward.
   const buildPath = (hist, signFlip) => {
     if (hist.length === 0) return '';
     let d = '';
-    for (let i = 0; i < hist.length; i++) {
-      const x = (i / (N - 1)) * W;
-      const y = mid + signFlip * hist[i] * ampPx;
+    const M = hist.length;
+    for (let i = 0; i < M; i++) {
+      const x = (i / Math.max (1, N - 1)) * W;
+      const idx = (M - 1) - i;                // newest first
+      const y = mid + signFlip * hist[idx] * ampPx;
       d += (i ? ' L ' : 'M ') + x.toFixed (1) + ' ' + y.toFixed (1);
     }
     return d;
