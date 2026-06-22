@@ -81,6 +81,14 @@ void FftPitchShifter::reset()
     rover = N - hop;
 }
 
+void FftPitchShifter::setIntervalSemitones (float semitones) noexcept
+{
+    // Wide musical range, clamped so the FFT shifter doesn't get asked for
+    // ratios so extreme that bin collisions dominate the output.
+    const float clamped = std::clamp (semitones, -24.0f, 24.0f);
+    ratio = std::pow (2.0f, clamped / 12.0f);
+}
+
 float FftPitchShifter::process (float x) noexcept
 {
     inFIFO[(size_t) rover] = x;

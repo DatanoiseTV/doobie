@@ -114,6 +114,12 @@ namespace dID
     // reverb mode is anything other than Shimmer.
     inline constexpr auto shimmerSemis  = "shimmerSemis";   // semitones, -24..+24
 
+    // Delay "Pitch" character only: the interval each repeat is shifted by
+    // (compounds across repeats — e.g. +12 climbs an octave per echo, -5
+    // descends a fourth). Inert when delayMode != Pitch. Same range as
+    // shimmerSemis so a UI control can be shared visually.
+    inline constexpr auto pitchSemis    = "pitchSemis";     // semitones, -24..+24
+
     // ---- Modulation matrix --------------------------------------------------
     // Two LFOs + one envelope follower feed a 4-slot matrix; each slot picks a
     // source, a destination (curated subset of engine params, see ModMatrix.h)

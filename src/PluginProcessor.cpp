@@ -116,6 +116,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     // Shimmer pitch interval, in semitones. Discrete 1-st steps over a two-
     // octave range; +12 (octave up) is the classic Brian-Eno default.
     layout.add (std::make_unique<FloatParam> (pid (dID::shimmerSemis), "Shimmer Interval", Range (-24.0f, 24.0f, 1.0f), 12.0f));
+    // Delay-Pitch-character interval — same range and step. Compounds: each
+    // repeat is shifted by this, so +12 climbs an octave per echo, -5
+    // descends a fourth, etc.
+    layout.add (std::make_unique<FloatParam> (pid (dID::pitchSemis),   "Pitch Interval",   Range (-24.0f, 24.0f, 1.0f), 12.0f));
 
     // ---- Input multimode filter (Svf, ported from hardware) ----------------
     layout.add (std::make_unique<BoolParam>   (pid (dID::inFilterOn),   "Input Filter", false));
@@ -323,6 +327,7 @@ doobie::EngineParams DoobieAudioProcessor::buildEngineParams()
     p.gateReleaseMs   = raw (dID::gateRelease);
 
     p.shimmerSemis    = raw (dID::shimmerSemis);
+    p.pitchSemis      = raw (dID::pitchSemis);
 
     return p;
 }

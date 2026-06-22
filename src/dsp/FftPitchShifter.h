@@ -34,6 +34,9 @@ public:
     void reset();
 
     void setRatio (float r) noexcept { ratio = r; }
+    // Convenience: pass the interval in semitones (translated to a
+    // 2^(n/12) ratio). Useful for callers that think musically.
+    void setIntervalSemitones (float semitones) noexcept;
 
     float process (float x) noexcept;
 

@@ -204,6 +204,26 @@ function HeadsPanel({ heads, setHead, mods, synced }) {
 /* ============================== DELAY (hero) ============================== */
 function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', mods, fbCol }) {
   const tcChip = (key, label) => <Chip on={p[key]} onClick={() => setP(key, !p[key])}>{label}</Chip>;
+  // Pitch-character interval picker. Normalised 0..1 from the slider relay
+  // maps to -24..+24 st in unit steps (49 discrete steps). Sliding lands on
+  // the named musical interval; the chip row jumps to common ones with
+  // one click. Same shape as the shimmer reverb picker so both feel like
+  // siblings of the same control.
+  const pSemis    = Math.round (p.pitchSemis * 48) - 24;
+  const setPSemis = (s) => setP ('pitchSemis', (s + 24) / 48);
+  const pSemiChips = [-12, -7, -5, 0, 5, 7, 12, 19, 24];
+  const pSemiName  = (s) => {
+    const sign = s > 0 ? '+' : s < 0 ? '−' : '';
+    const abs  = Math.abs (s);
+    const tag  = abs === 0  ? 'unison'
+              : abs === 5  ? '4th'
+              : abs === 7  ? '5th'
+              : abs === 12 ? 'octave'
+              : abs === 19 ? '8va+5'
+              : abs === 24 ? '2 octaves'
+              : '';
+    return sign + abs + ' st' + (tag ? ' · ' + tag : '');
+  };
   return (
     <div className="panel" style={{ flex: 1 }}>
       <PHead title="Delay" icon={Ico.delay}
@@ -232,6 +252,21 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
             </select>
           </div>
           <div className="cluster-label" style={{ marginTop: 2 }}>Character</div>
+          {p.character === 'Pitch' && (
+            <div className="shimmer-int" style={{ marginBottom: 4 }}>
+              <div className="shimmer-int-hd">
+                <span className="cluster-label">Interval</span>
+                <span className="shimmer-int-val">{pSemiName (pSemis)}</span>
+              </div>
+              <div className="shimmer-int-chips">
+                {pSemiChips.map (s =>
+                  <button key={s} data-on={pSemis === s ? '1' : '0'} onClick={() => setPSemis (s)}>
+                    {s > 0 ? '+' + s : s}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
           <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
             {tcChip('pingpong', 'Ping-Pong')}
             {tcChip('freeze',   'Freeze')}

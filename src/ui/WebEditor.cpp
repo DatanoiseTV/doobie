@@ -116,7 +116,7 @@ namespace
         "plateDecay", "plateSize", "plateDamp", "platePredelay", "reverbMod",
         "irGain", "irSpeed",
         "gateThreshold", "gateHold", "gateRelease",
-        "shimmerSemis",
+        "shimmerSemis", "pitchSemis",
         "lfo1Rate", "lfo1Depth", "lfo2Rate", "lfo2Depth",
         "envAttack", "envRelease", "envSens",
         "head1Level", "head2Level", "head3Level", "head4Level",

@@ -75,6 +75,8 @@ const PARAM_MAP = {
   gateRel:    { kind: 'slider', id: 'gateRelease' },
   // Shimmer-only: pitch interval applied to the regen tail.
   shimmerSemis: { kind: 'slider', id: 'shimmerSemis' },
+  // Delay-Pitch-character only: per-repeat pitch interval.
+  pitchSemis:  { kind: 'slider', id: 'pitchSemis' },
   // Convolution-only: makeup gain on the wet IR signal (dB).
   irGain:     { kind: 'slider', id: 'irGain' },
   // --- output ---

@@ -236,6 +236,12 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
     // the interval (in semitones) is a separate, user-selectable param.
     shimmer.setParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
     shimmer.setIntervalSemitones (params.shimmerSemis);
+
+    // Delay's Pitch character uses the same shifter type but a separate
+    // interval — and runs on the recirculating path, so each repeat shifts
+    // by `pitchSemis`, compounding into the climbing-octave classic.
+    pitchL.setIntervalSemitones (params.pitchSemis);
+    pitchR.setIntervalSemitones (params.pitchSemis);
     gated.setPlateParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
     gated.setGateParams (params.gateThresholdDb, params.gateHoldMs, params.gateReleaseMs);
     // IR makeup gain (per-sample smoothed inside the wrapper).

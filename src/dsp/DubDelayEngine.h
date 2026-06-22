@@ -88,6 +88,10 @@ struct EngineParams
     // +12 is the classic octave-up shimmer; -12 gives a dark "fall" shimmer,
     // +7 a chiming fifth, etc. Inert unless reverbMode == Shimmer.
     float shimmerSemis = 12.0f;
+    // Pitch-character-only: semitones each repeat is shifted by. Compounds
+    // across the feedback loop (climbing/falling octave per echo). Inert
+    // unless delayMode == Pitch.
+    float pitchSemis   = 12.0f;
 
     // Input multimode filter (TPT-SVF, ported from the hardware build).
     // Sits on the live input pre-delay. OFF = true bypass.
