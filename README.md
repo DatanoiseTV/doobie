@@ -16,7 +16,7 @@ home as a modulated delay and ambience for any genre.
 ![Linux](https://img.shields.io/badge/Linux-x86__64-lightgrey)
 [![Release](https://img.shields.io/github/v/release/DatanoiseTV/doobie?include_prereleases&sort=semver&color=cccccc)](https://github.com/DatanoiseTV/doobie/releases)
 
-<img src="docs/screenshots/doobie.png" width="850" alt="Doobie — Classic Dub preset">
+<img width="800" height="515" alt="Doobie Plugin UI" src="https://github.com/user-attachments/assets/b1eb8004-795a-4e33-9f52-4d77cd1ae06e" />
 
 </div>
 
