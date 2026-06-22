@@ -163,8 +163,19 @@
     'Input Gain':       ['inputDrive'],
   };
 
+  // Subscribes to every slot's relays + the live LFO/env values published in
+  // the host `levels` event, and returns two maps keyed by APVTS param id:
+  //
+  //   ranges[paramId] = half-range (0..1) — the maximum modulation amplitude
+  //                     this destination will see (used to draw the mod ARC).
+  //   live[paramId]   = live signed offset (-half..+half) — the instantaneous
+  //                     modulation applied right now (used to position the
+  //                     mod DOT so it actually traces the source waveform
+  //                     instead of a generic sine tween).
+  //
+  // The returned object is still subscriptable as `mods[paramId]` (number =
+  // ranges) for backwards-compat, but also has `.live[paramId]` for the dot.
   function useJuceModMap(numSlots) {
-    // Subscribe to every slot's three relays. Slots 1..N (the backend names them mod1Src..mod8Src).
     const slots = [];
     for (let i = 0; i < numSlots; ++i) {
       const n = i + 1;
@@ -173,11 +184,15 @@
       const amt = global.Juce.getSliderState(`mod${n}Amt`);
       slots.push({ src, dst, amt });
     }
-    // LFO depths + env sens read here so the displayed mod range matches what
-    // the engine actually applies (matrix amount * source depth).
-    const lfo1Depth = global.Juce.getSliderState('lfo1Depth');
-    const lfo2Depth = global.Juce.getSliderState('lfo2Depth');
-    const envSens   = global.Juce.getSliderState('envSens');
+    // Per-LFO depth and env sens scale the source's effective range — same
+    // factor the engine applies, so the on-screen arc width matches.
+    const depths = [
+      global.Juce.getSliderState('lfo1Depth'),
+      global.Juce.getSliderState('lfo2Depth'),
+      global.Juce.getSliderState('lfo3Depth'),
+      global.Juce.getSliderState('lfo4Depth'),
+      global.Juce.getSliderState('envSens'),
+    ];
 
     const [tick, setTick] = useState(0);
     useEffect(() => {
@@ -187,30 +202,45 @@
         s.dst.valueChangedEvent.addListener(bump);
         s.amt.valueChangedEvent.addListener(bump);
       });
-      lfo1Depth.valueChangedEvent.addListener(bump);
-      lfo2Depth.valueChangedEvent.addListener(bump);
-      envSens.valueChangedEvent.addListener(bump);
+      depths.forEach (d => d.valueChangedEvent.addListener(bump));
       return undefined;
     }, []);
 
-    const depthOf = (sIdx) => sIdx === 1 ? lfo1Depth.getNormalisedValue()
-                          : sIdx === 2 ? lfo2Depth.getNormalisedValue()
-                          : sIdx === 3 ? envSens.getNormalisedValue()
-                          : 0;
-    const mods = {};
+    // Live source values come in via the `levels` event (lfo1v..lfo4v in
+    // [-1,+1], env in [0,1]). The Knob refreshes on each `levels` tick at
+    // 30 Hz so the dot follows the actual waveform.
+    const lv = JuceBridge.useJuceEvent ('levels', { lfo1v:0, lfo2v:0, lfo3v:0, lfo4v:0, env:0 });
+    // Map ModSource enum index to its live value. Order MUST match
+    // ModMatrix.h::ModSource — Off=0, Lfo1..4=1..4, Env=5.
+    const sourceLive = [0, lv.lfo1v || 0, lv.lfo2v || 0, lv.lfo3v || 0, lv.lfo4v || 0, lv.env || 0];
+
+    const depthOf = (sIdx) =>
+      sIdx >= 1 && sIdx <= 4 ? depths[sIdx - 1].getNormalisedValue()
+      : sIdx === 5           ? depths[4].getNormalisedValue()
+      : 0;
+
+    const ranges = {};
+    const live   = {};
     slots.forEach(s => {
       const si = s.src.getChoiceIndex();
       const di = s.dst.getChoiceIndex();
       if (si <= 0 || di <= 0) return;
-      // amt comes back as 0..1 from the relay; the underlying APVTS range is -1..1.
       const amt01 = s.amt.getNormalisedValue();
-      const amt = amt01 * 2 - 1;
-      const half = Math.abs(amt) * depthOf(si) * 0.5;
+      const amt   = amt01 * 2 - 1;
+      const half  = Math.abs(amt) * depthOf(si) * 0.5;
       if (half <= 0) return;
+      // Live offset: source × signed amount × depth × 0.5 (same shape the
+      // engine applies, in normalised-knob space).
+      const offset = sourceLive[si] * amt * depthOf(si) * 0.5;
       const params = DEST_TO_PARAMS[MOD_DESTS[di]] || [];
-      params.forEach(p => { mods[p] = Math.max(mods[p] || 0, half); });
+      params.forEach(p => {
+        ranges[p] = Math.max (ranges[p] || 0, half);
+        live[p]   = (live[p]   || 0) + offset;
+      });
     });
-    return mods;
+    // Backwards-compat: indexable like the old flat map (number = range).
+    Object.assign (ranges, { live });
+    return ranges;
   }
 
   global.JuceBridge = {

@@ -47,9 +47,16 @@ const Ico = {
 };
 
 function KB({ label, k, p, setP, bipolar, format, lit, size = 'sm', mods, arcColor, modKey }) {
+  const id  = modKey || PARAM_MOD_KEY[k] || '';
+  const rng = mods ? (mods[id] || 0) : 0;
+  // Live modulation offset for THIS param right now (signed). Drives the
+  // mod-indicator dot's position so it traces the source's actual waveform
+  // — sine glides, square jumps, S&H teleports — instead of always
+  // looking like a sine tween.
+  const liveOff = (mods && mods.live) ? (mods.live[id] || 0) : 0;
   return <Knob size={size} label={label} bipolar={bipolar} format={format} lit={lit}
                value={p[k]} onChange={(v) => setP(k, v)}
-               mod={mods ? (mods[modKey || PARAM_MOD_KEY[k] || ''] || 0) : 0}
+               mod={rng} modValue={liveOff}
                arcColor={arcColor} />;
 }
 

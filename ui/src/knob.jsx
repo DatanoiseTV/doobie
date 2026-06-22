@@ -17,7 +17,7 @@ function arcPath(cx, cy, r, a0, a1){
 const A0 = -135, A1 = 135, SWEEP = A1 - A0;
 
 /* ---- Knob ---- */
-function Knob({ value = 0.5, onChange, size = 'md', label, format, lit = false, bipolar = false, mod = 0, arcColor, defaultValue }){
+function Knob({ value = 0.5, onChange, size = 'md', label, format, lit = false, bipolar = false, mod = 0, modValue = 0, arcColor, defaultValue }){
   const ref = useRef(null);
   const [drag, setDrag] = useState(false);
   const stash = useRef({ y: 0, v: 0 });
@@ -114,10 +114,16 @@ function Knob({ value = 0.5, onChange, size = 'md', label, format, lit = false, 
           <line className="k-point" x1={pix} y1={piy} x2={px - (px-c)*0.06} y2={py - (py-c)*0.06}
                 strokeWidth={size === 'lg' ? 2.4 : 1.8} strokeLinecap="round" />
           <circle className="k-hub" cx={c} cy={c} r={size === 'lg' ? 3 : 2} />
-          {modOn && <circle className="k-moddot" r={size === 'lg' ? 2.7 : 2}>
-            <animateMotion dur="1.7s" repeatCount="indefinite" keyPoints="0;1;0" keyTimes="0;0.5;1"
-                           calcMode="spline" keySplines="0.4 0 0.6 1;0.4 0 0.6 1" path={modPath} />
-          </circle>}
+          {modOn && (() => {
+            // Live mod-dot: position at value + modValue (signed offset in
+            // normalised knob units, ±mod). Replaces a generic sine
+            // animateMotion tween — the dot now actually traces the source's
+            // shape (sine glides, square jumps, S&H teleports). Falls back
+            // to centre of arc if no live value is plumbed through.
+            const dotPos = Math.max (0, Math.min (1, value + modValue));
+            const [dx, dy] = polar (c, c, Rm, A0 + dotPos * SWEEP);
+            return <circle className="k-moddot" cx={dx} cy={dy} r={size === 'lg' ? 2.7 : 2} />;
+          })()}
         </svg>
       </div>
       {label && <div className="klabel">{label}</div>}
