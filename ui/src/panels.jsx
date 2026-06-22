@@ -194,6 +194,14 @@ function HeadsPanel({ heads, setHead, mods, synced }) {
                     const target = synced ? snapHeadDiv (v).ratio : v;
                     setHead(i, 'time', clampTime (i, target));
                   }} />
+            {/* Per-head additive offset in ms (signed, ±200 ms). Stacks on
+                top of the ratio-driven tap so micro-timing / haas-style
+                widening between heads is independent of the master delay.
+                Bipolar knob, ms display, separate from the wow/flutter-
+                modulated head TIME above. */}
+            <Knob size="sm" label="Offset" value={h.offset} bipolar
+                  format={(v) => { const d = Math.round ((v - 0.5) * 400); return (d > 0 ? '+' : '') + d + ' ms'; }}
+                  onChange={(v) => setHead(i, 'offset', v)} />
           </div>
         )}
       </div>
@@ -506,6 +514,16 @@ function OutputBar({ p, setP, levels, mods }) {
           <WidthDial value={p.width} onChange={(v) => setP('width', v)} label="Width" format={fmt.pct} />
           <KB label="Duck"     k="duck"   p={p} setP={setP} format={fmt.pct}   size="md"     mods={mods} />
           <KB label="Output"   k="output" p={p} setP={setP} format={fmt.trim}  size="md" lit />
+          {/* Auto-gain pill — slow program leveler + fast ceiling catch on
+              the output. Tames feedback near self-oscillation without
+              crushing dynamics. ON by default; LED-style chip so it reads
+              at a glance during live use. */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, marginLeft: 4 }}>
+            <Chip on={p.autoGain} onClick={() => setP('autoGain', !p.autoGain)}>Auto Gain</Chip>
+            <span style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--c-txt-3)' }}>
+              {p.autoGain ? 'leveler' : 'bypass'}
+            </span>
+          </div>
         </div>
         <span className="divider" style={{ height: 70 }} />
         <div className="out-meters">

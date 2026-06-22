@@ -81,6 +81,9 @@ const PARAM_MAP = {
   midiPitchMode: { kind: 'toggle', id: 'midiPitchMode' },
   midiPortaOn:   { kind: 'toggle', id: 'midiPortaOn'   },
   midiPortaMs:   { kind: 'slider', id: 'midiPortaMs'   },
+  // Output leveler — auto-gain that keeps long-term loudness constant
+  // when feedback approaches self-oscillation, without crushing dynamics.
+  autoGain:      { kind: 'toggle', id: 'outLevelerOn'  },
   // Convolution-only: makeup gain on the wet IR signal (dB).
   irGain:     { kind: 'slider', id: 'irGain' },
   // --- output ---
@@ -167,11 +170,13 @@ function bindHeads(force) {
     const lvl  = window.Juce.getSliderState(`head${n}Level`);
     const pan  = window.Juce.getSliderState(`head${n}Pan`);
     const time = window.Juce.getSliderState(`head${n}Ratio`);
+    const off  = window.Juce.getSliderState(`head${n}Offset`);
     on.valueChangedEvent.addListener(force);
     lvl.valueChangedEvent.addListener(force);
     pan.valueChangedEvent.addListener(force);
     time.valueChangedEvent.addListener(force);
-    arr.push({ id: 'ABCD'[i], on, lvl, pan, time });
+    off.valueChangedEvent.addListener(force);
+    arr.push({ id: 'ABCD'[i], on, lvl, pan, time, off });
   }
   return arr;
 }
@@ -179,17 +184,19 @@ function makeHeads(handles) {
   return handles.map(h => ({
     id: h.id,
     on: !!h.on.getValue(),
-    level: h.lvl.getNormalisedValue(),
-    pan:   h.pan.getNormalisedValue(),
-    time:  h.time.getNormalisedValue(),
+    level:  h.lvl.getNormalisedValue(),
+    pan:    h.pan.getNormalisedValue(),
+    time:   h.time.getNormalisedValue(),
+    offset: h.off.getNormalisedValue(),
   }));
 }
 function setHead(handles, i, key, v) {
   const h = handles[i];
-  if (key === 'on')    h.on.setValue(!!v);
-  else if (key === 'level') h.lvl.setNormalisedValue(Math.max(0, Math.min(1, v)));
-  else if (key === 'pan')   h.pan.setNormalisedValue(Math.max(0, Math.min(1, v)));
-  else if (key === 'time')  h.time.setNormalisedValue(Math.max(0, Math.min(1, v)));
+  if (key === 'on')         h.on.setValue(!!v);
+  else if (key === 'level')  h.lvl.setNormalisedValue(Math.max(0, Math.min(1, v)));
+  else if (key === 'pan')    h.pan.setNormalisedValue(Math.max(0, Math.min(1, v)));
+  else if (key === 'time')   h.time.setNormalisedValue(Math.max(0, Math.min(1, v)));
+  else if (key === 'offset') h.off.setNormalisedValue(Math.max(0, Math.min(1, v)));
 }
 
 /* ---- mod matrix bindings ------------------------------------------------- */

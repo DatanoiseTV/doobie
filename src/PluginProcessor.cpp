@@ -68,6 +68,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
         layout.add (std::make_unique<FloatParam> (pid (dID::headLevel[(size_t) i]), "Head " + n + " Level", Range (0.0f, 1.0f, 0.001f), defLevel[(size_t) i]));
         layout.add (std::make_unique<FloatParam> (pid (dID::headPan[(size_t) i]),   "Head " + n + " Pan",   Range (-1.0f, 1.0f, 0.001f), defPan[(size_t) i]));
         layout.add (std::make_unique<FloatParam> (pid (dID::headRatio[(size_t) i]), "Head " + n + " Ratio", Range (0.05f, 1.0f, 0.001f), defRatio[(size_t) i]));
+        layout.add (std::make_unique<FloatParam> (pid (dID::headOffset[(size_t) i]), "Head " + n + " Offset", Range (-200.0f, 200.0f, 0.1f), 0.0f));
     }
 
     // ---- Tape character -----------------------------------------------------
@@ -122,6 +123,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     layout.add (std::make_unique<FloatParam> (pid (dID::pitchSemis),   "Pitch Interval",   Range (-24.0f, 24.0f, 1.0f), 12.0f));
     layout.add (std::make_unique<BoolParam>  (pid (dID::midiPitchMode), "MIDI Pitch Mode", false));
     layout.add (std::make_unique<BoolParam>  (pid (dID::midiPortaOn),   "MIDI Portamento", false));
+    layout.add (std::make_unique<BoolParam>  (pid (dID::outLevelerOn),  "Auto Gain", true));
     {
         Range portaRange (0.0f, 2000.0f, 1.0f); portaRange.setSkewForCentre (120.0f);
         layout.add (std::make_unique<FloatParam> (pid (dID::midiPortaMs), "MIDI Portamento Time", portaRange, 100.0f));
@@ -273,9 +275,10 @@ doobie::EngineParams DoobieAudioProcessor::buildEngineParams()
 
     for (int i = 0; i < 4; ++i)
     {
-        p.headOn[(size_t) i]    = raw (dID::headOn[(size_t) i]) > 0.5f;
-        p.headLevel[(size_t) i] = raw (dID::headLevel[(size_t) i]);
-        p.headPan[(size_t) i]   = raw (dID::headPan[(size_t) i]);
+        p.headOn[(size_t) i]      = raw (dID::headOn[(size_t) i]) > 0.5f;
+        p.headLevel[(size_t) i]   = raw (dID::headLevel[(size_t) i]);
+        p.headPan[(size_t) i]     = raw (dID::headPan[(size_t) i]);
+        p.headOffsetMs[(size_t) i] = raw (dID::headOffset[(size_t) i]);
 
         const float rawRatio = raw (dID::headRatio[(size_t) i]);
         if (synced && masterQuarters > 0.0)
@@ -472,6 +475,7 @@ void DoobieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
     }
 
     engine.setParams (p);
+    engine.getLeveler().setEnabled (raw (dID::outLevelerOn) > 0.5f);
     engine.process (buffer);
 
     // Capture output peaks for the VU meters.

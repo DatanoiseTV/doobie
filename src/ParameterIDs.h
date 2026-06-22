@@ -49,6 +49,12 @@ namespace dID
     inline constexpr std::array<const char*, 4> headLevel { "head1Level", "head2Level", "head3Level", "head4Level" };
     inline constexpr std::array<const char*, 4> headPan   { "head1Pan",   "head2Pan",   "head3Pan",   "head4Pan"   };
     inline constexpr std::array<const char*, 4> headRatio { "head1Ratio", "head2Ratio", "head3Ratio", "head4Ratio" };
+    // Per-head ADDITIVE offset, in milliseconds, on top of the ratio-driven
+    // delay time. Useful for micro-timing: a few ms of haas-style offset
+    // between heads widens the wash without changing the rhythmic feel, or
+    // for stacking tapped echoes against a quantised grid. Range ±200 ms,
+    // signed so heads can pull either side of the ratio tap.
+    inline constexpr std::array<const char*, 4> headOffset{ "head1Offset", "head2Offset", "head3Offset", "head4Offset" };
 
     // ---- Tape character -----------------------------------------------------
     inline constexpr auto wow         = "wow";
@@ -133,6 +139,12 @@ namespace dID
     // on top of the glided note for vibrato / micro-adjustment.
     inline constexpr auto midiPortaOn   = "midiPortaOn";    // bool
     inline constexpr auto midiPortaMs   = "midiPortaMs";    // ms, 0..2000
+
+    // Output leveler — slow program-dependent gain reduction + fast ceiling
+    // catcher applied at the end of the engine chain. Holds long-term
+    // loudness constant while preserving transient dynamics — crucial for
+    // live use where feedback near self-oscillation otherwise clips the bus.
+    inline constexpr auto outLevelerOn  = "outLevelerOn";   // bool, default ON
 
     // ---- Modulation matrix --------------------------------------------------
     // Two LFOs + one envelope follower feed a 4-slot matrix; each slot picks a

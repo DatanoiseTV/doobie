@@ -16,6 +16,7 @@
 #include "WowFlutter.h"
 #include "Phaser.h"
 #include "Svf.h"
+#include "OutputLeveler.h"
 #include "Saturation.h"
 #include "ToneStack.h"
 #include "SpringReverb.h"
@@ -59,6 +60,10 @@ struct EngineParams
     std::array<float, 4> headLevel { 0.9f, 0.0f, 0.0f, 0.7f };
     std::array<float, 4> headPan   { 0.0f, 0.0f, 0.0f, 0.0f };
     std::array<float, 4> headRatio { 0.25f, 0.5f, 0.75f, 1.0f };
+    // Per-head ADDITIVE offset, in milliseconds. Stacks on top of the
+    // ratio-driven tap time so micro-timing (haas widening, off-grid
+    // tapped echoes) is independent of the master delay.
+    std::array<float, 4> headOffsetMs { 0.0f, 0.0f, 0.0f, 0.0f };
 
     float wow = 0.15f, flutter = 0.1f, drive = 0.25f;
     float age = 0.0f;   // tape-wear macro: hiss + dropouts + HF loss + instability
@@ -221,6 +226,14 @@ private:
     // image). Both are OFF=bypass.
     Svf    inFilterL, inFilterR;
     Phaser phaserL,   phaserR;
+
+    // Output leveler (slow program leveler + fast ceiling catcher). Tames
+    // feedback runaway at the output stage so live use doesn't clip the
+    // bus or get aggressively loud as repeats build. Linked stereo.
+public:
+    OutputLeveler& getLeveler() noexcept { return outLeveler; }
+private:
+    OutputLeveler outLeveler;
 
     // Multiplicative smoothing glides the delay time at a constant ratio, which
     // sounds like a tape capstan easing to a new speed rather than a linear jump.

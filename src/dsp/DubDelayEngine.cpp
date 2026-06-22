@@ -98,6 +98,7 @@ void DubDelayEngine::prepare (double sr, int maxBlockSize)
     dcOutR.prepare (sr);
 
     tapeAge.prepare (sr);
+    outLeveler.prepare (sr);
 
     // Feedback-limiter time constants (2 ms attack / 250 ms release) — held
     // here so we don't recompute them per sample. Matches the hardware port.
@@ -133,6 +134,7 @@ void DubDelayEngine::reset()
     tapeWarmL = tapeWarmR = tapeDarkL = tapeDarkR = 0.0f;
     bbdLpL = bbdLpR = bbdBpL = bbdBpR = 0.0f;
     fbLimEnv = 0.0f;
+    outLeveler.reset();
     wowFlutter.reset();
     duckEnv = 0.0f;
 
@@ -491,7 +493,12 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
                 if (lvl <= 1.0e-5f)
                     continue;
 
-                const float hd = std::max (2.0f, (float) (dly * ratio * m));
+                // Ratio-driven base position + additive ms offset (signed).
+                // The offset is NOT modulated by wow/flutter — it's the
+                // user's chosen alignment shift, not part of the tape
+                // capstan's pitch variation.
+                const float offsetSamples = params.headOffsetMs[(size_t) i] * 0.001f * (float) sampleRate;
+                const float hd = std::max (2.0f, (float) (dly * ratio * m) + offsetSamples);
                 const float tL = tapeL.read (hd);
                 const float tR = tapeR.read (hd);
 
@@ -582,6 +589,12 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
         // bus and need a session reload.
         if (! std::isfinite (outL)) outL = 0.0f;
         if (! std::isfinite (outR)) outR = 0.0f;
+
+        // Two-stage output leveler — slow program-dependent gain reduction
+        // followed by a fast ceiling catcher. Tames feedback runaway for
+        // live use without crushing dynamics like a brick-wall limiter.
+        // True bypass when disabled by the user.
+        outLeveler.processSample (outL, outR);
 
         L[n] = outL;
         if (stereo)

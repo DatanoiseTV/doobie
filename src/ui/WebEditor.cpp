@@ -117,6 +117,7 @@ namespace
         "irGain", "irSpeed",
         "gateThreshold", "gateHold", "gateRelease",
         "shimmerSemis", "pitchSemis", "midiPortaMs",
+        "head1Offset", "head2Offset", "head3Offset", "head4Offset",
         "lfo1Rate", "lfo1Depth", "lfo2Rate", "lfo2Depth",
         "envAttack", "envRelease", "envSens",
         "head1Level", "head2Level", "head3Level", "head4Level",
@@ -128,7 +129,7 @@ namespace
         "phaserRate", "phaserDepth", "phaserFb", "phaserMix",
     };
     constexpr const char* kBoolIds[] = {
-        "syncMode", "pingPong", "freeze", "delayBypass", "midiPitchMode", "midiPortaOn",
+        "syncMode", "pingPong", "freeze", "delayBypass", "midiPitchMode", "midiPortaOn", "outLevelerOn",
         "head1On", "head2On", "head3On", "head4On",
         "inFilterOn", "phaserOn",
     };
