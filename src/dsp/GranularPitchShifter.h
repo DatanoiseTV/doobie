@@ -30,7 +30,7 @@ namespace doobie
 // (full amplitude) while the other is fading in/out at the edges.
 //
 // Trade-offs vs. the FFT phase vocoder (FftPitchShifter):
-//   + Lower latency (~25 ms half-window vs. ~17 ms N-hop)
+//   + Lower latency (~12 ms half-window vs. ~17 ms N-hop on the FFT)
 //   + Smoother on transients and percussive sources (no spectral smear)
 //   + Cleaner at extreme intervals (±24 st) — no bin-shift aliasing
 //   - More phasey on sustained pitched material (the crossfade is audible
@@ -43,16 +43,21 @@ public:
     void prepare (double sr) noexcept
     {
         sampleRate = sr;
-        // 200 ms buffer (next power of two). Window is half the buffer
-        // so each head has a ~100 ms scan range — long enough that even
-        // -24 st (read at half speed) doesn't run out of samples before
-        // the next wrap.
+        // Buffer = 64 ms (covers -24 st = 0.25× read speed for at least
+        // one window length without overlap). Window = 24 ms — short
+        // enough that perceived latency is ~12 ms (half-window — the
+        // crossfade lag — gets you a clean signal once the second head
+        // ramps in), long enough that grains aren't audible on most
+        // material. The previous 100 ms window was clean but felt
+        // sluggish on live source — the "delayed" feel the user noticed.
         int n = 1;
-        while (n < (int) (0.2 * sr)) n <<= 1;
+        const int target = (int) std::ceil (0.064 * sr);
+        while (n < target) n <<= 1;
         bufSize = n;
         bufMask = n - 1;
         buffer.assign ((size_t) bufSize, 0.0f);
-        windowSize = 0.5f * (float) bufSize;
+        const int win = (int) std::ceil (0.024 * sr);
+        windowSize = (float) win;
         reset();
     }
 
