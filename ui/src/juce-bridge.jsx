@@ -231,7 +231,13 @@
       if (half <= 0) return;
       // Live offset: source × signed amount × depth × 0.5 (same shape the
       // engine applies, in normalised-knob space).
-      const offset = sourceLive[si] * amt * depthOf(si) * 0.5;
+      // sourceLive[si] is already the engine's depth × shape (Lfo::advance
+      // multiplies by depth before returning). Multiply only by amount ×
+      // the 0.5 destination scaling — not by depth again. The previous
+      // `* depthOf(si)` here applied depth twice, squashing the dot's
+      // travel to depth² × amount × 0.5 and making it look like the
+      // indicator wasn't moving even with a fully-set-up matrix slot.
+      const offset = sourceLive[si] * amt * 0.5;
       const params = DEST_TO_PARAMS[MOD_DESTS[di]] || [];
       params.forEach(p => {
         ranges[p] = Math.max (ranges[p] || 0, half);
