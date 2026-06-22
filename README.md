@@ -22,6 +22,8 @@ home as a modulated delay and ambience for any genre.
 
 ## Highlights
 
+<img width="1520" height="979" alt="Screenshot 2026-06-23 at 01 20 09" src="https://github.com/user-attachments/assets/00f3b817-59e4-45a6-8727-9f40ff223d8a" />
+
 - **Multi-head tape echo** — four playback heads tapping one tape, each with its
   own level, pan, time and **±200 ms additive offset** for haas-style micro-
   timing between heads. In sync each head's time snaps to a musical division
