@@ -120,6 +120,13 @@ namespace dID
     // shimmerSemis so a UI control can be shared visually.
     inline constexpr auto pitchSemis    = "pitchSemis";     // semitones, -24..+24
 
+    // MIDI-note mode: when ON, incoming MIDI note-on messages set BOTH the
+    // delay-pitch and shimmer-reverb intervals relative to a reference of
+    // C3 (MIDI 60). C3 = 0 st, C4 = +12 st, C2 = -12 st, etc. The chip
+    // pickers in the UI become read-outs while this is active. Lets you
+    // play the shimmer/pitch intervals from a keyboard.
+    inline constexpr auto midiPitchMode = "midiPitchMode";  // bool
+
     // ---- Modulation matrix --------------------------------------------------
     // Two LFOs + one envelope follower feed a 4-slot matrix; each slot picks a
     // source, a destination (curated subset of engine params, see ModMatrix.h)

@@ -38,7 +38,7 @@ public:
     bool hasEditor() const override { return true; }
 
     const juce::String getName() const override { return "Doobie"; }
-    bool acceptsMidi() const override  { return false; }
+    bool acceptsMidi() const override  { return true; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
     double getTailLengthSeconds() const override { return 8.0; }
@@ -126,6 +126,12 @@ private:
     std::atomic<float> reverbLevel { 0.0f };
     // Latest mod-source values published from processBlock for UI metering.
     std::atomic<float> lfo1ValueUI { 0.0f }, lfo2ValueUI { 0.0f }, envValueUI { 0.0f };
+    // Most recent MIDI note-on; used by the "MIDI pitch mode" toggle to drive
+    // the shimmer + delay pitch intervals from a keyboard. C3 (MIDI 60) is
+    // the reference; semitone offset from 60 becomes the interval. Default
+    // 72 (C4) so the engine sits at +12 st (the historical octave-up) until
+    // the first note arrives.
+    std::atomic<int> lastMidiNote { 72 };
     double sampleRate = 44100.0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DoobieAudioProcessor)

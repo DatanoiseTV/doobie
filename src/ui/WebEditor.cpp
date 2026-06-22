@@ -128,7 +128,7 @@ namespace
         "phaserRate", "phaserDepth", "phaserFb", "phaserMix",
     };
     constexpr const char* kBoolIds[] = {
-        "syncMode", "pingPong", "freeze", "delayBypass",
+        "syncMode", "pingPong", "freeze", "delayBypass", "midiPitchMode",
         "head1On", "head2On", "head3On", "head4On",
         "inFilterOn", "phaserOn",
     };

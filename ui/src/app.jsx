@@ -77,6 +77,8 @@ const PARAM_MAP = {
   shimmerSemis: { kind: 'slider', id: 'shimmerSemis' },
   // Delay-Pitch-character only: per-repeat pitch interval.
   pitchSemis:  { kind: 'slider', id: 'pitchSemis' },
+  // MIDI Note Mode: incoming notes drive shimmer+pitch intervals.
+  midiPitchMode: { kind: 'toggle', id: 'midiPitchMode' },
   // Convolution-only: makeup gain on the wet IR signal (dB).
   irGain:     { kind: 'slider', id: 'irGain' },
   // --- output ---

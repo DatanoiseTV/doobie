@@ -638,6 +638,17 @@ input, textarea, [contenteditable="true"] {
   background:var(--c-raise); color:var(--c-txt); border-color:var(--accent-dim);
   box-shadow:0 1px 0 oklch(0.34 0.006 60) inset;
 }
+.midi-btn{
+  height:20px; padding:0 8px; border-radius:5px;
+  background:var(--c-well); color:var(--c-txt-2);
+  border:1px solid var(--c-line-2); cursor:pointer;
+  font:inherit; font-size:9.5px; letter-spacing:0.18em; text-transform:uppercase;
+}
+.midi-btn:hover{ background:color-mix(in oklab, var(--c-well), white 6%); color:var(--c-txt); }
+.midi-btn.on{
+  background:var(--accent); color:#1a1410; border-color:var(--accent);
+  box-shadow:0 0 8px var(--accent-glow);
+}
 
 /* ============================================================
    Knob right-click context menu

@@ -211,7 +211,7 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
   // siblings of the same control.
   const pSemis    = Math.round (p.pitchSemis * 48) - 24;
   const setPSemis = (s) => setP ('pitchSemis', (s + 24) / 48);
-  const pSemiChips = [-12, -7, -5, 0, 5, 7, 12, 19, 24];
+  const pSemiChips = [-24, -19, -12, -7, -5, 0, 5, 7, 12, 19, 24];
   const pSemiName  = (s) => {
     const sign = s > 0 ? '+' : s < 0 ? '−' : '';
     const abs  = Math.abs (s);
@@ -256,9 +256,15 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
             <div className="shimmer-int" style={{ marginBottom: 4 }}>
               <div className="shimmer-int-hd">
                 <span className="cluster-label">Interval</span>
-                <span className="shimmer-int-val">{pSemiName (pSemis)}</span>
+                <span className="shimmer-int-val">{pSemiName (pSemis)}{p.midiPitchMode ? ' · MIDI' : ''}</span>
+                <span style={{ flex: 1 }} />
+                <button className={'midi-btn' + (p.midiPitchMode ? ' on' : '')}
+                        onClick={() => setP ('midiPitchMode', !p.midiPitchMode)}
+                        title="Drive the interval from incoming MIDI notes (C3 = unison)">
+                  MIDI
+                </button>
               </div>
-              <div className="shimmer-int-chips">
+              <div className="shimmer-int-chips" style={p.midiPitchMode ? { opacity: 0.45, pointerEvents: 'none' } : null}>
                 {pSemiChips.map (s =>
                   <button key={s} data-on={pSemis === s ? '1' : '0'} onClick={() => setPSemis (s)}>
                     {s > 0 ? '+' + s : s}
@@ -362,7 +368,7 @@ function ReverbPanel({ p, setP, mods, irInfo }) {
               : '';
     return sign + abs + ' st' + (tag ? ' · ' + tag : '');
   };
-  const semiChips = [-12, -5, 0, 5, 7, 12, 19, 24];
+  const semiChips = [-24, -19, -12, -7, -5, 0, 5, 7, 12, 19, 24];
   const routeBtn = (k, lab) =>
     <button data-on={p.route === k ? '1' : '0'} onClick={() => setP('route', k)}>{lab}</button>;
   return (
@@ -416,9 +422,15 @@ function ReverbPanel({ p, setP, mods, irInfo }) {
         <div className="shimmer-int">
           <div className="shimmer-int-hd">
             <span className="cluster-label">Interval</span>
-            <span className="shimmer-int-val">{semiName (semis)}</span>
+            <span className="shimmer-int-val">{semiName (semis)}{p.midiPitchMode ? ' · MIDI' : ''}</span>
+            <span style={{ flex: 1 }} />
+            <button className={'midi-btn' + (p.midiPitchMode ? ' on' : '')}
+                    onClick={() => setP ('midiPitchMode', !p.midiPitchMode)}
+                    title="Drive the interval from incoming MIDI notes (C3 = unison)">
+              MIDI
+            </button>
           </div>
-          <div className="shimmer-int-chips">
+          <div className="shimmer-int-chips" style={p.midiPitchMode ? { opacity: 0.45, pointerEvents: 'none' } : null}>
             {semiChips.map (s =>
               <button key={s} data-on={semis === s ? '1' : '0'} onClick={() => setSemis (s)}>
                 {s > 0 ? '+' + s : s}

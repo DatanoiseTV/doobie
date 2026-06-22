@@ -120,6 +120,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     // repeat is shifted by this, so +12 climbs an octave per echo, -5
     // descends a fourth, etc.
     layout.add (std::make_unique<FloatParam> (pid (dID::pitchSemis),   "Pitch Interval",   Range (-24.0f, 24.0f, 1.0f), 12.0f));
+    layout.add (std::make_unique<BoolParam>  (pid (dID::midiPitchMode), "MIDI Pitch Mode", false));
 
     // ---- Input multimode filter (Svf, ported from hardware) ----------------
     layout.add (std::make_unique<BoolParam>   (pid (dID::inFilterOn),   "Input Filter", false));
@@ -337,7 +338,7 @@ void DoobieAudioProcessor::updateEngineParams()
     engine.setParams (buildEngineParams());
 }
 
-void DoobieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer&)
+void DoobieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;
 
@@ -350,6 +351,20 @@ void DoobieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
         if (auto pos = ph->getPosition())
             if (auto bpm = pos->getBpm())
                 currentBpm.store (*bpm);
+
+    // --- MIDI pitch mode ----------------------------------------------------
+    // When the user has toggled the MIDI Pitch Mode on, the most recent
+    // note-on we see this block becomes the new reference. C3 (MIDI 60) is
+    // the unison anchor — playing C4 yields +12 st, F#3 yields +6 st, etc.
+    // Latest-note semantics (no polyphony tracking) keep the behaviour
+    // predictable; arpeggiators and step sequencers map cleanly to the
+    // shifter without extra plumbing.
+    for (const auto meta : midi)
+    {
+        const auto msg = meta.getMessage();
+        if (msg.isNoteOn())
+            lastMidiNote.store (msg.getNoteNumber(), std::memory_order_relaxed);
+    }
 
     // --- Modulation matrix --------------------------------------------------
     // Pull LFO / env / slot settings from APVTS, run the env follower over the
@@ -401,6 +416,18 @@ void DoobieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
 
     auto p = buildEngineParams();
     doobie::applyModMatrix (p, modSlots, sources);
+
+    // MIDI pitch mode override — applied after the mod matrix so it always
+    // wins (the user has explicitly asked for keyboard control). Drives
+    // BOTH the delay's pitch character and the shimmer regen tail at the
+    // same time so chords played up the keyboard sweep both consistently.
+    if (raw (dID::midiPitchMode) > 0.5f)
+    {
+        const int semis = juce::jlimit (-24, 24, lastMidiNote.load (std::memory_order_relaxed) - 60);
+        p.pitchSemis   = (float) semis;
+        p.shimmerSemis = (float) semis;
+    }
+
     engine.setParams (p);
     engine.process (buffer);
 
