@@ -702,6 +702,18 @@ function EnvViz({ level }) {
 
 /* ============================== MOD DRAWER ============================== */
 function ModDrawer({ open, onClose, p, setP, matrix, setMx, numSlots, levels }) {
+  // Map source name → live value for the per-row mini-scope.
+  const sourceLive = (name) => {
+    if (!levels) return 0;
+    if (name === 'LFO 1') return levels.lfo1v || 0;
+    if (name === 'LFO 2') return levels.lfo2v || 0;
+    if (name === 'LFO 3') return levels.lfo3v || 0;
+    if (name === 'LFO 4') return levels.lfo4v || 0;
+    // Env is unipolar [0,1] — remap to bipolar [-1, +1] for the scope so
+    // the trace deflects symmetrically around the midline.
+    if (name === 'Env')   return ((levels.env || 0) * 2 - 1);
+    return 0;
+  };
   const [tab, setTab] = useState('sources');
   return (
     <>
@@ -734,16 +746,24 @@ function ModDrawer({ open, onClose, p, setP, matrix, setMx, numSlots, levels }) 
             </div>
             :
             <div className="modcard">
-              <div className="subhead" style={{ display: 'grid', gridTemplateColumns: '24px 1fr 22px 1fr 1.2fr 64px', gap: 10 }}>
-                <span>#</span><span>Source</span><span /><span>Destination</span><span>Amount</span><span style={{ textAlign: 'right' }}>Value</span>
+              <div className="subhead" style={{ display: 'grid', gridTemplateColumns: '24px 1fr 56px 22px 1fr 1.2fr 64px', gap: 10 }}>
+                <span>#</span><span>Source</span><span>Scope</span><span /><span>Destination</span><span>Amount</span><span style={{ textAlign: 'right' }}>Value</span>
               </div>
               {matrix.map((m, i) =>
-                <div className="mm-row" key={i}>
+                <div className="mm-row mm-row-scoped" key={i}>
                   <span className="idx">{i + 1}</span>
                   <div className="sel">
                     <select value={m.src} onChange={(e) => setMx(i, 'src', e.target.value)}>
                       {JuceBridge.MOD_SOURCES.map(o => <option key={o}>{o}</option>)}
                     </select>
+                  </div>
+                  {/* Inline live scope of the selected source. The unit
+                      keeps its own rolling history so each row reads
+                      independently. Off → flat midline (no signal). */}
+                  <div className="mm-scope">
+                    {m.src !== 'Off'
+                      ? <WaveMini shape="Sine" rate={0.5} depth={1} value={sourceLive(m.src)} />
+                      : <span className="mm-scope-off">—</span>}
                   </div>
                   <span className="arr">→</span>
                   <div className="sel">
