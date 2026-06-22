@@ -799,6 +799,229 @@ namespace
             { dID::mix, 0.7f },
         } + mod (0, SrcLfo1, DstInFilterCutoff, 0.5f));
 
+        // ====================================================================
+        // 64..79: Live Vocal FX bank. Designed for solo vocal — short slaps for
+        // body, plate / hall / shimmer for ambience, pitch tricks for harmony,
+        // a MIDI-playable harmoniser, and movement patches that the mod matrix
+        // animates. Defaults assume the dry vocal lands at -12 dBFS-ish; most
+        // patches sit at mix 0.30..0.45 so they sweeten without burying the
+        // source. Cleaned input via a gentle high-pass at 80–120 Hz to keep
+        // breath / plosives out of the wet.
+        // ====================================================================
+
+        // 64: Vox Slap — classic ADT-style slapback for body and width
+        P ("Vox Slap", std::vector<PV>{
+            { dID::syncMode, 0 }, { dID::timeMs, 110.0f },
+            { dID::delayMode, 1 }, { dID::feedback, 0.18f },
+            { dID::preHpFreq, 90.0f }, { dID::lpFreq, 7000.0f },
+            { dID::drive, 0.18f }, { dID::wow, 0.10f }, { dID::flutter, 0.05f },
+            { dID::reverbMode, (float) hwRev (2) }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.10f }, { dID::plateDecay, 0.30f }, { dID::plateSize, 0.35f },
+            { dID::width, 1.3f }, { dID::mix, 0.30f },
+        } + singleHead() + tone (5500.0f));
+
+        // 65: Vox Doubler — slapback at unison with the two playback heads
+        // panned hard for a wider, double-tracked feel. Digital character
+        // (no pitching) — for a detune-thicken version use "Stereo Doubler"
+        // below (preset 76).
+        P ("Vox Doubler", std::vector<PV>{
+            { dID::syncMode, 0 }, { dID::timeMs, 42.0f },
+            { dID::delayMode, 0 },                               // Digital
+            { dID::feedback, 0.10f },
+            { dID::preHpFreq, 100.0f }, { dID::lpFreq, 9000.0f },
+            // Two heads, slightly different times + opposite pans = haas.
+            ho (0, true),  hl (0, 0.85f), hr (0, 1.00f), hp (0, -0.4f),
+            ho (1, true),  hl (1, 0.80f), hr (1, 0.92f), hp (1,  0.4f),
+            ho (2, false), ho (3, false),
+            // 6 ms offset between heads pulls them off the unison grid for
+            // micro-doubling stereo width without combing.
+            { dID::headOffset[0], -3.0f }, { dID::headOffset[1], 3.0f },
+            { dID::reverbMode, 0 },
+            { dID::width, 1.5f }, { dID::mix, 0.42f },
+        });
+
+        // 66: Vox Hall — lush long hall behind the vocal. No delay tail,
+        // pure ambience; the reverb size + decay carry it.
+        P ("Vox Hall", std::vector<PV>{
+            { dID::syncMode, 0 }, { dID::timeMs, 80.0f },
+            { dID::delayMode, 0 }, { dID::feedback, 0.0f }, { dID::delayBypass, 1 },
+            { dID::preHpFreq, 90.0f },
+            { dID::reverbMode, (float) hwRev (5) }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.45f }, { dID::plateDecay, 0.82f }, { dID::plateSize, 0.88f },
+            { dID::plateDamp, 0.35f }, { dID::platePredelay, 30.0f },
+            { dID::reverbMod, 0.12f },
+            { dID::width, 1.5f }, { dID::mix, 0.40f },
+        } + singleHead());
+
+        // 67: Vox Plate Vintage — bright plate, classic 80s vocal sound
+        // (Padgham / Lillywhite era). Bigger predelay so the dry stays
+        // forward.
+        P ("Vox Plate", std::vector<PV>{
+            { dID::syncMode, 0 }, { dID::delayBypass, 1 },
+            { dID::preHpFreq, 110.0f }, { dID::treble, 0.15f },
+            { dID::reverbMode, (float) hwRev (2) }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.42f }, { dID::plateDecay, 0.65f }, { dID::plateSize, 0.55f },
+            { dID::plateDamp, 0.20f }, { dID::platePredelay, 45.0f },
+            { dID::reverbMod, 0.05f },
+            { dID::width, 1.2f }, { dID::mix, 0.38f },
+        } + singleHead());
+
+        // 68: Vox Shimmer Soar — octave-up shimmer for ethereal lifts on
+        // long held notes. Moderate predelay so the dry attack lands clean.
+        P ("Vox Shimmer", std::vector<PV>{
+            { dID::syncMode, 0 }, { dID::delayBypass, 1 },
+            { dID::preHpFreq, 100.0f },
+            { dID::reverbMode, (float) hwRev (7) }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.40f }, { dID::plateDecay, 0.78f }, { dID::plateSize, 0.85f },
+            { dID::plateDamp, 0.35f }, { dID::platePredelay, 40.0f },
+            { dID::reverbMod, 0.20f }, { dID::shimmerSemis, 12.0f },
+            { dID::width, 1.5f }, { dID::mix, 0.32f },
+        } + singleHead());
+
+        // 69: Dub Vox Echo — tempo-synced 1/4 dub delay for reggae /
+        // electronic vocal chops. In-feedback spring for the wash.
+        P ("Dub Vox Echo", std::vector<PV>{
+            { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
+            { dID::delayMode, 1 }, { dID::feedback, 0.62f },
+            { dID::preHpFreq, 120.0f }, { dID::drive, 0.32f },
+            { dID::wow, 0.18f }, { dID::flutter, 0.08f }, { dID::hiss, 0.15f },
+            { dID::reverbMode, (float) hwRev (1) }, { dID::reverbRoute, 2 },
+            { dID::reverbMix, 0.38f }, { dID::springDecay, 0.55f },
+            { dID::mix, 0.36f },
+        } + singleHead() + tone (2400.0f));
+
+        // 70: Whisper Wash — soft, breathy pad behind whispered vocals.
+        // Diffuse character smears the repeats so individual hits are
+        // indistinguishable.
+        P ("Whisper Wash", std::vector<PV>{
+            { dID::syncMode, 0 }, { dID::timeMs, 380.0f },
+            { dID::delayMode, 3 }, { dID::feedback, 0.55f },
+            { dID::preHpFreq, 200.0f }, { dID::lpFreq, 4500.0f },
+            { dID::reverbMode, (float) hwRev (4) }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.50f }, { dID::plateDecay, 0.75f }, { dID::plateSize, 0.80f },
+            { dID::springDecay, 0.40f }, { dID::reverbMod, 0.15f },
+            { dID::width, 1.4f }, { dID::mix, 0.55f },
+        } + singleHead());
+
+        // 71: Tape Vox — warm tape echo behind the vocal, the Sun-Studio /
+        // Elvis sound. Single repeat with tape character bringing the colour.
+        P ("Tape Vox", std::vector<PV>{
+            { dID::syncMode, 0 }, { dID::timeMs, 140.0f },
+            { dID::delayMode, 1 }, { dID::feedback, 0.32f },
+            { dID::preHpFreq, 110.0f },
+            { dID::drive, 0.40f }, { dID::wow, 0.28f }, { dID::flutter, 0.18f },
+            { dID::hiss, 0.32f },
+            { dID::reverbMode, (float) hwRev (1) }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.18f }, { dID::springDecay, 0.40f },
+            { dID::mix, 0.38f },
+        } + singleHead() + tone (3800.0f));
+
+        // 72: Telephone Vox — narrow band-pass + tape grit for old-radio /
+        // dispatch effects. Use as a lyrical contrast or for spoken-word
+        // sections.
+        P ("Telephone Vox", std::vector<PV>{
+            { dID::syncMode, 0 }, { dID::delayBypass, 1 },
+            { dID::inFilterOn, 1 }, { dID::inFilterType, 2 },     // BP
+            { dID::inFilterCutoff, 1400.0f }, { dID::inFilterRes, 0.55f },
+            { dID::drive, 0.55f }, { dID::hiss, 0.20f },
+            { dID::reverbMode, (float) hwRev (1) }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.12f }, { dID::springDecay, 0.35f },
+            { dID::mix, 0.0f },                                   // 100% wet for the FX channel
+        } + singleHead());
+
+        // 73: Ghost Octave — pitch character at -12 layered under the dry
+        // for a haunted underbelly. Low feedback so it's a single ghost
+        // echo, not a tower.
+        P ("Ghost Octave", std::vector<PV>{
+            { dID::syncMode, 0 }, { dID::timeMs, 220.0f },
+            { dID::delayMode, 4 }, { dID::pitchOn, 1 }, { dID::pitchSemis, -12.0f },
+            { dID::feedback, 0.32f },
+            { dID::preHpFreq, 80.0f }, { dID::lpFreq, 3500.0f },
+            { dID::reverbMode, (float) hwRev (2) }, { dID::reverbRoute, 2 },
+            { dID::reverbMix, 0.28f }, { dID::plateDecay, 0.60f },
+            { dID::width, 1.3f }, { dID::mix, 0.32f },
+        } + singleHead());
+
+        // 74: Cathedral Vox — long, dense gothic-cathedral reverb for solo
+        // sustained vocals. No delay; the predelay + tail do the work.
+        P ("Cathedral", std::vector<PV>{
+            { dID::syncMode, 0 }, { dID::delayBypass, 1 },
+            { dID::preHpFreq, 100.0f },
+            { dID::reverbMode, (float) hwRev (5) }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.55f }, { dID::plateDecay, 0.95f }, { dID::plateSize, 0.95f },
+            { dID::plateDamp, 0.45f }, { dID::platePredelay, 80.0f },
+            { dID::reverbMod, 0.08f },
+            { dID::width, 1.7f }, { dID::mix, 0.45f },
+        } + singleHead());
+
+        // 75: Fifth Stack — shimmer set to +7 st (a perfect fifth) for a
+        // Gregorian / power-chord vocal stack. Sounds great on long held
+        // notes.
+        P ("Fifth Stack", std::vector<PV>{
+            { dID::syncMode, 0 }, { dID::delayBypass, 1 },
+            { dID::preHpFreq, 100.0f },
+            { dID::reverbMode, (float) hwRev (7) }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.42f }, { dID::plateDecay, 0.78f }, { dID::plateSize, 0.85f },
+            { dID::plateDamp, 0.30f }, { dID::platePredelay, 50.0f },
+            { dID::reverbMod, 0.15f }, { dID::shimmerSemis, 7.0f },  // perfect fifth up
+            { dID::width, 1.5f }, { dID::mix, 0.38f },
+        } + singleHead());
+
+        // 76: Stereo Doubler — Pitch char at unison with maximum spread
+        // and short delay = the classic "two-shifter chorus" thickener.
+        // Pitch ON at semis=0 + spread does it; mix high since this IS the
+        // effect.
+        P ("Stereo Doubler", std::vector<PV>{
+            { dID::syncMode, 0 }, { dID::timeMs, 25.0f },
+            { dID::delayMode, 4 }, { dID::pitchOn, 1 }, { dID::pitchSemis, 0.0f },
+            { dID::pitchSpread, 30.0f },  // ±15 c
+            { dID::feedback, 0.08f },
+            { dID::preHpFreq, 110.0f },
+            { dID::reverbMode, 0 },
+            { dID::width, 1.6f }, { dID::mix, 0.50f },
+        } + singleHead());
+
+        // 77: Megaphone — heavy band-pass + drive + small spring, for
+        // theatrical effect calls. Mid-honk-y on purpose; use as 100% wet
+        // FX bus.
+        P ("Megaphone", std::vector<PV>{
+            { dID::syncMode, 0 }, { dID::delayBypass, 1 },
+            { dID::inFilterOn, 1 }, { dID::inFilterType, 2 },
+            { dID::inFilterCutoff, 1800.0f }, { dID::inFilterRes, 0.70f },
+            { dID::drive, 0.80f }, { dID::hiss, 0.28f },
+            { dID::reverbMode, (float) hwRev (1) }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.20f }, { dID::springDecay, 0.30f }, { dID::springTone, 0.65f },
+            { dID::mix, 0.0f },
+        } + singleHead());
+
+        // 78: Frozen Pad — freeze the buffer behind the vocal as a sustained
+        // bed. Hit Freeze, sing over it, let the bed evolve through the
+        // shimmer.
+        P ("Frozen Pad", std::vector<PV>{
+            { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::timeMs, 1000.0f },
+            { dID::delayMode, 3 }, { dID::freeze, 1 }, { dID::feedback, 0.85f },
+            { dID::preHpFreq, 150.0f }, { dID::lpFreq, 5500.0f },
+            { dID::reverbMode, (float) hwRev (7) }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.55f }, { dID::plateDecay, 0.85f }, { dID::plateSize, 0.90f },
+            { dID::reverbMod, 0.25f }, { dID::shimmerSemis, 12.0f },
+            { dID::width, 1.6f }, { dID::mix, 0.45f },
+        } + singleHead());
+
+        // 79: MIDI Harmonizer — keyboard-driven pitch on the delay tail.
+        // Pitch char + MIDI Pitch Mode + portamento so smoothly-played
+        // melody lines glide through the harmony. C3 (MIDI 60) = unison.
+        P ("MIDI Harmonizer", std::vector<PV>{
+            { dID::syncMode, 0 }, { dID::timeMs, 180.0f },
+            { dID::delayMode, 4 }, { dID::pitchOn, 1 }, { dID::pitchSemis, 0.0f },
+            { dID::midiPitchMode, 1 }, { dID::midiPortaOn, 1 }, { dID::midiPortaMs, 60.0f },
+            { dID::pitchSpread, 0.0f },
+            { dID::feedback, 0.30f },
+            { dID::preHpFreq, 100.0f }, { dID::lpFreq, 8000.0f },
+            { dID::reverbMode, (float) hwRev (2) }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.25f }, { dID::plateDecay, 0.55f }, { dID::platePredelay, 30.0f },
+            { dID::width, 1.4f }, { dID::mix, 0.42f },
+        } + singleHead());
+
         return out;
     }
 }

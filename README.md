@@ -82,7 +82,7 @@ home as a modulated delay and ambience for any genre.
   fast ceiling catcher at -0.3 dBFS. Tames feedback runaway near self-
   oscillation without crushing transient dynamics, so live use stops clipping
   the bus. ON by default; one-click bypass in the Output panel.
-- **64 factory presets** across dub/reggae, ambient/cinematic, rhythmic/electronic,
+- **80 factory presets** across dub/reggae, ambient/cinematic, rhythmic/electronic,
   lo-fi/vintage, hall & shimmer, delay characters, sound-design FX and instrument
   patches, plus user save/load.
 - **HTML/CSS WebView UI** (JUCE 8 `WebBrowserComponent`). Modern-studio
