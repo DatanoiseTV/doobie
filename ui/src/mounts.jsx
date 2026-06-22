@@ -82,4 +82,52 @@ function DigitalMeter({ label, liveDb = -90, big = false, scale = false }){
   );
 }
 
-Object.assign(window, { TapeDeck, DigitalMeter });
+/* ---- Stereo scope inside the tape loop ----
+   A rolling oscilloscope-style display fed from the existing `levels`
+   peak event (per-channel dB, 30 Hz). Converted to linear amplitude for
+   display. The shape rolls left → right: L trace deflects UP from the
+   centre line, R DOWN, mirror-imaged like a classic mastering scope.
+   When quiet both traces collapse to the centre line. */
+function StereoScope({ levels }){
+  const W = 600, H = 78, mid = H / 2;
+  const N = 128;                       // history length (frames)
+  const histL = React.useRef([]);
+  const histR = React.useRef([]);
+  const [tick, setTick] = React.useState (0);
+  // Push current peak each render. 30 Hz prop updates drive a 30 Hz scope
+  // — fast enough that motion reads as a real waveform.
+  React.useEffect(() => {
+    const lL = levels && levels.peak ? levels.peak.l : -90;
+    const lR = levels && levels.peak ? levels.peak.r : -90;
+    const toLin = (db) => Math.max (0, Math.min (1, (db + 54) / 57));
+    histL.current.push (toLin (lL));
+    histR.current.push (toLin (lR));
+    if (histL.current.length > N) histL.current.shift();
+    if (histR.current.length > N) histR.current.shift();
+    setTick (t => t + 1);
+  }, [levels]);
+
+  const ampPx = mid - 6;
+  const buildPath = (hist, signFlip) => {
+    if (hist.length === 0) return '';
+    let d = '';
+    for (let i = 0; i < hist.length; i++) {
+      const x = (i / (N - 1)) * W;
+      const y = mid + signFlip * hist[i] * ampPx;
+      d += (i ? ' L ' : 'M ') + x.toFixed (1) + ' ' + y.toFixed (1);
+    }
+    return d;
+  };
+  const pathL = buildPath (histL.current, -1);  // L deflects up
+  const pathR = buildPath (histR.current,  1);  // R deflects down
+
+  return (
+    <svg className="tape-scope" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+      <line x1="0" y1={mid} x2={W} y2={mid} className="tape-scope-axis" />
+      {pathL && <path d={pathL} className="tape-scope-l" />}
+      {pathR && <path d={pathR} className="tape-scope-r" />}
+    </svg>
+  );
+}
+
+Object.assign(window, { TapeDeck, DigitalMeter, StereoScope });

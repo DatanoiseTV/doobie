@@ -344,7 +344,7 @@ function App() {
           </div>
 
           <div className="col-mid">
-            <DelayPanel p={p} setP={setP} heads={heads} tapeSpeed={tapeSpeed} accent="var(--accent)" mods={mods} fbCol={fbCol} midiNote={levels.midiNote} />
+            <DelayPanel p={p} setP={setP} heads={heads} tapeSpeed={tapeSpeed} accent="var(--accent)" mods={mods} fbCol={fbCol} midiNote={levels.midiNote} levels={levels} />
           </div>
 
           <div className="col-right">

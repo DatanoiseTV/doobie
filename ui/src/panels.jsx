@@ -226,7 +226,7 @@ function midiNoteName (n) {
 }
 
 /* ============================== DELAY (hero) ============================== */
-function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', mods, fbCol, midiNote }) {
+function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', mods, fbCol, midiNote, levels }) {
   const tcChip = (key, label) => <Chip on={p[key]} onClick={() => setP(key, !p[key])}>{label}</Chip>;
   // Pitch-character interval picker. Normalised 0..1 from the slider relay
   // maps to -24..+24 st in unit steps (49 discrete steps). Sliding lands on
@@ -256,6 +256,10 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
       <div className="tape-screen" style={{ padding: '6px 4px' }}>
         <div className="scan" />
         <TapeDeck heads={heads} playing={!p.bypass && !p.freeze} recording={false} speed={tapeSpeed} accent={accent} />
+        {/* Stereo waveform scope embedded in the empty centre of the tape
+            loop — same idea as the original doobie firmware. Driven by
+            the existing peak-level event so no extra audio plumbing. */}
+        <StereoScope levels={levels} />
       </div>
       <div className="bigknobs" style={{ marginTop: 14 }}>
         <Knob size="lg" label="Time" value={p.time} lit mod={mods ? mods.timeMs || 0 : 0}
@@ -351,8 +355,11 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
               </div>
             </div>
           )}
-          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-            {tcChip('pingpong', 'Ping-Pong')}
+          {/* Transport chips on a single line. Compact variant (smaller
+              padding + shorter labels) so all three fit the column width
+              without wrapping. */}
+          <div className="row chip-row-compact" style={{ gap: 6, flexWrap: 'nowrap' }}>
+            {tcChip('pingpong', 'P-Pong')}
             {tcChip('freeze',   'Freeze')}
             {/* Momentary kill — hold to mute the recirculating feedback,
                 release to bring it back. Uses pointer-down/up + leave so
