@@ -121,6 +121,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     // descends a fourth, etc.
     layout.add (std::make_unique<FloatParam> (pid (dID::pitchSemis),   "Pitch Interval",   Range (-24.0f, 24.0f, 1.0f), 12.0f));
     layout.add (std::make_unique<BoolParam>  (pid (dID::midiPitchMode), "MIDI Pitch Mode", false));
+    layout.add (std::make_unique<BoolParam>  (pid (dID::midiPortaOn),   "MIDI Portamento", false));
+    {
+        Range portaRange (0.0f, 2000.0f, 1.0f); portaRange.setSkewForCentre (120.0f);
+        layout.add (std::make_unique<FloatParam> (pid (dID::midiPortaMs), "MIDI Portamento Time", portaRange, 100.0f));
+    }
 
     // ---- Input multimode filter (Svf, ported from hardware) ----------------
     layout.add (std::make_unique<BoolParam>   (pid (dID::inFilterOn),   "Input Filter", false));
@@ -358,12 +363,21 @@ void DoobieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
     // the unison anchor — playing C4 yields +12 st, F#3 yields +6 st, etc.
     // Latest-note semantics (no polyphony tracking) keep the behaviour
     // predictable; arpeggiators and step sequencers map cleanly to the
-    // shifter without extra plumbing.
+    // shifter without extra plumbing. Pitch-bend (always ±2 st GM range)
+    // adds on top so the wheel rides vibrato / micro-adjusts the interval.
     for (const auto meta : midi)
     {
         const auto msg = meta.getMessage();
         if (msg.isNoteOn())
             lastMidiNote.store (msg.getNoteNumber(), std::memory_order_relaxed);
+        else if (msg.isPitchWheel())
+        {
+            // JUCE returns 0..16383, 8192 is center. Map to ±2 st (GM
+            // default — Roland D-50 / DX7 era convention, and what most
+            // controllers send out of the box).
+            const float norm = (float) (msg.getPitchWheelValue() - 8192) / 8192.0f;
+            pitchBendSemis = juce::jlimit (-2.0f, 2.0f, norm * 2.0f);
+        }
     }
 
     // --- Modulation matrix --------------------------------------------------
@@ -423,9 +437,38 @@ void DoobieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
     // same time so chords played up the keyboard sweep both consistently.
     if (raw (dID::midiPitchMode) > 0.5f)
     {
-        const int semis = juce::jlimit (-24, 24, lastMidiNote.load (std::memory_order_relaxed) - 60);
-        p.pitchSemis   = (float) semis;
-        p.shimmerSemis = (float) semis;
+        const int note = lastMidiNote.load (std::memory_order_relaxed);
+        const float target = (note < 0 ? 0.0f : (float) (note - 60));
+
+        // Portamento: glide portaSemis toward target over `midiPortaMs`.
+        // One-pole, time constant matched to the user-set ms; per-block
+        // step gives plenty of resolution for hand-played glides (a 100 ms
+        // glide at 256-sample blocks at 44.1k = ~22 blocks, smooth enough
+        // to be inaudible as steps).
+        const bool  portaOn  = raw (dID::midiPortaOn) > 0.5f;
+        const float portaMs  = juce::jmax (1.0f, raw (dID::midiPortaMs));
+        if (! portaInit) { portaSemis = target; portaInit = true; }
+        if (portaOn)
+        {
+            const float tauSec = portaMs * 0.001f;
+            const float dt     = (float) numSamples / (float) juce::jmax (1.0, sampleRate);
+            const float a      = 1.0f - std::exp (-dt / tauSec);
+            portaSemis += (target - portaSemis) * a;
+        }
+        else
+        {
+            portaSemis = target;
+        }
+
+        const float finalSemis = juce::jlimit (-24.0f, 24.0f, portaSemis + pitchBendSemis);
+        p.pitchSemis   = finalSemis;
+        p.shimmerSemis = finalSemis;
+    }
+    else
+    {
+        // Re-anchor the glider so flipping MIDI mode on doesn't snap from
+        // wherever it last sat; the first note becomes the new anchor.
+        portaInit = false;
     }
 
     engine.setParams (p);

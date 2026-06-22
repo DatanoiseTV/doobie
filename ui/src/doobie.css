@@ -654,6 +654,27 @@ input, textarea, [contenteditable="true"] {
   background:var(--c-well); border:1px solid var(--c-line-2); border-radius:4px;
   color:var(--accent); font-family:var(--mono); font-size:10px; text-align:center;
 }
+.shimmer-int-hd .midi-btn + .midi-btn{ margin-left:4px; }
+.porta-row{
+  display:flex; align-items:center; gap:8px; margin:6px 0 8px;
+  padding:6px 8px; background:var(--c-well); border:1px solid var(--c-line-2);
+  border-radius:var(--r-sm);
+}
+.porta-row .porta-lab{
+  font-size:9.5px; letter-spacing:0.18em; text-transform:uppercase;
+  color:var(--c-txt-3); flex:0 0 auto;
+}
+.porta-row input[type="range"]{
+  flex:1; appearance:none; height:4px; background:var(--c-line-2); border-radius:2px;
+}
+.porta-row input[type="range"]::-webkit-slider-thumb{
+  appearance:none; width:12px; height:12px; border-radius:50%;
+  background:var(--accent); border:1px solid var(--accent-dim); cursor:pointer;
+}
+.porta-row .porta-val{
+  font-family:var(--mono); font-size:10.5px; color:var(--accent);
+  min-width:54px; text-align:right; flex:0 0 auto;
+}
 
 /* ============================================================
    Knob right-click context menu

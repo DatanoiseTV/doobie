@@ -270,12 +270,27 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
                   {p.midiPitchMode && <> · MIDI <span className="midi-note">{midiNoteName (midiNote)}</span></>}
                 </span>
                 <span style={{ flex: 1 }} />
+                {p.midiPitchMode && (
+                  <button className={'midi-btn' + (p.midiPortaOn ? ' on' : '')}
+                          onClick={() => setP ('midiPortaOn', !p.midiPortaOn)}
+                          title="Glide between notes over the porta time (pitch bend always rides on top, ±2 st)">
+                    PORTA
+                  </button>
+                )}
                 <button className={'midi-btn' + (p.midiPitchMode ? ' on' : '')}
                         onClick={() => setP ('midiPitchMode', !p.midiPitchMode)}
-                        title="Drive the interval from incoming MIDI notes (C3 = unison)">
+                        title="Drive the interval from incoming MIDI notes (C3 = unison, pitch bend = ±2 st)">
                   MIDI
                 </button>
               </div>
+              {p.midiPitchMode && p.midiPortaOn && (
+                <div className="porta-row">
+                  <span className="porta-lab">Glide</span>
+                  <input type="range" min="0" max="1" step="0.001" value={p.midiPortaMs}
+                         onChange={(e) => setP ('midiPortaMs', parseFloat (e.target.value))} />
+                  <span className="porta-val">{Math.round (p.midiPortaMs * 2000)} ms</span>
+                </div>
+              )}
               <div className="shimmer-int-chips" style={p.midiPitchMode ? { opacity: 0.45, pointerEvents: 'none' } : null}>
                 {pSemiChips.map (s =>
                   <button key={s} data-on={pSemis === s ? '1' : '0'} onClick={() => setPSemis (s)}>
@@ -439,12 +454,27 @@ function ReverbPanel({ p, setP, mods, irInfo, midiNote }) {
               {p.midiPitchMode && <> · MIDI <span className="midi-note">{midiNoteName (midiNote)}</span></>}
             </span>
             <span style={{ flex: 1 }} />
+            {p.midiPitchMode && (
+              <button className={'midi-btn' + (p.midiPortaOn ? ' on' : '')}
+                      onClick={() => setP ('midiPortaOn', !p.midiPortaOn)}
+                      title="Glide between notes over the porta time (pitch bend always rides on top, ±2 st)">
+                PORTA
+              </button>
+            )}
             <button className={'midi-btn' + (p.midiPitchMode ? ' on' : '')}
                     onClick={() => setP ('midiPitchMode', !p.midiPitchMode)}
-                    title="Drive the interval from incoming MIDI notes (C3 = unison)">
+                    title="Drive the interval from incoming MIDI notes (C3 = unison, pitch bend = ±2 st)">
               MIDI
             </button>
           </div>
+          {p.midiPitchMode && p.midiPortaOn && (
+            <div className="porta-row">
+              <span className="porta-lab">Glide</span>
+              <input type="range" min="0" max="1" step="0.001" value={p.midiPortaMs}
+                     onChange={(e) => setP ('midiPortaMs', parseFloat (e.target.value))} />
+              <span className="porta-val">{Math.round (p.midiPortaMs * 2000)} ms</span>
+            </div>
+          )}
           <div className="shimmer-int-chips" style={p.midiPitchMode ? { opacity: 0.45, pointerEvents: 'none' } : null}>
             {semiChips.map (s =>
               <button key={s} data-on={semis === s ? '1' : '0'} onClick={() => setSemis (s)}>

@@ -137,6 +137,14 @@ private:
     // 72 (C4) so the engine sits at +12 st (the historical octave-up) until
     // the first note arrives.
     std::atomic<int> lastMidiNote { -1 };
+    // MIDI pitch-bend (±2 st GM range mapped here). Last value seen on
+    // the MidiBuffer; only matters while midiPitchMode is active.
+    float pitchBendSemis = 0.0f;
+    // Glided semitone value tracking lastMidiNote-60 over `midiPortaMs`.
+    // Re-anchored from the first note we see so it doesn't snap from -60
+    // at startup; updated each block in processBlock.
+    float portaSemis = 0.0f;
+    bool  portaInit  = false;
     double sampleRate = 44100.0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DoobieAudioProcessor)

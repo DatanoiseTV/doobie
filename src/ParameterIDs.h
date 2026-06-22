@@ -127,6 +127,13 @@ namespace dID
     // play the shimmer/pitch intervals from a keyboard.
     inline constexpr auto midiPitchMode = "midiPitchMode";  // bool
 
+    // Portamento for MIDI Pitch Mode. When ON, note-to-note jumps glide
+    // over `midiPortaMs` instead of stepping. Pitch bend (always on while
+    // MIDI mode is active, ±2 st range — General MIDI default) is added
+    // on top of the glided note for vibrato / micro-adjustment.
+    inline constexpr auto midiPortaOn   = "midiPortaOn";    // bool
+    inline constexpr auto midiPortaMs   = "midiPortaMs";    // ms, 0..2000
+
     // ---- Modulation matrix --------------------------------------------------
     // Two LFOs + one envelope follower feed a 4-slot matrix; each slot picks a
     // source, a destination (curated subset of engine params, see ModMatrix.h)

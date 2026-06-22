@@ -79,6 +79,8 @@ const PARAM_MAP = {
   pitchSemis:  { kind: 'slider', id: 'pitchSemis' },
   // MIDI Note Mode: incoming notes drive shimmer+pitch intervals.
   midiPitchMode: { kind: 'toggle', id: 'midiPitchMode' },
+  midiPortaOn:   { kind: 'toggle', id: 'midiPortaOn'   },
+  midiPortaMs:   { kind: 'slider', id: 'midiPortaMs'   },
   // Convolution-only: makeup gain on the wet IR signal (dB).
   irGain:     { kind: 'slider', id: 'irGain' },
   // --- output ---
