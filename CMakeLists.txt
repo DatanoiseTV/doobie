@@ -69,7 +69,14 @@ juce_add_plugin(Doobie
     NEEDS_WEB_BROWSER       TRUE   # pulls webkit2gtk + gtk pkg-config on Linux
     COPY_PLUGIN_AFTER_BUILD ${DOOBIE_INSTALL_LOCAL}
     VST3_CATEGORIES         Fx Delay
-    AU_MAIN_TYPE            kAudioUnitType_Effect)
+    # MusicEffect (aumf) is Apple's tag for "audio effect that ALSO takes MIDI"
+    # — JUCE would auto-pick this when NEEDS_MIDI_INPUT is TRUE, but a hard
+    # AU_MAIN_TYPE setting overrides it. Plain kAudioUnitType_Effect (aufx)
+    # promises no MIDI, so Ableton refuses to expose Doobie as a MIDI-routing
+    # target even with acceptsMidi() returning true at runtime (auval flags
+    # this as a warning). Using aumf fixes the routing while staying
+    # functionally an audio effect for hosts that don't care about the tag.
+    AU_MAIN_TYPE            kAudioUnitType_MusicEffect)
 
 juce_generate_juce_header(Doobie)
 
