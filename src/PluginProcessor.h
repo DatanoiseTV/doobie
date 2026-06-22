@@ -139,6 +139,27 @@ private:
     // the current preset as "dirty" so the UI can show an asterisk + ask
     // the user before they overwrite.
     void valueTreePropertyChanged (juce::ValueTree& tree, const juce::Identifier& prop) override;
+
+    // IR Speed reload is expensive (it resamples the cached IR through a
+    // JUCE Convolution rebuild). Doing that on every parameter tick during
+    // a slider drag crackles audibly. The APVTS listener stores the latest
+    // requested speed and arms a one-shot timer; the timer fires ~120 ms
+    // after the LAST change and applies it once. Live IR Speed knob feel
+    // stays smooth because the displayed value follows the param
+    // immediately — only the convolver reload waits.
+    struct IrSpeedDebouncer : private juce::Timer
+    {
+        DoobieAudioProcessor& owner;
+        std::atomic<float>    pending { 1.0f };
+        explicit IrSpeedDebouncer (DoobieAudioProcessor& o) : owner (o) {}
+        void request (float v)  { pending.store (v, std::memory_order_relaxed); startTimer (120); }
+        void timerCallback() override
+        {
+            stopTimer();
+            owner.engine.setIRSpeed (pending.load (std::memory_order_relaxed));
+        }
+    };
+    IrSpeedDebouncer irSpeedDebouncer { *this };
     std::atomic<bool> presetDirty { false };
     std::atomic<bool> suppressPresetDirty { false };
     // Snapshot of every parameter's normalised value at the last

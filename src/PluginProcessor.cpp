@@ -311,7 +311,7 @@ void DoobieAudioProcessor::parameterChanged (const juce::String& parameterID, fl
     // Called on the message thread when irSpeed moves. Reload the IR at the
     // new effective sample rate so the rest of the chain hears the new length.
     if (parameterID == dID::irSpeed)
-        engine.setIRSpeed (newValue);
+        irSpeedDebouncer.request (newValue);
 }
 
 bool DoobieAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
