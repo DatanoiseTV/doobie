@@ -449,22 +449,27 @@ body{ font-family:var(--font); color:var(--c-txt); -webkit-font-smoothing:antial
    right, negative left) plus a dot at that position. Pointer-events
    none on the overlay so the slider stays draggable. */
 .mslider-wrap{ position:relative; height:18px; display:flex; align-items:center; }
-.mslider-wrap .mslider{ width:100%; position:relative; z-index:2; background:transparent; }
+/* Keep the slider's native track (var(--c-line) from .mslider above) and
+   thumb visible — the previous `background:transparent` here erased it
+   and left the live overlay floating on a blank row. Position above the
+   overlay so the user-set thumb stays the dominant click target. */
+.mslider-wrap .mslider{ width:100%; position:relative; z-index:3; }
 .mslider-live-fill{
-  position:absolute; top:50%; height:3px; transform:translateY(-50%);
-  border-radius:2px; opacity:0.55; pointer-events:none; z-index:1;
-  transition:left .04s linear, width .04s linear, background .04s linear;
+  position:absolute; top:50%; height:5px; transform:translateY(-50%);
+  border-radius:3px; opacity:0.7; pointer-events:none; z-index:2;
+  /* No CSS transition — the data already arrives at 30 Hz which is
+     smooth enough. A 40 ms ease here lagged behind drag-rate updates
+     and made the indicator look like it was juddering / stopping. */
 }
 .mslider-live-dot{
-  position:absolute; top:50%; width:7px; height:7px; border-radius:50%;
-  transform:translate(-50%, -50%); pointer-events:none; z-index:3;
+  position:absolute; top:50%; width:6px; height:6px; border-radius:50%;
+  transform:translate(-50%, -50%); pointer-events:none; z-index:2;
   box-shadow:0 0 6px var(--accent-glow);
-  transition:left .04s linear, background .04s linear;
 }
 .mslider-zero{
-  position:absolute; top:30%; bottom:30%; width:1px;
-  background:var(--c-line-2); transform:translateX(-50%);
-  pointer-events:none; z-index:1; opacity:0.7;
+  position:absolute; top:35%; bottom:35%; width:1px;
+  background:var(--c-txt-3); transform:translateX(-50%);
+  pointer-events:none; z-index:1; opacity:0.55;
 }
 .mm-row .idx{ font-family:var(--mono); font-size:12px; color:var(--accent); text-align:center; }
 .mm-row .arr{ color:var(--c-txt-3); text-align:center; }
