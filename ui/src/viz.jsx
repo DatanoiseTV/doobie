@@ -39,37 +39,66 @@ function DecayGraph({ decay = 0.6, type = 'Plate', height = 116 }){
 }
 
 /* ---------- LFO waveform mini ---------- */
-function WaveMini({ shape = 'Sine', rate = 0.4, depth = 0.6 }){
+function WaveMini({ shape = 'Sine', rate = 0.4, depth = 0.6, value = null }){
   const W = 120, H = 40, mid = H/2, amp = (H/2 - 4) * Math.max(0.15, depth);
   const cycles = 2;
+  // Static shape preview — drawn as a single SVG path so the user sees the
+  // characteristic of each waveform (square is flat-flat, triangle has
+  // straight ramps, saw teeth, S&H is jagged). Triangle is rebuilt to a
+  // canonical 0→+1→0→-1→0 shape so it's recognisable at a glance.
   const fn = (p) => {
-    const x = (p % 1);
+    const x = (p % 1 + 1) % 1; // keep p positive even when called via value samples
     switch(shape){
-      case 'Triangle': return x < 0.5 ? (1 - 4*x) : (-3 + 4*x);
+      case 'Triangle': {
+        if (x < 0.25) return 4 * x;
+        if (x < 0.75) return 2 - 4 * x;
+        return -4 + 4 * x;
+      }
       case 'Square':   return x < 0.5 ? 1 : -1;
-      case 'Saw Up':   return -1 + 2*x;
-      case 'Saw Down': return 1 - 2*x;
+      case 'Saw Up':   return -1 + 2 * x;
+      case 'Saw Down': return 1 - 2 * x;
       case 'Random':
-      case 'Random S&H': return Math.sin(p*7.3)*0.5 + Math.sin(p*3.1)*0.5;
-      default:         return Math.sin(p * Math.PI * 2);
+      case 'Random S&H': {
+        // Deterministic pseudo-random pulse train for the static preview
+        // — same x bins yield the same value each render so the path is
+        // stable instead of crawling.
+        const bin = Math.floor (x * 8);
+        return (Math.sin (bin * 12.9898) * 43758.5453) % 1 * 2 - 1;
+      }
+      default: return Math.sin (x * Math.PI * 2);
     }
   };
   let d = '';
-  const N = 120;
+  const N = 240;
   for (let i = 0; i <= N; i++){
     const px = (i / N) * W * 2;
-    const p  = (i / N) * cycles * 2;
+    const p  = (i / N) * cycles;
     const py = mid - fn(p) * amp;
     d += (i ? 'L' : 'M') + px.toFixed(1) + ' ' + py.toFixed(1) + ' ';
   }
   const dur = Math.max(0.6, 4.5 - rate * 3.5).toFixed(2);
+
+  // Live-value indicator: when the caller passes the LFO's current value
+  // (post-depth, in [-1, +1]) we plot it as a moving dot on the centre
+  // line. The dot's Y motion is the actual waveform shape — sine moves
+  // smoothly, triangle linearly, square JUMPs, S&H teleports. Without
+  // this the user only saw the static shape and the CSS scroll motion
+  // (which looks the same regardless of wave).
+  const liveOn = value != null && isFinite (value);
+  const liveY  = liveOn ? (mid - Math.max(-1, Math.min(1, value)) * amp) : mid;
   return (
     <div className="wave">
       <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
         <line x1="0" y1={mid} x2={W} y2={mid} stroke="var(--c-line-2)" strokeWidth="0.5" />
         <g className="wave-scroll" style={{ animationDuration: dur + 's', transformOrigin: 'center' }}>
-          <path d={d} fill="none" stroke="var(--accent)" strokeWidth="1.6" />
+          <path d={d} fill="none" stroke="var(--accent-dim, var(--accent))" strokeWidth="1.4" opacity="0.55" />
         </g>
+        {liveOn && (
+          <>
+            <line x1={W/2} y1={mid} x2={W/2} y2={liveY} stroke="var(--accent)" strokeWidth="1" opacity="0.4" />
+            <circle cx={W/2} cy={liveY} r="3" fill="var(--accent)" />
+          </>
+        )}
       </svg>
     </div>
   );
@@ -187,8 +216,9 @@ Object.assign(window, { KnobContextMenu, parseValue });
    chip shown after load — that mapping lives in one place
    conceptually even if it's evaluated twice (C++ + JS). When the
    manager grows a real categoryOf() it'll feed both sides. */
-const PRESET_CATS = ['ALL', 'DUB', 'AMBIENT', 'VINTAGE', 'WIDE', 'OTHER'];
-function categoryOf (name) {
+const PRESET_CATS = ['ALL', 'USER', 'DUB', 'AMBIENT', 'VINTAGE', 'WIDE', 'OTHER'];
+function categoryOf (name, isUser) {
+  if (isUser) return 'USER';
   if (!name) return 'OTHER';
   if (/Dub|Reggae/i.test(name)) return 'DUB';
   if (/Ambient/i.test(name))    return 'AMBIENT';
@@ -203,15 +233,26 @@ function PresetBrowser ({ open, onClose, currentName }) {
   const [cat,   setCat]     = React.useState('ALL');
   const inputRef = React.useRef(null);
 
-  // Pull the list each time the modal opens — handles the case where the
-  // host injected presets via state restore between opens.
+  // Pull both lists each time the modal opens. Names are de-duped favouring
+  // the user version when a name collides (a user save with the same name
+  // as a factory shadows the factory — that's the existing engine
+  // behaviour in loadByName, so the browser matches it).
   React.useEffect(() => {
     if (!open) return;
     setQuery('');
     let cancelled = false;
-    const fn = window.Juce.getNativeFunction('listFactoryPresets');
-    Promise.resolve(fn()).then(list => {
-      if (!cancelled) setNames(Array.isArray(list) ? list : []);
+    const fac  = window.Juce.getNativeFunction('listFactoryPresets');
+    const user = window.Juce.getNativeFunction('listUserPresets');
+    Promise.all([Promise.resolve(fac()), Promise.resolve(user())]).then(([facList, userList]) => {
+      if (cancelled) return;
+      const facArr  = Array.isArray(facList)  ? facList  : [];
+      const userArr = Array.isArray(userList) ? userList : [];
+      const userSet = new Set (userArr);
+      const merged  = [
+        ...userArr.map (n => ({ name: n, isUser: true })),
+        ...facArr.filter (n => !userSet.has (n)).map (n => ({ name: n, isUser: false })),
+      ];
+      setNames (merged);
     });
     setTimeout(() => { if (inputRef.current) inputRef.current.focus(); }, 60);
     return () => { cancelled = true; };
@@ -226,8 +267,11 @@ function PresetBrowser ({ open, onClose, currentName }) {
 
   if (!open) return null;
   const q = query.trim().toLowerCase();
+  // `names` is now [{name, isUser}]; build the display rows with the
+  // computed cat tag (USER overrides factory heuristics so a user save
+  // named "Vintage Whatever" still shows up under USER not VINTAGE).
   const rows = names
-    .map(n => ({ name: n, cat: categoryOf(n) }))
+    .map(entry => ({ name: entry.name, isUser: entry.isUser, cat: categoryOf(entry.name, entry.isUser) }))
     .filter(r => (cat === 'ALL' || r.cat === cat) && (!q || r.name.toLowerCase().includes(q)));
 
   // Stays open after a row is clicked so the user can audition through the
@@ -255,7 +299,8 @@ function PresetBrowser ({ open, onClose, currentName }) {
           {rows.length === 0
             ? <div className="br-empty">No presets match.</div>
             : rows.map(r =>
-                <div key={r.name} className="br-row" data-on={r.name === currentName ? '1' : '0'}
+                <div key={(r.isUser ? 'u:' : 'f:') + r.name} className="br-row"
+                     data-on={r.name === currentName ? '1' : '0'}
                      onClick={() => choose(r.name)}>
                   <span>{r.name}</span>
                   <span className="cat">{r.cat}</span>

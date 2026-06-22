@@ -246,6 +246,17 @@ WebEditor::WebEditor (::DoobieAudioProcessor& proc)
                     arr.add (juce::var (n));
                 complete (juce::var (arr));
             })
+        // User-saved presets (saveUser writes them to the application-data
+        // folder). Listed separately so the browser can tag the rows
+        // distinctly from the factory bank.
+        .withNativeFunction (juce::Identifier { "listUserPresets" },
+            [this] (const juce::Array<juce::var>&, juce::WebBrowserComponent::NativeFunctionCompletion complete)
+            {
+                juce::Array<juce::var> arr;
+                for (const auto& n : doobieProcessor.getPresetManager().getUserNames())
+                    arr.add (juce::var (n));
+                complete (juce::var (arr));
+            })
         // Returns the factory IR name list — used by the Convolution mode's
         // dropdown / browser.
         .withNativeFunction (juce::Identifier { "listFactoryIRs" },
