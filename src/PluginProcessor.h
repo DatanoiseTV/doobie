@@ -23,9 +23,14 @@
 // from the host transport, converts raw parameters into engine units, and hands
 // audio to the DubDelayEngine.
 class DoobieAudioProcessor : public juce::AudioProcessor,
-                             private juce::AudioProcessorValueTreeState::Listener
+                             private juce::AudioProcessorValueTreeState::Listener,
+                             private juce::ValueTree::Listener
 {
 public:
+    // True when any APVTS param has changed since the last preset load
+    // or user-save. Cleared by the preset manager's post-load hook.
+    bool isCurrentPresetDirty() const { return presetDirty.load (std::memory_order_relaxed); }
+    void clearPresetDirty()           { presetDirty.store (false, std::memory_order_relaxed); }
     DoobieAudioProcessor();
     ~DoobieAudioProcessor() override;
 
@@ -115,6 +120,12 @@ private:
     // sample rate. That allocates inside JUCE Convolution, so it runs from
     // the message thread via this listener rather than from processBlock.
     void parameterChanged (const juce::String& parameterID, float newValue) override;
+    // ValueTree::Listener — fires on any APVTS state change. Used to flag
+    // the current preset as "dirty" so the UI can show an asterisk + ask
+    // the user before they overwrite.
+    void valueTreePropertyChanged (juce::ValueTree& tree, const juce::Identifier& prop) override;
+    std::atomic<bool> presetDirty { false };
+    std::atomic<bool> suppressPresetDirty { false };
 
     juce::AudioProcessorValueTreeState apvts;
     doobie::DubDelayEngine engine;

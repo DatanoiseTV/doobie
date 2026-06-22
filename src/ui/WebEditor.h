@@ -82,6 +82,7 @@ private:
     // Last-known preset name + category, pushed only when changed (so we're
     // not spamming the JS side with redundant events).
     juce::String lastPresetName, lastPresetCat;
+    bool         lastPresetDirty = false;
     juce::String lastIRName;
     int          lastFactoryIRIndex = -1;
     bool         lastHadIR = false;

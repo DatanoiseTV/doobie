@@ -92,7 +92,7 @@ function Header({ preset, onPrev, onNext, onSave, modOpen, setModOpen, onBrowse 
       <div className="preset">
         <button className="nav" onClick={onPrev} aria-label="Previous preset">‹</button>
         <button className="name" onClick={() => onBrowse && onBrowse()} title="Browse presets">
-          <span className="t">{preset.name || '—'}</span>
+          <span className="t">{(preset.name || '—') + (preset.dirty ? ' *' : '')}</span>
           {preset.cat && <span className="cat">{preset.cat}</span>}
         </button>
         <button className="nav" onClick={onNext} aria-label="Next preset">›</button>

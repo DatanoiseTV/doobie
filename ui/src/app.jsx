@@ -282,7 +282,7 @@ function App() {
   const mods = JB.useJuceModMap(NUM_MOD_SLOTS);
 
   // Native event subscriptions for live data
-  const presetInfo = JB.useJuceEvent('presetInfo', { name: '—', cat: '' });
+  const presetInfo = JB.useJuceEvent('presetInfo', { name: '—', cat: '', dirty: false });
   const irInfo     = JB.useJuceEvent('irInfo',     { hasIR: false, factoryIndex: -1, isFactory: false, isFile: false, name: '(no IR)' });
   const levels = JB.useJuceEvent('levels', { in: -90, delay: -90, reverb: -90, out: -90, midiNote: -1, grDb: 0, env: 0, lfo1v: 0, lfo2v: 0, lfo3v: 0, lfo4v: 0, peak: { in: -90, delay: -90, reverb: -90, out: -90, l: -90, r: -90 } });
 
@@ -362,15 +362,30 @@ function App() {
       <ModDrawer open={modOpen} onClose={() => setModOpen(false)} p={p} setP={setP}
                  matrix={matrix} setMx={mX} numSlots={NUM_MOD_SLOTS} levels={levels} />
 
-      <PresetBrowser open={browserOpen} onClose={() => setBrowserOpen(false)} currentName={presetInfo.name} />
+      <PresetBrowser open={browserOpen} onClose={() => setBrowserOpen(false)}
+                     currentName={presetInfo.name}
+                     dirty={!!presetInfo.dirty}
+                     onRequestSave={(nextName) => {
+                       // Capture the queued switch; once the user names + saves,
+                       // we load the next preset.
+                       window._pendingPresetAfterSave = nextName;
+                       setSaveOpen(true);
+                     }} />
 
       <Modal open={saveOpen} title="Save preset" message="Pick a name for your patch."
              defaultValue={presetInfo.name || ''}
              onConfirm={(name) => {
                window.Juce.backend.emitEvent('preset_save', { name });
                setSaveOpen(false);
+               // If the save was triggered from the browser's "Save…" path
+               // (queued preset switch), chain the load after the save.
+               if (window._pendingPresetAfterSave) {
+                 const next = window._pendingPresetAfterSave;
+                 window._pendingPresetAfterSave = null;
+                 setTimeout (() => window.Juce.backend.emitEvent('preset_load', { name: next }), 30);
+               }
              }}
-             onCancel={() => setSaveOpen(false)}
+             onCancel={() => { window._pendingPresetAfterSave = null; setSaveOpen(false); }}
              confirmLabel="Save" />
 
       <KnobContextMenu />

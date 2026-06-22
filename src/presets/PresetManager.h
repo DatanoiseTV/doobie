@@ -36,6 +36,9 @@ public:
     // discontinuity / "DC pulse" click on every reload). The plugin
     // processor wires this to engine.fadeForReload().
     void setPreLoadHook (std::function<void()> fn) { preLoadHook = std::move (fn); }
+    // Called right AFTER a preset's values have been written into APVTS.
+    // Lets the processor clear any "dirty since last load" state it tracks.
+    void setPostLoadHook (std::function<void()> fn) { postLoadHook = std::move (fn); }
 
     juce::StringArray getFactoryNames() const;
     juce::StringArray getUserNames() const;
@@ -68,4 +71,5 @@ private:
     std::vector<Preset> factory;
     juce::String currentName;
     std::function<void()> preLoadHook;
+    std::function<void()> postLoadHook;
 };

@@ -1124,6 +1124,10 @@ void PresetManager::applyPreset (const Preset& preset)
             p->setValueNotifyingHost (p->convertTo0to1 (value));
 
     currentName = preset.name;
+
+    // Notify the processor that any "dirty-since-last-load" flag it
+    // tracks can now be cleared — we just finished applying.
+    if (postLoadHook) postLoadHook();
 }
 
 void PresetManager::loadFactory (int index)

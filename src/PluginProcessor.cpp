@@ -228,9 +228,27 @@ DoobieAudioProcessor::DoobieAudioProcessor()
 {
     apvts.addParameterListener (dID::irSpeed, this);
 
+    // Dirty-tracking: any APVTS state change after a load flips a flag the
+    // UI can read. Guarded by suppressPresetDirty so the param-flood
+    // during applyPreset doesn't trigger it.
+    apvts.state.addListener (this);
+
     // Engine dips its output to silence and ramps back over ~12 ms whenever
     // a preset starts loading — masks the "DC pulse" pop from the param swap.
-    presetManager.setPreLoadHook ([this] { engine.fadeForReload(); });
+    presetManager.setPreLoadHook ([this] {
+        suppressPresetDirty.store (true, std::memory_order_relaxed);
+        engine.fadeForReload();
+    });
+    presetManager.setPostLoadHook ([this] {
+        suppressPresetDirty.store (false, std::memory_order_relaxed);
+        presetDirty.store (false, std::memory_order_relaxed);
+    });
+}
+
+void DoobieAudioProcessor::valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&)
+{
+    if (! suppressPresetDirty.load (std::memory_order_relaxed))
+        presetDirty.store (true, std::memory_order_relaxed);
 }
 
 DoobieAudioProcessor::~DoobieAudioProcessor()

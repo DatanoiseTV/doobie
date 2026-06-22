@@ -473,15 +473,18 @@ void WebEditor::emitPresetInfo()
         : name.contains ("Cosmic")         ? "WIDE"
         : juce::String();
 
-    if (name == lastPresetName && cat == lastPresetCat)
+    const bool dirty = doobieProcessor.isCurrentPresetDirty();
+    if (name == lastPresetName && cat == lastPresetCat && dirty == lastPresetDirty)
         return;
+    lastPresetDirty = dirty;
 
     lastPresetName = name;
     lastPresetCat  = cat;
 
     juce::DynamicObject::Ptr obj = new juce::DynamicObject();
-    obj->setProperty ("name", name);
-    obj->setProperty ("cat",  cat);
+    obj->setProperty ("name",  name);
+    obj->setProperty ("cat",   cat);
+    obj->setProperty ("dirty", doobieProcessor.isCurrentPresetDirty());
     webView->emitEventIfBrowserIsVisible (juce::Identifier { "presetInfo" }, juce::var (obj.get()));
 }
 

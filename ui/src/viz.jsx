@@ -218,10 +218,11 @@ function categoryOf (name, isUser) {
   return 'OTHER';
 }
 
-function PresetBrowser ({ open, onClose, currentName }) {
+function PresetBrowser ({ open, onClose, currentName, dirty, onRequestSave }) {
   const [names, setNames]   = React.useState([]);
   const [query, setQuery]   = React.useState('');
   const [cat,   setCat]     = React.useState('ALL');
+  const [pendingPick, setPendingPick] = React.useState (null);  // queued switch awaiting confirmation
   const inputRef = React.useRef(null);
 
   // Pull both lists each time the modal opens. Names are de-duped favouring
@@ -269,9 +270,25 @@ function PresetBrowser ({ open, onClose, currentName }) {
   // bank without reopening the modal each time. The selected row stays
   // highlighted (currentName updates via the presetInfo event) and Close /
   // Esc dismiss when they're done.
+  //
+  // When the current preset is `dirty` (the user tweaked params since the
+  // last load/save), the row click is gated behind a confirmation modal
+  // so an accidental row click can't discard their work.
+  const performLoad = (n) => window.Juce.backend.emitEvent('preset_load', { name: n });
   const choose = (n) => {
-    window.Juce.backend.emitEvent('preset_load', { name: n });
+    if (dirty && n !== currentName) setPendingPick (n);
+    else performLoad (n);
   };
+  const confirmDiscard = () => {
+    if (pendingPick) performLoad (pendingPick);
+    setPendingPick (null);
+  };
+  const confirmSaveThenLoad = () => {
+    const next = pendingPick;
+    setPendingPick (null);
+    onRequestSave && onRequestSave (next);
+  };
+  const cancelPick = () => setPendingPick (null);
 
   return (
     <div className="modal-scrim open" onMouseDown={(e) => { if (e.target.classList.contains('modal-scrim')) onClose && onClose(); }}>
@@ -304,6 +321,23 @@ function PresetBrowser ({ open, onClose, currentName }) {
           <button className="btn ghost" onClick={() => onClose && onClose()}>Close</button>
         </div>
       </div>
+      {pendingPick && (
+        <div className="modal-scrim open" style={{ zIndex: 2147483647 }}
+             onMouseDown={(e) => { if (e.target.classList.contains('modal-scrim')) cancelPick(); }}>
+          <div className="modal" role="dialog" aria-modal="true" style={{ minWidth: 380 }}>
+            <h3>Unsaved changes</h3>
+            <p>
+              "<b>{currentName || '—'}</b>" has been edited. Switching to
+              "<b>{pendingPick}</b>" will discard your changes.
+            </p>
+            <div className="modal-actions">
+              <button className="btn ghost"  onClick={cancelPick}>Cancel</button>
+              <button className="btn ghost"  onClick={confirmDiscard}>Discard</button>
+              <button className="btn accent" onClick={confirmSaveThenLoad}>Save…</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -208,8 +208,13 @@
 
     // Live source values come in via the `levels` event (lfo1v..lfo4v in
     // [-1,+1], env in [0,1]). The Knob refreshes on each `levels` tick at
-    // 30 Hz so the dot follows the actual waveform.
-    const lv = JuceBridge.useJuceEvent ('levels', { lfo1v:0, lfo2v:0, lfo3v:0, lfo4v:0, env:0 });
+    // 30 Hz so the dot follows the actual waveform. Use the local
+    // useJuceEvent in this IIFE — referencing `JuceBridge.useJuceEvent`
+    // bare here looked up the global before the bottom `global.JuceBridge
+    // = ...` line had set it on the very first render, which made `lv`
+    // undefined and every mod arc came out as `mods.live[id] = 0` →
+    // looked like the mod indicators had disappeared.
+    const lv = useJuceEvent ('levels', { lfo1v:0, lfo2v:0, lfo3v:0, lfo4v:0, env:0 });
     // Map ModSource enum index to its live value. Order MUST match
     // ModMatrix.h::ModSource — Off=0, Lfo1..4=1..4, Env=5.
     const sourceLive = [0, lv.lfo1v || 0, lv.lfo2v || 0, lv.lfo3v || 0, lv.lfo4v || 0, lv.env || 0];
