@@ -78,6 +78,7 @@ void DubDelayEngine::prepare (double sr, int maxBlockSize)
         smoothedHeadGain[(size_t) i].reset (sr, 0.03);  // ~30 ms: click-free on/off
         smoothedHeadPan[(size_t) i].reset  (sr, 0.03);
         smoothedHeadRatio[(size_t) i].reset (sr, 0.12); // capstan-style time glide
+        smoothedHeadOffset[(size_t) i].reset (sr, 0.05); // 50 ms — kills crackle
     }
 
     smoothedDelay.setCurrentAndTargetValue (params.delaySamples);
@@ -153,6 +154,7 @@ void DubDelayEngine::reset()
         smoothedHeadPan[(size_t) i].setCurrentAndTargetValue (params.headPan[(size_t) i]);
         smoothedHeadRatio[(size_t) i].setCurrentAndTargetValue (
             std::clamp ((double) params.headRatio[(size_t) i], 0.05, 1.0));
+        smoothedHeadOffset[(size_t) i].setCurrentAndTargetValue (params.headOffsetMs[(size_t) i]);
     }
 
     for (auto& m : headMag) m.store (0.0f);
@@ -258,6 +260,7 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
         smoothedHeadPan[(size_t) i].setTargetValue (params.headPan[(size_t) i]);
         smoothedHeadRatio[(size_t) i].setTargetValue (
             std::clamp ((double) params.headRatio[(size_t) i], 0.05, 1.0));
+        smoothedHeadOffset[(size_t) i].setTargetValue (params.headOffsetMs[(size_t) i]);
     }
 
     const bool  reverbOn  = params.reverbMode != 0;
@@ -490,14 +493,19 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
                 const float  lvl   = smoothedHeadGain[(size_t) i].getNextValue();
                 const float  p     = smoothedHeadPan[(size_t) i].getNextValue();
                 const double ratio = smoothedHeadRatio[(size_t) i].getNextValue();
+                // Always pull the smoother — even when the head is silent —
+                // so its phase stays in sync and a head re-enables without a
+                // glitch.
+                const float  offMs = smoothedHeadOffset[(size_t) i].getNextValue();
                 if (lvl <= 1.0e-5f)
                     continue;
 
-                // Ratio-driven base position + additive ms offset (signed).
+                // Ratio-driven base position + additive ms offset (signed,
+                // ramp-smoothed over 50 ms so live knob moves don't crackle).
                 // The offset is NOT modulated by wow/flutter — it's the
                 // user's chosen alignment shift, not part of the tape
                 // capstan's pitch variation.
-                const float offsetSamples = params.headOffsetMs[(size_t) i] * 0.001f * (float) sampleRate;
+                const float offsetSamples = offMs * 0.001f * (float) sampleRate;
                 const float hd = std::max (2.0f, (float) (dly * ratio * m) + offsetSamples);
                 const float tL = tapeL.read (hd);
                 const float tR = tapeR.read (hd);

@@ -249,6 +249,11 @@ private:
     // glides, and the time ratio eases between divisions like the master capstan.
     std::array<juce::SmoothedValue<float>, 4> smoothedHeadGain, smoothedHeadPan;
     std::array<juce::SmoothedValue<double, juce::ValueSmoothingTypes::Multiplicative>, 4> smoothedHeadRatio;
+    // Per-head offset smoothing — without this, dragging the OFFSET knob
+    // moves the tape read position discontinuously per block and you hear
+    // crackles. Linear ramp in milliseconds; converted to samples in the
+    // per-sample tap-read loop.
+    std::array<juce::SmoothedValue<float>, 4> smoothedHeadOffset;
 
     // DC blockers stop a feedback offset from building across repeats, and keep
     // the wet output centred regardless of delay character or reverb.
