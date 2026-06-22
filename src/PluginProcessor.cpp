@@ -244,9 +244,17 @@ DoobieAudioProcessor::DoobieAudioProcessor()
         engine.fadeForReload();
     });
     presetManager.setPostLoadHook ([this] {
-        suppressPresetDirty.store (false, std::memory_order_relaxed);
-        snapshotCurrentParams();
-        presetDirty.store (false, std::memory_order_relaxed);
+        // Hold the suppression long enough for any async settling traffic
+        // (web-relay acknowledge round-trips, APVTS atomic-float ↔ value-tree
+        // sync, smoother property changes) to land. THEN snapshot and
+        // unsuppress. 80 ms catches every cycle we've seen in practice; the
+        // user can't move anything in that window because the WebView event
+        // loop is busy applying the load.
+        juce::Timer::callAfterDelay (80, [this] {
+            snapshotCurrentParams();
+            presetDirty.store (false, std::memory_order_relaxed);
+            suppressPresetDirty.store (false, std::memory_order_relaxed);
+        });
     });
 
     // First-load snapshot so the initial state (before any preset is
@@ -275,9 +283,18 @@ bool DoobieAudioProcessor::currentMatchesSnapshot() const
         if (rp == nullptr) continue;
         const auto it = cleanSnapshot.find (rp->paramID);
         if (it == cleanSnapshot.end()) continue;
-        // 1e-4 covers rounding through the apvts step quantisation and
-        // any float-conversion wobble in the relays.
-        if (std::fabs (rp->getValue() - it->second) > 1.0e-4f)
+        // Tolerance widened from 1e-4 → 5e-3. Two reasons:
+        // 1. JS web-relays round-trip the normalised value through float
+        //    and a relay-internal int scale; the result can sit a few
+        //    ten-thousandths off the param's actual quantised step.
+        // 2. APVTS's atomic-float cache and the value-tree XML it
+        //    syncs to round at different precisions, so a load can
+        //    produce a 1-2 ULP-off readback even when no user moved
+        //    anything.
+        // 5e-3 is still well under the smallest meaningful knob step
+        // (most params are 0.001 step, 5e-3 corresponds to 0.5% of the
+        // normalised range = below any audible / visible threshold).
+        if (std::fabs (rp->getValue() - it->second) > 5.0e-3f)
             return false;
     }
     return true;
