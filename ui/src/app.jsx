@@ -90,6 +90,9 @@ const PARAM_MAP = {
   autoGain:      { kind: 'toggle', id: 'outLevelerOn'  },
   // Convolution-only: makeup gain on the wet IR signal (dB).
   irGain:     { kind: 'slider', id: 'irGain' },
+  // Convolution-only: IR playback speed multiplier (0.25..4.0, log around 1).
+  // Resamples the IR up or down — pitches the tail and changes its length.
+  irSpeed:    { kind: 'slider', id: 'irSpeed' },
   // --- output ---
   mix:        { kind: 'slider', id: 'mix' },
   width:      { kind: 'slider', id: 'width' },

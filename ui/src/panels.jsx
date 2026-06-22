@@ -452,9 +452,17 @@ function ReverbPanel({ p, setP, mods, irInfo, midiNote }) {
           reverb. Only IR gain + width apply, so the 8-knob block collapses
           to two knobs and the panel fits comfortably alongside the Phaser. */}
       {isConv ? (
-        <div className="eqrow" style={{ marginBottom: 8, gridTemplateColumns: 'repeat(2, 1fr)' }}>
-          <KB label="IR Gain" k="irGain"   p={p} setP={setP} format={fmt.db}  mods={mods} lit />
-          <KB label="Width"   k="revWidth" p={p} setP={setP} format={fmt.pct} mods={mods} />
+        <div className="eqrow" style={{ marginBottom: 8, gridTemplateColumns: 'repeat(3, 1fr)' }}>
+          <KB label="IR Gain"  k="irGain"   p={p} setP={setP} format={fmt.db}  mods={mods} lit />
+          {/* IR Speed resamples the impulse — 1.00× = native, 0.5× = octave
+              down + 2× length, 2.0× = octave up + half length. Log-skewed
+              so the centre of the knob is unity gain (no resample). */}
+          <KB label="IR Speed" k="irSpeed"  p={p} setP={setP}
+              format={(v) => {
+                const s = 0.25 * Math.pow (16, v); // 0.25 .. 4.0 log
+                return s.toFixed(2) + '×';
+              }} />
+          <KB label="Width"    k="revWidth" p={p} setP={setP} format={fmt.pct} mods={mods} />
         </div>
       ) : (
         <>
