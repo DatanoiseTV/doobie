@@ -638,6 +638,32 @@ input, textarea, [contenteditable="true"] {
   background:var(--c-raise); color:var(--c-txt); border-color:var(--accent-dim);
   box-shadow:0 1px 0 oklch(0.34 0.006 60) inset;
 }
+
+/* ============================================================
+   Envelope follower visualizer (Mod drawer)
+   ============================================================ */
+.env-viz{ display:flex; align-items:center; gap:10px; padding:0 6px 4px; }
+.env-led{
+  width:10px; height:10px; border-radius:50%;
+  background:oklch(0.20 0.005 60); border:1px solid var(--c-line-2);
+  flex:0 0 auto; transition:background .03s, box-shadow .03s;
+}
+.env-led.on{ background:var(--accent); box-shadow:0 0 10px var(--accent-glow); border-color:var(--accent-dim); }
+.env-bar{
+  flex:1; height:10px; background:var(--c-well); border:1px solid var(--c-line-2);
+  border-radius:5px; position:relative; overflow:hidden;
+}
+.env-bar-fill{
+  position:absolute; left:0; top:0; bottom:0; transition:width .03s linear;
+}
+.env-bar-thresh{
+  position:absolute; top:-1px; bottom:-1px; width:1px;
+  background:oklch(0.55 0.04 60); opacity:.75;
+}
+.env-val{
+  font-family:var(--mono); font-size:10px; color:var(--c-txt-2);
+  min-width:24px; text-align:right; flex:0 0 auto;
+}
 .midi-btn{
   height:20px; padding:0 8px; border-radius:5px;
   background:var(--c-well); color:var(--c-txt-2);

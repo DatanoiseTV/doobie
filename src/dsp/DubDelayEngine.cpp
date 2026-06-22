@@ -244,9 +244,15 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
 
     // Delay's Pitch character uses the same shifter type but a separate
     // interval — and runs on the recirculating path, so each repeat shifts
-    // by `pitchSemis`, compounding into the climbing-octave classic.
-    pitchL.setIntervalSemitones (params.pitchSemis);
-    pitchR.setIntervalSemitones (params.pitchSemis);
+    // by `pitchSemis`, compounding into the climbing-octave classic. The
+    // stereo SPREAD detunes the two channels symmetrically (cents → semis)
+    // so unison + spread = chorus, harmony + spread = wide harmony. At
+    // spread == 0 both shifters get exactly the same interval, so the
+    // feature is a true no-op (sub-cent deadband to guarantee that even
+    // when a tiny float epsilon sneaks in from the smoother).
+    const float spreadSemis = params.pitchSpread < 0.5f ? 0.0f : (params.pitchSpread * 0.01f);
+    pitchL.setIntervalSemitones (params.pitchSemis - spreadSemis);
+    pitchR.setIntervalSemitones (params.pitchSemis + spreadSemis);
     gated.setPlateParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
     gated.setGateParams (params.gateThresholdDb, params.gateHoldMs, params.gateReleaseMs);
     // IR makeup gain (per-sample smoothed inside the wrapper).

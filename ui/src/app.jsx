@@ -80,6 +80,7 @@ const PARAM_MAP = {
   // Delay-Pitch-character only: per-repeat pitch interval + on/off bypass.
   pitchSemis:  { kind: 'slider', id: 'pitchSemis' },
   pitchOn:     { kind: 'toggle', id: 'pitchOn' },
+  pitchSpread: { kind: 'slider', id: 'pitchSpread' },
   // MIDI Note Mode: incoming notes drive shimmer+pitch intervals.
   midiPitchMode: { kind: 'toggle', id: 'midiPitchMode' },
   midiPortaOn:   { kind: 'toggle', id: 'midiPortaOn'   },
@@ -278,7 +279,7 @@ function App() {
   // Native event subscriptions for live data
   const presetInfo = JB.useJuceEvent('presetInfo', { name: '—', cat: '' });
   const irInfo     = JB.useJuceEvent('irInfo',     { hasIR: false, factoryIndex: -1, isFactory: false, isFile: false, name: '(no IR)' });
-  const levels = JB.useJuceEvent('levels', { in: -90, delay: -90, reverb: -90, out: -90, midiNote: -1, peak: { in: -90, delay: -90, reverb: -90, out: -90, l: -90, r: -90 } });
+  const levels = JB.useJuceEvent('levels', { in: -90, delay: -90, reverb: -90, out: -90, midiNote: -1, env: 0, lfo1v: 0, lfo2v: 0, lfo3v: 0, lfo4v: 0, peak: { in: -90, delay: -90, reverb: -90, out: -90, l: -90, r: -90 } });
 
   // Layout state (local UI only, not in APVTS)
   const [modOpen,     setModOpen]     = useState(false);
@@ -354,7 +355,7 @@ function App() {
       </div>
 
       <ModDrawer open={modOpen} onClose={() => setModOpen(false)} p={p} setP={setP}
-                 matrix={matrix} setMx={mX} numSlots={NUM_MOD_SLOTS} />
+                 matrix={matrix} setMx={mX} numSlots={NUM_MOD_SLOTS} levels={levels} />
 
       <PresetBrowser open={browserOpen} onClose={() => setBrowserOpen(false)} currentName={presetInfo.name} />
 

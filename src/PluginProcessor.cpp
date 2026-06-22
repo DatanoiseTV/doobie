@@ -122,6 +122,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     // descends a fourth, etc.
     layout.add (std::make_unique<FloatParam> (pid (dID::pitchSemis),   "Pitch Interval",   Range (-24.0f, 24.0f, 1.0f), 12.0f));
     layout.add (std::make_unique<BoolParam>  (pid (dID::pitchOn),       "Pitch Shifter",   true));
+    layout.add (std::make_unique<FloatParam> (pid (dID::pitchSpread),   "Pitch Spread",    Range (0.0f, 100.0f, 0.1f), 0.0f));
     layout.add (std::make_unique<BoolParam>  (pid (dID::feedbackKill),  "Kill Feedback",   false));
     layout.add (std::make_unique<BoolParam>  (pid (dID::midiPitchMode), "MIDI Pitch Mode", false));
     layout.add (std::make_unique<BoolParam>  (pid (dID::midiPortaOn),   "MIDI Portamento", false));
@@ -360,6 +361,7 @@ doobie::EngineParams DoobieAudioProcessor::buildEngineParams()
     p.shimmerSemis    = raw (dID::shimmerSemis);
     p.pitchSemis      = raw (dID::pitchSemis);
     p.pitchOn         = raw (dID::pitchOn) > 0.5f;
+    p.pitchSpread     = raw (dID::pitchSpread);
     p.feedbackKill    = raw (dID::feedbackKill) > 0.5f;
 
     return p;

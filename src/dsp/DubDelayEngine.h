@@ -102,6 +102,10 @@ struct EngineParams
     // latency) — useful for A/B and to mute the shifter without changing
     // character mode.
     bool  pitchOn      = true;
+    // Stereo pitch spread in CENTS. L shifts by (semis - spread/100), R by
+    // (semis + spread/100). At interval=0 this is a detune chorus; at any
+    // interval it widens the harmony's stereo image.
+    float pitchSpread  = 0.0f;
     // Momentary kill — when held, recirculating feedback is fast-faded to
     // zero (~8 ms) and the existing tail rings out naturally. Live dub
     // move to chop repeats cleanly without touching the FEEDBACK knob.

@@ -304,6 +304,16 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
                   <span className="porta-val">{Math.round (p.midiPortaMs * 2000)} ms</span>
                 </div>
               )}
+              {/* Stereo spread: detunes L/R symmetrically around the
+                  chosen interval (cents). 0 = true bypass (both channels
+                  shift identically); 25 c ≈ subtle chorus thickening at
+                  unison; 100 c = wide harmony shimmer. */}
+              <div className="porta-row">
+                <span className="porta-lab">Spread</span>
+                <input type="range" min="0" max="1" step="0.001" value={p.pitchSpread}
+                       onChange={(e) => setP ('pitchSpread', parseFloat (e.target.value))} />
+                <span className="porta-val">{Math.round (p.pitchSpread * 100)} c</span>
+              </div>
               <div className="shimmer-int-chips" style={p.midiPitchMode ? { opacity: 0.45, pointerEvents: 'none' } : null}>
                 {pSemiChips.map (s =>
                   <button key={s} data-on={pSemis === s ? '1' : '0'} onClick={() => setPSemis (s)}>
@@ -617,8 +627,34 @@ function LfoCard({ n, p, setP }) {
   );
 }
 
+/* ============================== ENV VIS ============================== */
+// Horizontal bar showing the env follower's live value, with an LED that
+// lights once the level crosses a "noticeable" threshold (corresponds to
+// where the env starts driving meaningful modulation). The bar's tint
+// scales from amber → red as the level climbs so live use reads at a
+// glance without staring at a number.
+function EnvViz({ level }) {
+  const v = Math.max (0, Math.min (1, level || 0));
+  const thresh = 0.1;   // LED threshold — small value above quiescent noise
+  const active = v > thresh;
+  return (
+    <div className="env-viz">
+      <span className={'env-led' + (active ? ' on' : '')} />
+      <div className="env-bar">
+        <div className="env-bar-fill"
+             style={{ width: (v * 100).toFixed(1) + '%',
+                      background: v > 0.7
+                        ? 'color-mix(in oklab, var(--accent), var(--peak) ' + Math.round ((v - 0.7) / 0.3 * 80) + '%)'
+                        : 'var(--accent)' }} />
+        <div className="env-bar-thresh" style={{ left: (thresh * 100) + '%' }} />
+      </div>
+      <span className="env-val">{(v * 100).toFixed(0)}</span>
+    </div>
+  );
+}
+
 /* ============================== MOD DRAWER ============================== */
-function ModDrawer({ open, onClose, p, setP, matrix, setMx, numSlots }) {
+function ModDrawer({ open, onClose, p, setP, matrix, setMx, numSlots, levels }) {
   const [tab, setTab] = useState('sources');
   return (
     <>
@@ -641,7 +677,8 @@ function ModDrawer({ open, onClose, p, setP, matrix, setMx, numSlots }) {
               <LfoCard n={4} p={p} setP={setP} />
               <div className="modcard">
                 <div className="subhead">Envelope Follower</div>
-                <div className="row" style={{ gap: 18, justifyContent: 'space-around' }}>
+                <EnvViz level={levels && levels.env} />
+                <div className="row" style={{ gap: 18, justifyContent: 'space-around', marginTop: 8 }}>
                   <KB label="Attack"  k="envAtk"  p={p} setP={setP} format={fmt.msSkew(0.1, 500)} size="md" lit />
                   <KB label="Release" k="envRel"  p={p} setP={setP} format={fmt.msSkew(1, 2000)} size="md" lit />
                   <KB label="Sens"    k="envSens" p={p} setP={setP} format={fmt.pct}             size="md" lit />

@@ -132,6 +132,13 @@ namespace dID
     // comparison or to mute the shifter's latency during arrangement.
     inline constexpr auto pitchOn       = "pitchOn";        // bool, default ON
 
+    // Stereo spread for the pitch shifter: L shifts by (semis - spread),
+    // R by (semis + spread). At interval=0 this becomes a detune chorus
+    // (the classic "two pitch shifters dialled ±10 cents" thickening);
+    // at non-zero intervals it widens the harmony stereo image. Cents,
+    // 0..100.
+    inline constexpr auto pitchSpread   = "pitchSpread";    // cents, 0..100
+
     // Momentary "kill feedback" — when held, the recirculating feedback is
     // fast-faded to zero (~8 ms) and the existing tail rings out naturally.
     // Release and feedback fades back in over the same time. Live dub move

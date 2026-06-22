@@ -116,7 +116,7 @@ namespace
         "plateDecay", "plateSize", "plateDamp", "platePredelay", "reverbMod",
         "irGain", "irSpeed",
         "gateThreshold", "gateHold", "gateRelease",
-        "shimmerSemis", "pitchSemis", "midiPortaMs",
+        "shimmerSemis", "pitchSemis", "midiPortaMs", "pitchSpread",
         "head1Offset", "head2Offset", "head3Offset", "head4Offset",
         "lfo1Rate", "lfo1Depth", "lfo2Rate", "lfo2Depth",
         "lfo3Rate", "lfo3Depth", "lfo4Rate", "lfo4Depth",
@@ -432,6 +432,13 @@ void WebEditor::emitLevels()
     // Surfaced so the user can confirm MIDI is reaching the plugin while
     // wiring up a source in the host.
     root->setProperty ("midiNote", doobieProcessor.getLastMidiNote());
+    // Mod-source live values for the Sources tab visualisers (env follower
+    // bar + LED, LFO scopes).
+    root->setProperty ("env",   doobieProcessor.getEnvValue());
+    root->setProperty ("lfo1v", doobieProcessor.getLfo1Value());
+    root->setProperty ("lfo2v", doobieProcessor.getLfo2Value());
+    root->setProperty ("lfo3v", doobieProcessor.getLfo3Value());
+    root->setProperty ("lfo4v", doobieProcessor.getLfo4Value());
 
     webView->emitEventIfBrowserIsVisible (juce::Identifier { "levels" }, juce::var (root.get()));
 }
