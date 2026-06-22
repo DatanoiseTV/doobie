@@ -23,14 +23,23 @@ home as a modulated delay and ambience for any genre.
 ## Highlights
 
 - **Multi-head tape echo** — four playback heads tapping one tape, each with its
-  own level, pan and time. In sync each head's time snaps to a musical division
+  own level, pan, time and **±200 ms additive offset** for haas-style micro-
+  timing between heads. In sync each head's time snaps to a musical division
   (1/32 … 1/1) so taps land on the grid; free-running, it's a continuous fraction
   of the repeat. A four-pad **head matrix** switches each head in or out
   independently for any combination of taps, and switching is click-free — heads
   ramp in and out instead of cutting dead.
 - **Five delay characters** — Digital (clean), Tape (wow/flutter + saturation),
   BBD (dark analog bucket-brigade), Diffuse (repeats smeared into a wash) and
-  Pitch (each repeat climbs an octave).
+  Pitch (each repeat shifts by a user-selectable interval — chip row from
+  −24 to +24 st, ON/OFF bypass on the shifter itself for A/B without
+  changing character).
+- **MIDI Note Mode** — toggle on the Pitch character and the shimmer reverb
+  to play their intervals from a keyboard: C3 = unison, C4 = +12 st, etc.
+  Pitch bend always active (±2 st, GM default). Optional **portamento** with
+  0–2000 ms glide time so chord-to-chord moves glide instead of stepping.
+  The plugin registers as an AU MusicEffect (aumf) so hosts route MIDI in
+  cleanly.
 - **Free or tempo-synced** — free time (20 ms – 8 s) or musical divisions from 1/64
   up to 4 bars (dotted and triplet included), locked to the host. The tape buffer
   goes out to 16 s, so "4 bars at 60 BPM" or slower ambient drones fit comfortably.
@@ -68,6 +77,11 @@ home as a modulated delay and ambience for any genre.
   colouration insert.
 - **Performance controls** — ping-pong feedback, freeze (infinite hold), wet ducking,
   stereo width.
+- **Auto-gain output leveler** — slow program-dependent gain reduction (LA-2A-
+  style, 50/500 ms, 2:1 over -6 dBFS, floored at -12 dB GR) followed by a
+  fast ceiling catcher at -0.3 dBFS. Tames feedback runaway near self-
+  oscillation without crushing transient dynamics, so live use stops clipping
+  the bus. ON by default; one-click bypass in the Output panel.
 - **64 factory presets** across dub/reggae, ambient/cinematic, rhythmic/electronic,
   lo-fi/vintage, hall & shimmer, delay characters, sound-design FX and instrument
   patches, plus user save/load.
