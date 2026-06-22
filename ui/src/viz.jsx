@@ -39,16 +39,23 @@ function DecayGraph({ decay = 0.6, type = 'Plate', height = 116 }){
 }
 
 /* ---------- LFO waveform mini ---------- */
-function WaveMini({ shape = 'Sine', rate = 0.4, depth = 0.6 }){
-  // Static reference preview of the LFO's SHAPE — purely a visual cue
-  // for "which wave is selected". The actual live motion now lives on
-  // every knob's mod-indicator dot (which traces the real source value
-  // each frame), so this scope doesn't need to animate. Removing the
-  // CSS scroll also fixes a perceived "flipping" of the shape at
-  // certain rates (the scroll wrapping discontinuity crossed the
-  // viewport in step with the rate-derived duration).
+function WaveMini({ shape = 'Sine', rate = 0.4, depth = 0.6, value = null }){
+  // Live oscilloscope: keeps a rolling history of the actual LFO output
+  // and plots it as a moving wave. Newest on the right, oldest on the
+  // left — running the same way as a hardware scope. Falls back to a
+  // static reference shape when no `value` is passed (so the wave
+  // preview in the Wave dropdown still works).
   const W = 120, H = 40, mid = H/2, amp = (H/2 - 4) * Math.max(0.15, depth);
   const cycles = 2;
+  const N = 96;
+  const hist = React.useRef (new Array (N).fill (0));
+  const [, force] = React.useState (0);
+  React.useEffect (() => {
+    if (value == null || !isFinite (value)) return;
+    hist.current.push (Math.max (-1, Math.min (1, value)));
+    if (hist.current.length > N) hist.current.shift();
+    force (t => t + 1);
+  }, [value]);
   // Static shape preview — drawn as a single SVG path so the user sees the
   // characteristic of each waveform (square is flat-flat, triangle has
   // straight ramps, saw teeth, S&H is jagged). Triangle is rebuilt to a
@@ -75,21 +82,32 @@ function WaveMini({ shape = 'Sine', rate = 0.4, depth = 0.6 }){
       default: return Math.sin (x * Math.PI * 2);
     }
   };
-  // Draw exactly `cycles` periods at the FULL viewBox width — no
-  // off-viewport extension, no scroll animation, no flipping.
+  // Live mode — plot recent history if we have a value source plumbed in.
+  // Falls back to a static reference shape otherwise (used by the Wave
+  // dropdown preview which has no live data).
   let d = '';
-  const N = 240;
-  for (let i = 0; i <= N; i++){
-    const px = (i / N) * W;
-    const p  = (i / N) * cycles;
-    const py = mid - fn(p) * amp;
-    d += (i ? 'L' : 'M') + px.toFixed(1) + ' ' + py.toFixed(1) + ' ';
+  if (value != null && isFinite (value)) {
+    const h = hist.current;
+    for (let i = 0; i < N; i++) {
+      const px = (i / (N - 1)) * W;
+      const v  = h[i] || 0;
+      const py = mid - v * amp;
+      d += (i ? 'L' : 'M') + px.toFixed(1) + ' ' + py.toFixed(1) + ' ';
+    }
+  } else {
+    const M = 240;
+    for (let i = 0; i <= M; i++){
+      const px = (i / M) * W;
+      const p  = (i / M) * cycles;
+      const py = mid - fn(p) * amp;
+      d += (i ? 'L' : 'M') + px.toFixed(1) + ' ' + py.toFixed(1) + ' ';
+    }
   }
   return (
     <div className="wave">
       <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
         <line x1="0" y1={mid} x2={W} y2={mid} stroke="var(--c-line-2)" strokeWidth="0.5" />
-        <path d={d} fill="none" stroke="var(--accent)" strokeWidth="1.4" opacity="0.85" />
+        <path d={d} fill="none" stroke="var(--accent)" strokeWidth="1.4" opacity="0.9" />
       </svg>
     </div>
   );
