@@ -98,6 +98,8 @@ public:
     // per audio block; read by the editor on its timer.
     float getLfo1Value() const   { return lfo1ValueUI.load   (std::memory_order_relaxed); }
     float getLfo2Value() const   { return lfo2ValueUI.load   (std::memory_order_relaxed); }
+    float getLfo3Value() const   { return lfo3ValueUI.load   (std::memory_order_relaxed); }
+    float getLfo4Value() const   { return lfo4ValueUI.load   (std::memory_order_relaxed); }
     float getEnvValue() const    { return envValueUI.load    (std::memory_order_relaxed); }
 
 private:
@@ -115,7 +117,7 @@ private:
 
     // Modulation: two LFOs, one envelope follower (fed the dry input on each
     // processBlock), four mod slots. See dsp/ModMatrix.h.
-    doobie::Lfo              lfo1, lfo2;
+    doobie::Lfo              lfo1, lfo2, lfo3, lfo4;
     doobie::EnvelopeFollower envFollower;
     std::array<doobie::ModSlot, doobie::kNumModSlots> modSlots;
 
@@ -130,7 +132,9 @@ private:
     std::atomic<float> delayLevel  { 0.0f };
     std::atomic<float> reverbLevel { 0.0f };
     // Latest mod-source values published from processBlock for UI metering.
-    std::atomic<float> lfo1ValueUI { 0.0f }, lfo2ValueUI { 0.0f }, envValueUI { 0.0f };
+    std::atomic<float> lfo1ValueUI { 0.0f }, lfo2ValueUI { 0.0f };
+    std::atomic<float> lfo3ValueUI { 0.0f }, lfo4ValueUI { 0.0f };
+    std::atomic<float> envValueUI  { 0.0f };
     // Most recent MIDI note-on; used by the "MIDI pitch mode" toggle to drive
     // the shimmer + delay pitch intervals from a keyboard. C3 (MIDI 60) is
     // the reference; semitone offset from 60 becomes the interval. Default

@@ -106,6 +106,7 @@ void DubDelayEngine::prepare (double sr, int maxBlockSize)
     fbLimAttCoeff = 1.0f - std::exp (-1.0f / (0.002f * (float) sr));
     fbLimRelCoeff = 1.0f - std::exp (-1.0f / (0.250f * (float) sr));
     reloadCoeff   = 1.0f - std::exp (-1.0f / (0.012f * (float) sr));
+    killCoeff     = 1.0f - std::exp (-1.0f / (0.008f * (float) sr));  // ~8 ms
 
     reset();
 }
@@ -442,7 +443,14 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
             fbL = dcFbL.process (fbL);
             fbR = dcFbR.process (fbR);
 
-            const float fbGain = params.freeze ? 1.0f : fb;
+            // Momentary kill: ramp killGain toward 0 while held, toward 1
+            // on release. ~8 ms slope kills the click that a hard mute
+            // would otherwise put on the recirculating signal. The
+            // existing tail (already written to tape) rings out naturally.
+            const float killTarget = params.feedbackKill ? 0.0f : 1.0f;
+            killGain += (killTarget - killGain) * killCoeff;
+
+            const float fbGain = (params.freeze ? 1.0f : fb) * killGain;
             float fbContribL = fbL * fbGain;
             float fbContribR = fbR * fbGain;
 

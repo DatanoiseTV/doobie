@@ -36,6 +36,7 @@ public:
     {
         phase = 0.0f;
         held  = 0.0f;
+        smoothed = 0.0f;
         previousPhase = 0.0f;
         rngState = 0xC0FFEEu;
     }
@@ -43,6 +44,12 @@ public:
     void setRate     (float hz)    noexcept { rate = juce::jmax (0.001f, hz); }
     void setDepth    (float d)     noexcept { depth = juce::jlimit (0.0f, 1.0f, d); }
     void setWaveform (Wave w)      noexcept { waveform = w; }
+    // 0 = stepwise S&H (the default — every period jumps to a new value);
+    // 1 = the S&H output glides toward the new target across the FULL
+    // period, so it behaves like a smooth random walk. Anything in between
+    // = a one-pole low-pass with a time constant proportional to the
+    // current period — keeps the character musical at any rate.
+    void setSmoothing (float s)    noexcept { smoothing = juce::jlimit (0.0f, 1.0f, s); }
 
     // Advance the LFO by `numSamples` and return the post-advance value, in
     // [-depth, +depth]. Called once per block from the mod matrix.
@@ -56,6 +63,25 @@ public:
         // Sample-and-hold: pick a new uniform value whenever the phase wraps.
         if (waveform == Wave::Random && (phase < prev || numSamples == 0))
             held = whiteNoise();
+
+        // S&H smoothing: glide `smoothed` toward `held` at a rate tied to
+        // the period, so the SHAPE stays the same regardless of LFO rate.
+        // smoothing=0 -> alpha=1 (instant step); smoothing=1 -> alpha set
+        // so the value reaches ~63% of `held` after one full period.
+        if (waveform == Wave::Random)
+        {
+            if (smoothing <= 1.0e-4f)
+            {
+                smoothed = held;
+            }
+            else
+            {
+                // tau (in periods) = smoothing; alpha per BLOCK = 1 - exp(-deltaPhase/tau).
+                const float tau   = smoothing;
+                const float alpha = 1.0f - std::exp (-deltaPhase / tau);
+                smoothed += (held - smoothed) * alpha;
+            }
+        }
 
         return depth * compute();
     }
@@ -74,7 +100,7 @@ private:
             case Wave::SawUp:    return 2.0f * phase - 1.0f;
             case Wave::SawDown:  return 1.0f - 2.0f * phase;
             case Wave::Square:   return phase < 0.5f ? 1.0f : -1.0f;
-            case Wave::Random:   return held;
+            case Wave::Random:   return smoothing > 1.0e-4f ? smoothed : held;
         }
         return 0.0f;
     }
@@ -94,6 +120,8 @@ private:
     float phase = 0.0f;
     float previousPhase = 0.0f;
     float held = 0.0f;
+    float smoothed = 0.0f;   // glided S&H value (only used when smoothing > 0)
+    float smoothing = 0.0f;  // 0 = stepwise S&H, 1 = full-period glide
     uint32_t rngState = 0xC0FFEEu;
 };
 } // namespace doobie

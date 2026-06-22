@@ -120,22 +120,22 @@ function InputPanel({ p, setP, mods }) {
         </div>
       </div>
       {/* ----- Input multimode filter (TPT-SVF, ported from the hardware
-              Keinedelay/DFM build). OFF = true bypass. ----- */}
-      <div className="route-row" style={{ marginTop: 14, marginBottom: fOn ? 12 : 0 }}>
+              Keinedelay/DFM build). OFF = true bypass. Filter chip + LP/HP/BP
+              type picker + cutoff/reso knobs all on one row so the section
+              reads as one unit instead of a stacked sub-panel. ----- */}
+      <div className="route-row" style={{ marginTop: 14, gap: 14, alignItems: 'center' }}>
         <Chip on={fOn} onClick={() => setP('inFilterOn', !fOn)}>Filter</Chip>
         {fOn && (
-          <div className="seg">{typeSeg('LP', 'LP')}{typeSeg('HP', 'HP')}{typeSeg('BP', 'BP')}</div>
+          <>
+            <div className="seg">{typeSeg('LP', 'LP')}{typeSeg('HP', 'HP')}{typeSeg('BP', 'BP')}</div>
+            <KB label="Cutoff" k="inFilterCutoff" p={p} setP={setP} size="sm"
+                format={(v) => v < 1 ? Math.round(v * 18000) + ' Hz' : (v).toFixed(0) + ' Hz'}
+                mods={mods} modKey="inFilterCutoff" lit />
+            <KB label="Reso"   k="inFilterRes"    p={p} setP={setP} size="sm"
+                format={fmt.pct} mods={mods} modKey="inFilterRes" />
+          </>
         )}
       </div>
-      {fOn && (
-        <div className="eqrow" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-          <KB label="Cutoff" k="inFilterCutoff" p={p} setP={setP}
-              format={(v) => v < 1 ? Math.round(v * 18000) + ' Hz' : (v).toFixed(0) + ' Hz'}
-              mods={mods} modKey="inFilterCutoff" lit />
-          <KB label="Reso"   k="inFilterRes"    p={p} setP={setP}
-              format={fmt.pct} mods={mods} modKey="inFilterRes" />
-        </div>
-      )}
     </div>
   );
 }
@@ -316,6 +316,17 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
           <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
             {tcChip('pingpong', 'Ping-Pong')}
             {tcChip('freeze',   'Freeze')}
+            {/* Momentary kill — hold to mute the recirculating feedback,
+                release to bring it back. Uses pointer-down/up + leave so
+                the chip never gets stuck on if the cursor slides off. */}
+            <Chip on={p.killFb}
+                  onMouseDown={() => setP('killFb', true)}
+                  onMouseUp={() => setP('killFb', false)}
+                  onMouseLeave={() => { if (p.killFb) setP('killFb', false); }}
+                  onTouchStart={() => setP('killFb', true)}
+                  onTouchEnd={() => setP('killFb', false)}>
+              Kill FB
+            </Chip>
           </div>
         </div>
         <Knob size="lg" label="Feedback" value={p.feedback} lit format={fmt.pct} arcColor={fbCol}
@@ -554,6 +565,58 @@ function VUStrip({ stages }) {
   );
 }
 
+/* ============================== LFO CARD ============================== */
+// One LFO panel — used four times in the Mod drawer (LFO 1–4). The Sync
+// toggle swaps the rate readout between a free Hz knob and a tempo
+// division choice; the Smooth slider is only meaningful when the wave is
+// Random S&H, but we keep it visible always so users know it's there.
+function LfoCard({ n, p, setP }) {
+  const rateK   = 'lfo' + n + 'Rate';
+  const depthK  = 'lfo' + n + 'Depth';
+  const waveK   = 'lfo' + n + 'Wave';
+  const syncK   = 'lfo' + n + 'Sync';
+  const divK    = 'lfo' + n + 'Div';
+  const smoothK = 'lfo' + n + 'Smooth';
+  const isRnd   = p[waveK] === 'Random S&H';
+  return (
+    <div className="modcard">
+      <div className="subhead">
+        LFO {n}
+        <span style={{ flex: 1 }} />
+        <button className={'midi-btn' + (p[syncK] ? ' on' : '')}
+                onClick={() => setP(syncK, !p[syncK])}
+                title="Sync to host tempo (rate = BPM · division)">
+          SYNC
+        </button>
+      </div>
+      <div className="row" style={{ gap: 18, alignItems: 'flex-start' }}>
+        {p[syncK]
+          ? <div style={{ width: 96 }}>
+              <div className="cluster-label" style={{ marginBottom: 6 }}>Div</div>
+              <div className="sel">
+                <select value={p[divK]} onChange={(e) => setP(divK, e.target.value)}>
+                  {['1/64','1/32T','1/32','1/16T','1/16','1/8T','1/16.','1/8','1/4T','1/8.','1/4','1/2T','1/4.','1/2','1/1T','1/2.','1/1','2 bars','4 bars'].map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              </div>
+            </div>
+          : <KB label="Rate" k={rateK} p={p} setP={setP}
+                format={(v) => (0.001 + v * 20).toFixed(2) + ' Hz'} size="md" lit />}
+        <KB label="Depth"  k={depthK}  p={p} setP={setP} format={fmt.pct} size="md" lit />
+        <KB label="Smooth" k={smoothK} p={p} setP={setP} format={fmt.pct} size="md" lit={isRnd} />
+        <div style={{ flex: 1 }}>
+          <div className="sel">
+            <select value={p[waveK]} onChange={(e) => setP(waveK, e.target.value)}>
+              {['Sine','Triangle','Saw Up','Saw Down','Square','Random S&H'].map(o => <option key={o}>{o}</option>)}
+            </select>
+          </div>
+          <div style={{ height: 8 }} />
+          <WaveMini shape={p[waveK]} rate={p[rateK]} depth={p[depthK]} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ============================== MOD DRAWER ============================== */
 function ModDrawer({ open, onClose, p, setP, matrix, setMx, numSlots }) {
   const [tab, setTab] = useState('sources');
@@ -572,38 +635,10 @@ function ModDrawer({ open, onClose, p, setP, matrix, setMx, numSlots }) {
         <div className="dbody">
           {tab === 'sources' ?
             <div className="modgrid">
-              <div className="modcard">
-                <div className="subhead">LFO 1</div>
-                <div className="row" style={{ gap: 18, alignItems: 'flex-start' }}>
-                  <KB label="Rate"  k="lfo1Rate"  p={p} setP={setP} format={(v) => (0.001 + v * 20).toFixed(2) + ' Hz'} size="md" lit />
-                  <KB label="Depth" k="lfo1Depth" p={p} setP={setP} format={fmt.pct} size="md" lit />
-                  <div style={{ flex: 1 }}>
-                    <div className="sel">
-                      <select value={p.lfo1Wave} onChange={(e) => setP('lfo1Wave', e.target.value)}>
-                        {['Sine','Triangle','Saw Up','Saw Down','Square','Random S&H'].map(o => <option key={o}>{o}</option>)}
-                      </select>
-                    </div>
-                    <div style={{ height: 8 }} />
-                    <WaveMini shape={p.lfo1Wave} rate={p.lfo1Rate} depth={p.lfo1Depth} />
-                  </div>
-                </div>
-              </div>
-              <div className="modcard">
-                <div className="subhead">LFO 2</div>
-                <div className="row" style={{ gap: 18, alignItems: 'flex-start' }}>
-                  <KB label="Rate"  k="lfo2Rate"  p={p} setP={setP} format={(v) => (0.001 + v * 20).toFixed(2) + ' Hz'} size="md" lit />
-                  <KB label="Depth" k="lfo2Depth" p={p} setP={setP} format={fmt.pct} size="md" lit />
-                  <div style={{ flex: 1 }}>
-                    <div className="sel">
-                      <select value={p.lfo2Wave} onChange={(e) => setP('lfo2Wave', e.target.value)}>
-                        {['Sine','Triangle','Saw Up','Saw Down','Square','Random S&H'].map(o => <option key={o}>{o}</option>)}
-                      </select>
-                    </div>
-                    <div style={{ height: 8 }} />
-                    <WaveMini shape={p.lfo2Wave} rate={p.lfo2Rate} depth={p.lfo2Depth} />
-                  </div>
-                </div>
-              </div>
+              <LfoCard n={1} p={p} setP={setP} />
+              <LfoCard n={2} p={p} setP={setP} />
+              <LfoCard n={3} p={p} setP={setP} />
+              <LfoCard n={4} p={p} setP={setP} />
               <div className="modcard">
                 <div className="subhead">Envelope Follower</div>
                 <div className="row" style={{ gap: 18, justifyContent: 'space-around' }}>

@@ -91,7 +91,8 @@
   // the matrix combo box stores an integer index, so a mismatched name list
   // would route source/dest to the wrong slot silently. Keep this in sync
   // with modDestNames() in ModMatrix.h whenever destinations are added.
-  const MOD_SOURCES = ['Off', 'LFO 1', 'LFO 2', 'Env'];
+  // MUST match the ModSource enum order in src/dsp/ModMatrix.h.
+  const MOD_SOURCES = ['Off', 'LFO 1', 'LFO 2', 'LFO 3', 'LFO 4', 'Env'];
   const MOD_DESTS   = [
     'Off',
     'Delay Time', 'Feedback', 'Mix', 'Width', 'Duck',
@@ -107,6 +108,7 @@
     'In Filter Cutoff', 'In Filter Res',
     'Pan', 'Out Level',
     'Phaser Rate', 'Phaser Depth', 'Phaser Mix',
+    'Input Gain',
   ];
   // Map from MOD_DEST string -> APVTS param IDs whose knob should display
   // a live mod-range arc + dot. Multiple IDs means the destination affects
@@ -158,6 +160,7 @@
     'Phaser Rate':      ['phaserRate'],
     'Phaser Depth':     ['phaserDepth'],
     'Phaser Mix':       ['phaserMix'],
+    'Input Gain':       ['inputDrive'],
   };
 
   function useJuceModMap(numSlots) {

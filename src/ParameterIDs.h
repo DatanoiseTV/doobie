@@ -132,6 +132,12 @@ namespace dID
     // comparison or to mute the shifter's latency during arrangement.
     inline constexpr auto pitchOn       = "pitchOn";        // bool, default ON
 
+    // Momentary "kill feedback" — when held, the recirculating feedback is
+    // fast-faded to zero (~8 ms) and the existing tail rings out naturally.
+    // Release and feedback fades back in over the same time. Live dub move
+    // to chop the repeats cleanly without changing the FEEDBACK knob.
+    inline constexpr auto feedbackKill  = "feedbackKill";   // bool, default off
+
     // MIDI-note mode: when ON, incoming MIDI note-on messages set BOTH the
     // delay-pitch and shimmer-reverb intervals relative to a reference of
     // C3 (MIDI 60). C3 = 0 st, C4 = +12 st, C2 = -12 st, etc. The chip
@@ -157,12 +163,35 @@ namespace dID
     // source, a destination (curated subset of engine params, see ModMatrix.h)
     // and a bipolar amount. Mod is applied per block to the base params; the
     // engine's own smoothers ramp toward the modulated targets.
-    inline constexpr auto lfo1Rate   = "lfo1Rate";    // Hz
+    inline constexpr auto lfo1Rate   = "lfo1Rate";    // Hz (free mode)
     inline constexpr auto lfo1Depth  = "lfo1Depth";   // 0..1
     inline constexpr auto lfo1Wave   = "lfo1Wave";    // choice index
+    // Per-LFO sync. When `lfo1Sync` is ON, the LFO rate is derived from the
+    // host BPM and the chosen musical division (same list as the delay's
+    // sync divisions) instead of the free-running Hz knob. Smoothing
+    // applies to the Random S&H wave only — interpolates between held
+    // samples at the rate (0 = instant step, 1 = full-period glide).
+    inline constexpr auto lfo1Sync   = "lfo1Sync";    // bool
+    inline constexpr auto lfo1Div    = "lfo1Div";     // choice (syncDivChoices)
+    inline constexpr auto lfo1Smooth = "lfo1Smooth";  // 0..1
     inline constexpr auto lfo2Rate   = "lfo2Rate";
     inline constexpr auto lfo2Depth  = "lfo2Depth";
     inline constexpr auto lfo2Wave   = "lfo2Wave";
+    inline constexpr auto lfo2Sync   = "lfo2Sync";
+    inline constexpr auto lfo2Div    = "lfo2Div";
+    inline constexpr auto lfo2Smooth = "lfo2Smooth";
+    inline constexpr auto lfo3Rate   = "lfo3Rate";
+    inline constexpr auto lfo3Depth  = "lfo3Depth";
+    inline constexpr auto lfo3Wave   = "lfo3Wave";
+    inline constexpr auto lfo3Sync   = "lfo3Sync";
+    inline constexpr auto lfo3Div    = "lfo3Div";
+    inline constexpr auto lfo3Smooth = "lfo3Smooth";
+    inline constexpr auto lfo4Rate   = "lfo4Rate";
+    inline constexpr auto lfo4Depth  = "lfo4Depth";
+    inline constexpr auto lfo4Wave   = "lfo4Wave";
+    inline constexpr auto lfo4Sync   = "lfo4Sync";
+    inline constexpr auto lfo4Div    = "lfo4Div";
+    inline constexpr auto lfo4Smooth = "lfo4Smooth";
     inline constexpr auto envAttack  = "envAttack";   // ms
     inline constexpr auto envRelease = "envRelease";  // ms
     inline constexpr auto envSens    = "envSens";     // dB

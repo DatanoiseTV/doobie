@@ -102,6 +102,10 @@ struct EngineParams
     // latency) — useful for A/B and to mute the shifter without changing
     // character mode.
     bool  pitchOn      = true;
+    // Momentary kill — when held, recirculating feedback is fast-faded to
+    // zero (~8 ms) and the existing tail rings out naturally. Live dub
+    // move to chop repeats cleanly without touching the FEEDBACK knob.
+    bool  feedbackKill = false;
 
     // Input multimode filter (TPT-SVF, ported from the hardware build).
     // Sits on the live input pre-delay. OFF = true bypass.
@@ -206,6 +210,13 @@ private:
     static constexpr float kFbLimThresh = 0.9f;
     float fbLimEnv = 0.0f;
     float fbLimAttCoeff = 0.0f, fbLimRelCoeff = 0.0f;
+
+    // Kill-feedback momentary smoother. Per-sample one-pole that ramps
+    // toward 0 when pressed and back to 1 on release over ~8 ms — fast
+    // enough to feel responsive, slow enough to avoid the click that a
+    // hard mute would put on the recirculating signal.
+    float killGain  = 1.0f;
+    float killCoeff = 0.0f;
 
     // Preset-swap fade (ported from hardware). On a preset load we dip the
     // output to 0 and ramp back over ~12 ms, masking the param-swap

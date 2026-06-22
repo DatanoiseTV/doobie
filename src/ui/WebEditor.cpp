@@ -119,6 +119,8 @@ namespace
         "shimmerSemis", "pitchSemis", "midiPortaMs",
         "head1Offset", "head2Offset", "head3Offset", "head4Offset",
         "lfo1Rate", "lfo1Depth", "lfo2Rate", "lfo2Depth",
+        "lfo3Rate", "lfo3Depth", "lfo4Rate", "lfo4Depth",
+        "lfo1Smooth", "lfo2Smooth", "lfo3Smooth", "lfo4Smooth",
         "envAttack", "envRelease", "envSens",
         "head1Level", "head2Level", "head3Level", "head4Level",
         "head1Pan",   "head2Pan",   "head3Pan",   "head4Pan",
@@ -129,13 +131,15 @@ namespace
         "phaserRate", "phaserDepth", "phaserFb", "phaserMix",
     };
     constexpr const char* kBoolIds[] = {
-        "syncMode", "pingPong", "freeze", "delayBypass", "midiPitchMode", "midiPortaOn", "outLevelerOn", "pitchOn",
+        "syncMode", "pingPong", "freeze", "delayBypass", "midiPitchMode", "midiPortaOn", "outLevelerOn", "pitchOn", "feedbackKill",
         "head1On", "head2On", "head3On", "head4On",
         "inFilterOn", "phaserOn",
+        "lfo1Sync", "lfo2Sync", "lfo3Sync", "lfo4Sync",
     };
     constexpr const char* kChoiceIds[] = {
         "delayMode", "syncDiv", "reverbMode", "reverbRoute",
-        "lfo1Wave",  "lfo2Wave",
+        "lfo1Wave",  "lfo2Wave", "lfo3Wave", "lfo4Wave",
+        "lfo1Div",   "lfo2Div",  "lfo3Div",  "lfo4Div",
         "mod1Src", "mod2Src", "mod3Src", "mod4Src", "mod5Src", "mod6Src", "mod7Src", "mod8Src",
         "mod1Dst", "mod2Dst", "mod3Dst", "mod4Dst", "mod5Dst", "mod6Dst", "mod7Dst", "mod8Dst",
         "inFilterType", "phaserRoute",

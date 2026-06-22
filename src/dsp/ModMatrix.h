@@ -34,7 +34,11 @@ namespace doobie
 // sidechain feel: louder input ⇒ more duck ⇒ quieter wet.
 constexpr int kNumModSlots = 8;
 
-enum class ModSource : int { Off = 0, Lfo1, Lfo2, Env, Count };
+// IMPORTANT: when adding a new source, also extend MOD_SOURCES in
+// ui/src/juce-bridge.jsx — the slot dropdown indexes into this enum by
+// integer, so a name list mismatch routes a slot to the wrong source
+// silently. Currently 4 LFOs + 1 envelope follower.
+enum class ModSource : int { Off = 0, Lfo1, Lfo2, Lfo3, Lfo4, Env, Count };
 
 // Curated subset of useful destinations. Adding entries here is the main way
 // to extend the matrix — appending keeps stored slot indices stable.
@@ -79,6 +83,9 @@ enum class ModDest : int
     PhaserRate,        // ±2 octaves multiplicative (0.01..8 Hz)
     PhaserDepth,       // ±0.5
     PhaserMix,         // ±0.5
+    // Append-only: the slot Dst combo box stores ints, so adding here keeps
+    // existing saved slot indices stable.
+    InputGain,         // ±12 dB on the input drive (pre-tone)
     Count
 };
 
@@ -103,7 +110,8 @@ inline juce::StringArray modDestNames()
         "Head 1 Time", "Head 2 Time", "Head 3 Time", "Head 4 Time",
         "In Filter Cutoff", "In Filter Res",
         "Pan", "Out Level",
-        "Phaser Rate", "Phaser Depth", "Phaser Mix"
+        "Phaser Rate", "Phaser Depth", "Phaser Mix",
+        "Input Gain"
     };
 }
 
@@ -118,6 +126,8 @@ struct ModSourceValues
 {
     float lfo1 = 0.0f;  // bipolar, [-1, 1]
     float lfo2 = 0.0f;
+    float lfo3 = 0.0f;
+    float lfo4 = 0.0f;
     float env  = 0.0f;  // unipolar, [0, 1]
 };
 
@@ -132,6 +142,8 @@ inline void applyModSlot (EngineParams& p, const ModSlot& slot, const ModSourceV
     {
         case ModSource::Lfo1: src = s.lfo1; break;
         case ModSource::Lfo2: src = s.lfo2; break;
+        case ModSource::Lfo3: src = s.lfo3; break;
+        case ModSource::Lfo4: src = s.lfo4; break;
         case ModSource::Env:  src = s.env;  break;
         case ModSource::Off:
         case ModSource::Count:
@@ -190,6 +202,10 @@ inline void applyModSlot (EngineParams& p, const ModSlot& slot, const ModSourceV
         case ModDest::PhaserRate:     mulOctaves (p.phaserRate, 2.0f * k, 0.01f, 8.0f); break;
         case ModDest::PhaserDepth:    add (p.phaserDepth, 0.5f * k, 0.0f, 1.0f); break;
         case ModDest::PhaserMix:      add (p.phaserMix,   0.5f * k, 0.0f, 1.0f); break;
+        // Input drive (the pre-tone gain). Multiplicative ±12 dB so an LFO
+        // can pump the dry input level into the delay (tremolo-style) or
+        // the envelope can duck it. ±12 dB ≈ 0.25..4× gain.
+        case ModDest::InputGain:      p.inputGain *= juce::jlimit (0.0f, 4.0f, std::pow (2.0f, 2.0f * k)); break;
         case ModDest::Off:
         case ModDest::Count:
         default: break;

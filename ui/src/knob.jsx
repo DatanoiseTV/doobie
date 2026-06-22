@@ -126,9 +126,12 @@ function Knob({ value = 0.5, onChange, size = 'md', label, format, lit = false, 
 }
 
 /* ---- Chip toggle (LED) ---- */
-function Chip({ on, onClick, children, led = true }){
+function Chip({ on, onClick, children, led = true, ...rest }){
+  // ...rest forwards any extra handlers (onMouseDown / onMouseUp /
+  // onTouchStart / etc.) so callers can implement momentary press-and-hold
+  // behaviour without a new component (e.g. Kill FB in the Delay panel).
   return (
-    <button className="chip" data-on={on ? '1' : '0'} onClick={onClick}>
+    <button className="chip" data-on={on ? '1' : '0'} onClick={onClick} {...rest}>
       {led && <span className="led" />}{children}
     </button>
   );

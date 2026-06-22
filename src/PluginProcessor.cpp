@@ -122,6 +122,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     // descends a fourth, etc.
     layout.add (std::make_unique<FloatParam> (pid (dID::pitchSemis),   "Pitch Interval",   Range (-24.0f, 24.0f, 1.0f), 12.0f));
     layout.add (std::make_unique<BoolParam>  (pid (dID::pitchOn),       "Pitch Shifter",   true));
+    layout.add (std::make_unique<BoolParam>  (pid (dID::feedbackKill),  "Kill Feedback",   false));
     layout.add (std::make_unique<BoolParam>  (pid (dID::midiPitchMode), "MIDI Pitch Mode", false));
     layout.add (std::make_unique<BoolParam>  (pid (dID::midiPortaOn),   "MIDI Portamento", false));
     layout.add (std::make_unique<BoolParam>  (pid (dID::outLevelerOn),  "Auto Gain", true));
@@ -165,9 +166,27 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
         layout.add (std::make_unique<FloatParam>  (pid (dID::lfo1Rate),   "LFO 1 Rate",   lfoRateRange, 1.0f));
         layout.add (std::make_unique<FloatParam>  (pid (dID::lfo1Depth),  "LFO 1 Depth",  Range (0.0f, 1.0f, 0.001f), 0.5f));
         layout.add (std::make_unique<ChoiceParam> (pid (dID::lfo1Wave),   "LFO 1 Wave",   dID::lfoWaveChoices, 0));
+        layout.add (std::make_unique<BoolParam>   (pid (dID::lfo1Sync),   "LFO 1 Sync", false));
+        layout.add (std::make_unique<ChoiceParam> (pid (dID::lfo1Div),    "LFO 1 Division", dID::syncDivChoices, 10));   // 1/4 default
+        layout.add (std::make_unique<FloatParam>  (pid (dID::lfo1Smooth), "LFO 1 Smooth", Range (0.0f, 1.0f, 0.001f), 0.0f));
         layout.add (std::make_unique<FloatParam>  (pid (dID::lfo2Rate),   "LFO 2 Rate",   lfoRateRange, 0.5f));
         layout.add (std::make_unique<FloatParam>  (pid (dID::lfo2Depth),  "LFO 2 Depth",  Range (0.0f, 1.0f, 0.001f), 0.5f));
         layout.add (std::make_unique<ChoiceParam> (pid (dID::lfo2Wave),   "LFO 2 Wave",   dID::lfoWaveChoices, 1));
+        layout.add (std::make_unique<BoolParam>   (pid (dID::lfo2Sync),   "LFO 2 Sync", false));
+        layout.add (std::make_unique<ChoiceParam> (pid (dID::lfo2Div),    "LFO 2 Division", dID::syncDivChoices, 10));
+        layout.add (std::make_unique<FloatParam>  (pid (dID::lfo2Smooth), "LFO 2 Smooth", Range (0.0f, 1.0f, 0.001f), 0.0f));
+        layout.add (std::make_unique<FloatParam>  (pid (dID::lfo3Rate),   "LFO 3 Rate",   lfoRateRange, 0.25f));
+        layout.add (std::make_unique<FloatParam>  (pid (dID::lfo3Depth),  "LFO 3 Depth",  Range (0.0f, 1.0f, 0.001f), 0.5f));
+        layout.add (std::make_unique<ChoiceParam> (pid (dID::lfo3Wave),   "LFO 3 Wave",   dID::lfoWaveChoices, 0));
+        layout.add (std::make_unique<BoolParam>   (pid (dID::lfo3Sync),   "LFO 3 Sync", false));
+        layout.add (std::make_unique<ChoiceParam> (pid (dID::lfo3Div),    "LFO 3 Division", dID::syncDivChoices, 10));
+        layout.add (std::make_unique<FloatParam>  (pid (dID::lfo3Smooth), "LFO 3 Smooth", Range (0.0f, 1.0f, 0.001f), 0.0f));
+        layout.add (std::make_unique<FloatParam>  (pid (dID::lfo4Rate),   "LFO 4 Rate",   lfoRateRange, 2.0f));
+        layout.add (std::make_unique<FloatParam>  (pid (dID::lfo4Depth),  "LFO 4 Depth",  Range (0.0f, 1.0f, 0.001f), 0.5f));
+        layout.add (std::make_unique<ChoiceParam> (pid (dID::lfo4Wave),   "LFO 4 Wave",   dID::lfoWaveChoices, 5));   // Random S&H default
+        layout.add (std::make_unique<BoolParam>   (pid (dID::lfo4Sync),   "LFO 4 Sync", false));
+        layout.add (std::make_unique<ChoiceParam> (pid (dID::lfo4Div),    "LFO 4 Division", dID::syncDivChoices, 10));
+        layout.add (std::make_unique<FloatParam>  (pid (dID::lfo4Smooth), "LFO 4 Smooth", Range (0.0f, 1.0f, 0.001f), 0.3f));
         layout.add (std::make_unique<FloatParam>  (pid (dID::envAttack), "Env Attack",   envAtkRange, 10.0f));
         layout.add (std::make_unique<FloatParam>  (pid (dID::envRelease),"Env Release",  envRelRange, 200.0f));
         layout.add (std::make_unique<FloatParam>  (pid (dID::envSens),   "Env Sensitivity", Range (-24.0f, 24.0f, 0.1f), 0.0f));
@@ -237,6 +256,8 @@ void DoobieAudioProcessor::prepareToPlay (double sr, int samplesPerBlock)
     sampleRate = sr;
     lfo1.prepare (sr);
     lfo2.prepare (sr);
+    lfo3.prepare (sr);
+    lfo4.prepare (sr);
     envFollower.prepare (sr);
     updateEngineParams();
     engine.prepare (sr, samplesPerBlock);
@@ -339,6 +360,7 @@ doobie::EngineParams DoobieAudioProcessor::buildEngineParams()
     p.shimmerSemis    = raw (dID::shimmerSemis);
     p.pitchSemis      = raw (dID::pitchSemis);
     p.pitchOn         = raw (dID::pitchOn) > 0.5f;
+    p.feedbackKill    = raw (dID::feedbackKill) > 0.5f;
 
     return p;
 }
@@ -393,12 +415,39 @@ void DoobieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
     // modulated targets, so even fast modulation stays click-free.
     auto raw = [this] (const char* id) { return apvts.getRawParameterValue (id)->load(); };
 
-    lfo1.setRate (raw (dID::lfo1Rate));
+    // Per-LFO rate is either the free Hz knob or BPM*division when sync is
+    // on. The division choice indexes into dID::syncDivQuarters (same list
+    // the master delay uses, so a `1/4` here moves once per quarter-note).
+    // Hz = (BPM / 60) / quarterNotesPerCycle.
+    const double bpm = currentBpm.load();
+    auto lfoRate = [&] (const char* rateId, const char* syncId, const char* divId)
+    {
+        if (raw (syncId) > 0.5f && bpm > 0.0)
+        {
+            const int idx = juce::jlimit (0, (int) dID::syncDivQuarters.size() - 1,
+                                          (int) raw (divId));
+            const double q = dID::syncDivQuarters[(size_t) idx];
+            return (float) ((bpm / 60.0) / std::max (q, 0.001));
+        }
+        return raw (rateId);
+    };
+
+    lfo1.setRate (lfoRate (dID::lfo1Rate, dID::lfo1Sync, dID::lfo1Div));
     lfo1.setDepth (raw (dID::lfo1Depth));
     lfo1.setWaveform ((doobie::Lfo::Wave) (int) raw (dID::lfo1Wave));
-    lfo2.setRate (raw (dID::lfo2Rate));
+    lfo1.setSmoothing (raw (dID::lfo1Smooth));
+    lfo2.setRate (lfoRate (dID::lfo2Rate, dID::lfo2Sync, dID::lfo2Div));
     lfo2.setDepth (raw (dID::lfo2Depth));
     lfo2.setWaveform ((doobie::Lfo::Wave) (int) raw (dID::lfo2Wave));
+    lfo2.setSmoothing (raw (dID::lfo2Smooth));
+    lfo3.setRate (lfoRate (dID::lfo3Rate, dID::lfo3Sync, dID::lfo3Div));
+    lfo3.setDepth (raw (dID::lfo3Depth));
+    lfo3.setWaveform ((doobie::Lfo::Wave) (int) raw (dID::lfo3Wave));
+    lfo3.setSmoothing (raw (dID::lfo3Smooth));
+    lfo4.setRate (lfoRate (dID::lfo4Rate, dID::lfo4Sync, dID::lfo4Div));
+    lfo4.setDepth (raw (dID::lfo4Depth));
+    lfo4.setWaveform ((doobie::Lfo::Wave) (int) raw (dID::lfo4Wave));
+    lfo4.setSmoothing (raw (dID::lfo4Smooth));
     envFollower.setAttack (raw (dID::envAttack));
     envFollower.setRelease (raw (dID::envRelease));
     envFollower.setSensitivity (raw (dID::envSens));
@@ -418,12 +467,16 @@ void DoobieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
     const doobie::ModSourceValues sources {
         lfo1.advance (numSamples),
         lfo2.advance (numSamples),
+        lfo3.advance (numSamples),
+        lfo4.advance (numSamples),
         envFollower.value()
     };
 
     // Publish to the UI metering atomics. Editor reads these on a timer.
     lfo1ValueUI.store (sources.lfo1, std::memory_order_relaxed);
     lfo2ValueUI.store (sources.lfo2, std::memory_order_relaxed);
+    lfo3ValueUI.store (sources.lfo3, std::memory_order_relaxed);
+    lfo4ValueUI.store (sources.lfo4, std::memory_order_relaxed);
     envValueUI.store  (sources.env,  std::memory_order_relaxed);
 
     for (int i = 0; i < doobie::kNumModSlots; ++i)
