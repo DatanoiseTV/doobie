@@ -324,7 +324,15 @@ function App() {
     { label: 'OUT',    base: dbToBase(levels.out),    peakDb: levels.peak.out },
   ];
 
-  const presetClick = (dir) => window.Juce.backend.emitEvent(dir < 0 ? 'preset_prev' : 'preset_next', {});
+  // Header arrows step through the bank. When the current preset is dirty
+  // we route through the same confirm-modal as the browser-row click,
+  // so an arrow press can't silently discard edits.
+  const [pendingNav, setPendingNav] = useState (null);  // { dir } | null
+  const stepPreset = (dir) => window.Juce.backend.emitEvent(dir < 0 ? 'preset_prev' : 'preset_next', {});
+  const presetClick = (dir) => {
+    if (presetInfo.dirty) setPendingNav ({ dir });
+    else stepPreset (dir);
+  };
   const onSave = () => setSaveOpen(true);
 
   return (
@@ -377,18 +385,50 @@ function App() {
              onConfirm={(name) => {
                window.Juce.backend.emitEvent('preset_save', { name });
                setSaveOpen(false);
-               // If the save was triggered from the browser's "Save…" path
-               // (queued preset switch), chain the load after the save.
+               // Chain whatever switch was queued (browser row click OR
+               // header arrow) — clear both globals so a later save can't
+               // accidentally trigger a stale navigation.
                if (window._pendingPresetAfterSave) {
                  const next = window._pendingPresetAfterSave;
                  window._pendingPresetAfterSave = null;
                  setTimeout (() => window.Juce.backend.emitEvent('preset_load', { name: next }), 30);
+               } else if (window._pendingNavAfterSave != null) {
+                 const dir = window._pendingNavAfterSave;
+                 window._pendingNavAfterSave = null;
+                 setTimeout (() => stepPreset (dir), 30);
                }
              }}
-             onCancel={() => { window._pendingPresetAfterSave = null; setSaveOpen(false); }}
+             onCancel={() => {
+               window._pendingPresetAfterSave = null;
+               window._pendingNavAfterSave    = null;
+               setSaveOpen(false);
+             }}
              confirmLabel="Save" />
 
       <KnobContextMenu />
+
+      {/* Dirty-discard confirmation for the header prev/next arrows. The
+          browser modal has its own (so users can still audition through
+          the bank quickly with the modal open and dirty=false after their
+          first switch); this one only fires for the standalone arrows. */}
+      {pendingNav && (
+        <div className="modal-scrim open" style={{ zIndex: 2147483647 }}
+             onMouseDown={(e) => { if (e.target.classList.contains('modal-scrim')) setPendingNav(null); }}>
+          <div className="modal" role="dialog" aria-modal="true" style={{ minWidth: 380 }}>
+            <h3>Unsaved changes</h3>
+            <p>
+              "<b>{presetInfo.name || '—'}</b>" has been edited. Stepping to the
+              {pendingNav.dir < 0 ? ' previous' : ' next'} preset will discard
+              your changes.
+            </p>
+            <div className="modal-actions">
+              <button className="btn ghost"  onClick={() => setPendingNav(null)}>Cancel</button>
+              <button className="btn ghost"  onClick={() => { const d = pendingNav.dir; setPendingNav(null); stepPreset(d); }}>Discard</button>
+              <button className="btn accent" onClick={() => { window._pendingNavAfterSave = pendingNav.dir; setPendingNav(null); setSaveOpen(true); }}>Save…</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

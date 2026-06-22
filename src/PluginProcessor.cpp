@@ -251,6 +251,14 @@ void DoobieAudioProcessor::valueTreePropertyChanged (juce::ValueTree&, const juc
         presetDirty.store (true, std::memory_order_relaxed);
 }
 
+DoobieAudioProcessor::IrThumb DoobieAudioProcessor::getIrThumbnail (int /*binCount*/) const
+{
+    // Stubbed — the full IR waveform display is queued for the next
+    // session (needs engine.getConv() exposed first). Returns an empty
+    // IrThumb so callers can already query and render "no IR".
+    return {};
+}
+
 DoobieAudioProcessor::~DoobieAudioProcessor()
 {
     apvts.removeParameterListener (dID::irSpeed, this);

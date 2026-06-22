@@ -324,16 +324,15 @@ body{ font-family:var(--font); color:var(--c-txt); -webkit-font-smoothing:antial
      (mid at y≈174, halfway between 126 and 232). Narrower than
      the previous bounds so the scope reads as "inside the tape"
      rather than "filling the entire tape area". */
-  /* Visually centred in the empty interior between the strands. The
-     upper strand SAGS in the middle (the Q curve in tape.js drops it
-     from y=126 at the reels down to y=170 mid-span); the lower strand
-     stays at y=232. So the actual empty rectangle the user sees runs
-     from y≈170 to y=232 — midpoint y=201, which is 54.2% of the
-     stage. Top 42% + height 24% puts the scope's centerline there
-     with comfortable margin above the upper sag and below the
-     bottom strand. */
-  left:22%; right:22%;
-  top:42%; height:24%;
+  /* Fill the visible empty interior (between upper strand sag and lower
+     strand) with breathing room left for the reel circles. Tape SVG
+     viewBox 0 110 680 168 → reels at x=132/558, strand sag at y=170,
+     bottom strand at y=232. Scope spans roughly between those, centred
+     vertically. left/right at 21% to clear the reel circles, top:38%
+     /height:32% puts the scope's mid at y=110+0.54×168 = 201 (the
+     vertical centre of the visible interior). */
+  left:21%; right:21%;
+  top:38%; height:32%;
   pointer-events:none; opacity:0.85;
   filter:drop-shadow(0 0 5px var(--accent-glow));
 }

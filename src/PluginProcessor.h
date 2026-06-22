@@ -102,6 +102,20 @@ public:
     // Surfaced to the main VU meters so the user can see what auto-gain
     // is doing.
     float getOutputGrDb() const { return engine.getLeveler().getGainReductionDb(); }
+
+    // Convolution IR: returns a downsampled stereo envelope (min/max pairs)
+    // suitable for waveform display. binCount target = output bins. Returns
+    // {samples, sampleRate, numChannels, lengthSeconds} so the UI can label
+    // the time axis correctly.
+    struct IrThumb {
+        std::vector<float> peakL;   // per-bin absolute peak, 0..1
+        std::vector<float> peakR;   // empty if mono
+        double sampleRate = 0.0;
+        int    numChannels = 0;
+        int    numSamples = 0;
+        float  lengthSec  = 0.0f;
+    };
+    IrThumb getIrThumbnail (int binCount = 256) const;
     float getReverbLevel() const { return reverbLevel.load (std::memory_order_relaxed); }
 
     // Latest LFO and envelope-follower values, for UI metering. Updated once

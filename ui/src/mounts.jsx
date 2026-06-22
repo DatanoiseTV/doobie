@@ -91,8 +91,11 @@ function DigitalMeter({ label, liveDb = -90, big = false, scale = false }){
 function StereoScope({ levels }){
   const W = 600, H = 78, mid = H / 2;
   const N = 128;                       // history length (frames)
-  const histL = React.useRef([]);
-  const histR = React.useRef([]);
+  // Pre-fill with zeros so the path always spans the full SVG width
+  // from the first render (no growing-from-the-left-edge artefact while
+  // the buffer accumulates over its 4-second fill time).
+  const histL = React.useRef (new Array (N).fill (0));
+  const histR = React.useRef (new Array (N).fill (0));
   const [tick, setTick] = React.useState (0);
   // Push current peak each render. 30 Hz prop updates drive a 30 Hz scope
   // — fast enough that motion reads as a real waveform.
