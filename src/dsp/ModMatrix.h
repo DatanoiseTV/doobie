@@ -70,6 +70,15 @@ enum class ModDest : int
     // (Off=0..IRGain) keep their meaning.
     Head1Pan,   Head2Pan,   Head3Pan,   Head4Pan,    // ±1.0
     Head1Ratio, Head2Ratio, Head3Ratio, Head4Ratio,  // ±0.3 around base, clamped
+    // Ported from the hardware build. Append-only so existing saved slot
+    // indices (anything before this comment) stay stable.
+    InFilterCutoff,    // ±2 octaves multiplicative (clamped 20Hz..18kHz)
+    InFilterRes,       // ±0.5
+    Pan,               // ±1.0 (master pan; combines with per-head pans)
+    OutLevel,          // ±0.5 (output tremolo / level mod)
+    PhaserRate,        // ±2 octaves multiplicative (0.01..8 Hz)
+    PhaserDepth,       // ±0.5
+    PhaserMix,         // ±0.5
     Count
 };
 
@@ -91,7 +100,10 @@ inline juce::StringArray modDestNames()
         "Plate Decay", "Plate Size", "Plate Damp", "Plate Predelay",
         "Spring Decay", "Spring Tone", "IR Gain",
         "Head 1 Pan", "Head 2 Pan", "Head 3 Pan", "Head 4 Pan",
-        "Head 1 Time", "Head 2 Time", "Head 3 Time", "Head 4 Time"
+        "Head 1 Time", "Head 2 Time", "Head 3 Time", "Head 4 Time",
+        "In Filter Cutoff", "In Filter Res",
+        "Pan", "Out Level",
+        "Phaser Rate", "Phaser Depth", "Phaser Mix"
     };
 }
 
@@ -170,6 +182,14 @@ inline void applyModSlot (EngineParams& p, const ModSlot& slot, const ModSourceV
         case ModDest::Head2Ratio:    add (p.headRatio[1], 0.3f * k, 0.05f, 1.0f); break;
         case ModDest::Head3Ratio:    add (p.headRatio[2], 0.3f * k, 0.05f, 1.0f); break;
         case ModDest::Head4Ratio:    add (p.headRatio[3], 0.3f * k, 0.05f, 1.0f); break;
+        // Ported from hardware build:
+        case ModDest::InFilterCutoff: mulOctaves (p.inFilterCutoff, 2.0f * k, 20.0f, 18000.0f); break;
+        case ModDest::InFilterRes:    add (p.inFilterRes, 0.5f * k, 0.0f, 0.95f); break;
+        case ModDest::Pan:            add (p.pan,         1.0f * k, -1.0f, 1.0f); break;
+        case ModDest::OutLevel:       p.outGain *= juce::jlimit (0.0f, 2.0f, 1.0f + 0.5f * k); break;
+        case ModDest::PhaserRate:     mulOctaves (p.phaserRate, 2.0f * k, 0.01f, 8.0f); break;
+        case ModDest::PhaserDepth:    add (p.phaserDepth, 0.5f * k, 0.0f, 1.0f); break;
+        case ModDest::PhaserMix:      add (p.phaserMix,   0.5f * k, 0.0f, 1.0f); break;
         case ModDest::Off:
         case ModDest::Count:
         default: break;

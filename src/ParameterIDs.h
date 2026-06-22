@@ -62,6 +62,26 @@ namespace dID
     inline constexpr auto preBass     = "preBass";     // input low shelf
     inline constexpr auto preTreble   = "preTreble";   // input high shelf
 
+    // ---- Input multimode filter (performance filter) -----------------------
+    // Ported from the hardware build (Svf). Sits on the live input, OFF = true
+    // bypass so it never colours the signal until you reach for it. Type
+    // selects LP / HP / BP from the same TPT-SVF core (no zipper on sweeps).
+    inline constexpr auto inFilterOn      = "inFilterOn";
+    inline constexpr auto inFilterType    = "inFilterType";   // 0=LP, 1=HP, 2=BP
+    inline constexpr auto inFilterCutoff  = "inFilterCutoff"; // Hz, 20..18000
+    inline constexpr auto inFilterRes     = "inFilterRes";    // 0..1, clamped < self-osc
+
+    // ---- Phaser (ported from hardware build) -------------------------------
+    // 6-stage all-pass cascade with feedback. Routable like the reverb:
+    // post = on the echoes, pre = into the delay input, feedback = cumulative
+    // (deeper every repeat). Sits BEFORE the reverb at the same insert point.
+    inline constexpr auto phaserOn    = "phaserOn";
+    inline constexpr auto phaserRoute = "phaserRoute";   // 0 post, 1 pre, 2 feedback
+    inline constexpr auto phaserRate  = "phaserRate";    // Hz, 0.01..8
+    inline constexpr auto phaserDepth = "phaserDepth";   // 0..1
+    inline constexpr auto phaserFb    = "phaserFb";      // 0..0.9
+    inline constexpr auto phaserMix   = "phaserMix";     // 0..1
+
     // ---- Feedback tone (the dub tone knobs, applied on every repeat) -------
     inline constexpr auto bass        = "bass";        // low shelf in feedback
     inline constexpr auto treble      = "treble";      // high shelf in feedback
@@ -191,6 +211,15 @@ namespace dID
     inline constexpr auto factoryIrIndexProperty = "factoryIrIndex";
 
     inline const juce::StringArray reverbRouteChoices {
+        "Post", "Pre", "In Feedback"
+    };
+
+    // Input multimode filter type choices (Svf core, ported from hardware).
+    inline const juce::StringArray inFilterTypeChoices { "LP", "HP", "BP" };
+
+    // Phaser route choices: same insert-point options as the reverb so users
+    // can re-think the signal flow in one mental model.
+    inline const juce::StringArray phaserRouteChoices {
         "Post", "Pre", "In Feedback"
     };
 

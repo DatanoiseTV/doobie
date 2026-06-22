@@ -4,6 +4,64 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.14.0] — 2026-06-22
+
+### Added — hardware-port features
+Ported the months of work done on the embedded Keinedelay/DFM build
+(`/Users/syso/dev/Keinedelay2.1_DFM`) back into the plug-in. Stops the
+two codebases from drifting and lands the curated factory bank.
+
+- **Phaser.** Six-stage all-pass cascade with feedback, three insert
+  points (`Post` = on the wet echoes, `Pre` = into the delay input,
+  `In Feedback` = cumulative per repeat — phaser sits BEFORE the reverb
+  at the same insert point). Right channel runs at a 1/4-cycle phase
+  offset so the notch motion paints across the stereo image instead of
+  summing to mono. New APVTS params: `phaserOn`, `phaserRoute`,
+  `phaserRate`, `phaserDepth`, `phaserFb`, `phaserMix`. Source:
+  `src/dsp/Phaser.h`.
+- **Input multimode filter.** TPT state-variable (Zavalishin), LP / HP /
+  BP selectable per sample from the same core (so sweeping the type
+  can never blow the filter up). Per-sample `setParams` tracks the
+  smoothed cutoff zipper-free; the stereo pair shares one `tan()` call
+  via `copyCoefsFrom`. OFF = true bypass — pre-delay only colours the
+  signal when you reach for it. New APVTS params: `inFilterOn`,
+  `inFilterType`, `inFilterCutoff`, `inFilterRes`. Source:
+  `src/dsp/Svf.h`.
+- **Greatly expanded TapeAge.** The previous version was a hiss-floor
+  plus a one-pole low-pass. Replaced with the 250-line hardware model:
+  generation-loss HF roll-off that compounds in feedback; modulation
+  noise that rides the signal envelope with a tape-band spectrum
+  (HP 120 Hz + LP 9 kHz); discrete dropout events (oxide shedding —
+  random 20-120 ms dips with extra HF loss during the dip);
+  programme-dependent compression / headroom loss; sparse crackle
+  grains (filtered tick at ~3.5 kHz with 2-6 ms decay, scales `age^3`);
+  transport-instability boosts that fold into the wow/flutter
+  generator. All bounded ≤ unity, all gated by the AGE knob — AGE 0
+  is still true bypass.
+- **New modulation destinations.** Append-only at the end of the
+  `ModDest` enum (existing slot indices stay stable for already-saved
+  states): `InFilterCutoff`, `InFilterRes`, `Pan`, `OutLevel`,
+  `PhaserRate`, `PhaserDepth`, `PhaserMix`. Plugin keeps its 8-slot
+  matrix (hardware uses 6 due to screen size); 6-slot presets just
+  leave the extra two slots `Off`.
+- **64 factory presets** — straight port of the hardware's curated
+  bank, replacing the previous 59-preset set. Each entry exercises a
+  distinct corner of the engine; sweeps span dub voices, ambient
+  washes, modulated filters, phaser routings, frozen pads, gated 80s,
+  octave shimmer, dyna-pan, trance gate, slapback / doubler /
+  Nashville / Swell / Infinity. Tones written in Hz on the hardware
+  side are translated into the plugin's `lpFreq` + `treble` pair so
+  the sonic intent ports 1:1. Reverb-mode index gets a swap (hardware
+  Gated=6 / Shimmer=7 maps to plugin Gated=8 / Shimmer=6). See
+  `src/presets/PresetManager.cpp`.
+
+### Compatibility notes
+- Existing user sessions / saved states continue to work — the new
+  parameters are append-only with `OFF`-equivalent defaults
+  (`inFilterOn=false`, `phaserOn=false`).
+- `EngineParams` gained a `pan` field; the engine's existing per-head
+  pan logic is unchanged.
+
 ## [0.13.5] — 2026-06-01
 
 ### Fixed (Linux)

@@ -14,6 +14,8 @@
 
 #include "DelayLine.h"
 #include "WowFlutter.h"
+#include "Phaser.h"
+#include "Svf.h"
 #include "Saturation.h"
 #include "ToneStack.h"
 #include "SpringReverb.h"
@@ -43,6 +45,7 @@ struct EngineParams
     float mix        = 0.5f;   // 0..1 dry/wet
     float outGain    = 1.0f;   // linear
     float width      = 1.0f;   // 0..2 stereo width of the wet path
+    float pan        = 0.0f;   // -1 L .. +1 R; mod destination only (auto-pan)
 
     double delaySamples = 22050.0; // resolved length of the longest head (ratio 1.0)
     float  feedback     = 0.4f;    // 0..1.2 (above ~1 self-oscillates)
@@ -80,6 +83,23 @@ struct EngineParams
     float gateThresholdDb = -28.0f;
     float gateHoldMs      = 180.0f;
     float gateReleaseMs   = 6.0f;
+
+    // Input multimode filter (TPT-SVF, ported from the hardware build).
+    // Sits on the live input pre-delay. OFF = true bypass.
+    bool  inFilterOn     = false;
+    int   inFilterType   = 0;        // 0 LP, 1 HP, 2 BP
+    float inFilterCutoff = 1200.0f;  // Hz
+    float inFilterRes    = 0.15f;    // 0..1 (clamped < self-osc inside Svf)
+
+    // 6-stage all-pass phaser with feedback (ported from hardware).
+    // route: 0 post (on echoes), 1 pre (into delay input), 2 feedback
+    // (cumulative per repeat). Sits BEFORE the reverb at the same point.
+    bool  phaserOn    = false;
+    int   phaserRoute = 0;
+    float phaserRate  = 0.4f;   // Hz, 0.01..8
+    float phaserDepth = 0.7f;   // 0..1
+    float phaserFb    = 0.4f;   // 0..0.9
+    float phaserMix   = 0.5f;   // 0..1
 };
 
 // The complete dub delay: a stereo multi-head tape echo whose feedback path
@@ -165,6 +185,13 @@ private:
     ShimmerReverb     shimmer;
     ConvolutionReverb conv;
     GatedReverb       gated;
+
+    // Ported from hardware: input-multimode filter (one Svf per channel,
+    // sharing tan() via copyCoefsFrom) and a stereo 6-stage phaser pair
+    // (right channel given a phase offset so the sweep moves the stereo
+    // image). Both are OFF=bypass.
+    Svf    inFilterL, inFilterR;
+    Phaser phaserL,   phaserR;
 
     // Multiplicative smoothing glides the delay time at a constant ratio, which
     // sounds like a tape capstan easing to a new speed rather than a linear jump.

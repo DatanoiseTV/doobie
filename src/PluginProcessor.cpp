@@ -114,6 +114,26 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
         layout.add (std::make_unique<FloatParam> (pid (dID::gateRelease), "Gate Release", grelRange, 6.0f));
     }
 
+    // ---- Input multimode filter (Svf, ported from hardware) ----------------
+    layout.add (std::make_unique<BoolParam>   (pid (dID::inFilterOn),   "Input Filter", false));
+    layout.add (std::make_unique<ChoiceParam> (pid (dID::inFilterType), "Input Filter Type", dID::inFilterTypeChoices, 0));
+    {
+        Range cutRange (20.0f, 18000.0f, 1.0f); cutRange.setSkewForCentre (1000.0f);
+        layout.add (std::make_unique<FloatParam> (pid (dID::inFilterCutoff), "Input Filter Cutoff", cutRange, 1200.0f));
+    }
+    layout.add (std::make_unique<FloatParam> (pid (dID::inFilterRes),    "Input Filter Resonance", Range (0.0f, 0.95f, 0.001f), 0.15f));
+
+    // ---- Phaser (ported from hardware) -------------------------------------
+    layout.add (std::make_unique<BoolParam>   (pid (dID::phaserOn),    "Phaser", false));
+    layout.add (std::make_unique<ChoiceParam> (pid (dID::phaserRoute), "Phaser Route", dID::phaserRouteChoices, 0));
+    {
+        Range pRateRange (0.01f, 8.0f, 0.001f); pRateRange.setSkewForCentre (0.5f);
+        layout.add (std::make_unique<FloatParam> (pid (dID::phaserRate), "Phaser Rate", pRateRange, 0.4f));
+    }
+    layout.add (std::make_unique<FloatParam> (pid (dID::phaserDepth), "Phaser Depth", Range (0.0f, 1.0f, 0.001f), 0.7f));
+    layout.add (std::make_unique<FloatParam> (pid (dID::phaserFb),    "Phaser Feedback", Range (0.0f, 0.9f, 0.001f), 0.4f));
+    layout.add (std::make_unique<FloatParam> (pid (dID::phaserMix),   "Phaser Mix", Range (0.0f, 1.0f, 0.001f), 0.5f));
+
     // ---- Modulation matrix --------------------------------------------------
     {
         // 0.001..20 Hz: at the slow end one cycle takes ~17 minutes (multi-
@@ -278,6 +298,18 @@ doobie::EngineParams DoobieAudioProcessor::buildEngineParams()
     p.plateDamp   = raw (dID::plateDamp);
     p.platePredelay = raw (dID::platePredelay);
     p.plateMod    = raw (dID::reverbMod);
+
+    // Hardware-ported: input filter + phaser
+    p.inFilterOn     = raw (dID::inFilterOn) > 0.5f;
+    p.inFilterType   = (int) raw (dID::inFilterType);
+    p.inFilterCutoff = raw (dID::inFilterCutoff);
+    p.inFilterRes    = raw (dID::inFilterRes);
+    p.phaserOn       = raw (dID::phaserOn) > 0.5f;
+    p.phaserRoute    = (int) raw (dID::phaserRoute);
+    p.phaserRate     = raw (dID::phaserRate);
+    p.phaserDepth    = raw (dID::phaserDepth);
+    p.phaserFb       = raw (dID::phaserFb);
+    p.phaserMix      = raw (dID::phaserMix);
 
     p.gateThresholdDb = raw (dID::gateThreshold);
     p.gateHoldMs      = raw (dID::gateHold);

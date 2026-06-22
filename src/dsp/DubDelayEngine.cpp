@@ -39,6 +39,11 @@ void DubDelayEngine::prepare (double sr, int maxBlockSize)
     shimmer.prepare (sr);
     conv.prepare (sr, maxBlockSize);
     gated.prepare (sr);
+    inFilterL.prepare (sr); inFilterR.prepare (sr);
+    phaserL.prepare (sr);   phaserR.prepare (sr);
+    // Stereo phaser: right channel sweeps 1/4 cycle out of phase so the
+    // notch motion paints across the image instead of summing to mono.
+    phaserL.setPhaseOffset (0.0f); phaserR.setPhaseOffset (0.25f);
 
     // If a factory IR was loaded at a previous sample rate, regenerate it at
     // the new one — preferable to letting JUCE resample a stale buffer. A
@@ -113,6 +118,8 @@ void DubDelayEngine::reset()
     shimmer.reset();
     conv.reset();
     gated.reset();
+    inFilterL.reset(); inFilterR.reset();
+    phaserL.reset();   phaserR.reset();
     diffuseL.reset();
     diffuseR.reset();
     pitchL.reset();
@@ -237,6 +244,15 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
     }
 
     const bool  reverbOn  = params.reverbMode != 0;
+
+    // Ported from hardware: phaser block params (per-sample is overkill for a
+    // sweep this slow, per-block is zipper-free in practice). Right channel
+    // already has a 1/4-cycle phase offset from prepare().
+    if (params.phaserOn)
+    {
+        phaserL.setParams (params.phaserRate, params.phaserDepth, params.phaserFb, params.phaserMix);
+        phaserR.setParams (params.phaserRate, params.phaserDepth, params.phaserFb, params.phaserMix);
+    }
     // revMix and hissLevel are now pulled per-sample (the smoothed reverb mix
     // and the AGE-driven hiss level) so they ramp on knob changes.
 
@@ -335,6 +351,17 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
         float inL = preToneL.process (dryL * ig);
         float inR = preToneR.process (dryR * ig);
 
+        // Input multimode filter (TPT-SVF, ported from hardware). Per-sample
+        // setParams tracks knob/mod sweeps zipper-free. One tan() shared
+        // between L+R via copyCoefsFrom; OFF = true bypass.
+        if (params.inFilterOn)
+        {
+            inFilterL.setParams (params.inFilterCutoff, params.inFilterRes);
+            inFilterR.copyCoefsFrom (inFilterL);
+            inL = inFilterL.process (inL, params.inFilterType);
+            inR = inFilterR.process (inR, params.inFilterType);
+        }
+
         float wetL = 0.0f, wetR = 0.0f;
 
         if (! params.delayBypass)
@@ -351,6 +378,15 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
             // Tape wear: dropouts and progressive HF loss on the recirculating
             // signal (hiss is added at the tape write below). Bypassed at AGE 0.
             tapeAge.process (fbL, fbR);
+
+            // Phaser in feedback (route=2): every repeat deepens through the
+            // same all-pass chain. Sits BEFORE the in-loop reverb so the wash
+            // gets phased then reverbed, not the other way round.
+            if (params.phaserOn && params.phaserRoute == 2)
+            {
+                fbL = phaserL.process (fbL);
+                fbR = phaserR.process (fbR);
+            }
 
             // Reverb sitting inside the feedback loop (washes build up over repeats).
             if (reverbOn && params.reverbRoute == 2)
@@ -373,6 +409,14 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
 
             // What gets written to tape: input + pre-route reverb + feedback + hiss.
             float wrL = inL, wrR = inR;
+            // Phaser pre (route=1): into the delay input. Phased signal goes
+            // to tape; dry passes through untouched. The "pre" reverb sits
+            // after the phaser so the whole pre-stage stays before the wet.
+            if (params.phaserOn && params.phaserRoute == 1)
+            {
+                wrL = phaserL.process (wrL);
+                wrR = phaserR.process (wrR);
+            }
             if (reverbOn && params.reverbRoute == 1)
             {
                 float rL, rR;
@@ -438,6 +482,15 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
             dR = dcFbR.process (dR);
             wetL = dL;
             wetR = dR;
+        }
+
+        // Phaser post (route=0): on the wet echoes, BEFORE post-reverb. Same
+        // routing semantics as hardware: phaser sits at the same insert point
+        // as the reverb but always one stage earlier.
+        if (params.phaserOn && params.phaserRoute == 0)
+        {
+            wetL = phaserL.process (wetL);
+            wetR = phaserR.process (wetR);
         }
 
         // Reverb after the delay (or after the bypass path's character chain).
