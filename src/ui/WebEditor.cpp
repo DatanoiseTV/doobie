@@ -121,6 +121,7 @@ namespace
         "lfo1Rate", "lfo1Depth", "lfo2Rate", "lfo2Depth",
         "lfo3Rate", "lfo3Depth", "lfo4Rate", "lfo4Depth",
         "lfo1Smooth", "lfo2Smooth", "lfo3Smooth", "lfo4Smooth",
+        "lfo1Offset", "lfo2Offset", "lfo3Offset", "lfo4Offset",
         "envAttack", "envRelease", "envSens",
         "head1Level", "head2Level", "head3Level", "head4Level",
         "head1Pan",   "head2Pan",   "head3Pan",   "head4Pan",

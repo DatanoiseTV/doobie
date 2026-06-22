@@ -175,10 +175,15 @@ function HeadsPanel({ heads, setHead, mods, synced }) {
     if (h.on) { setHead(i, 'on', false); }
     else { setHead(i, 'time', freeSlot(i)); setHead(i, 'on', true); }
   };
-  // Build a per-head mod amount for the Pan + Time markers (the bridge
-  // publishes Head1 Pan, Head2 Pan ... separately).
-  const headPanMod = (i) => (mods && (mods['headPan' + i] || mods['pan' + i] || 0)) || 0;
-  const headTimeMod = (i) => (mods && (mods['headRatio' + i] || 0)) || 0;
+  // Build a per-head mod amount + live offset for the Pan / Time markers.
+  // The bridge publishes per-head destinations as head1Pan..head4Pan and
+  // head1Ratio..head4Ratio (1-indexed by APVTS naming, NOT 0-indexed by
+  // array position — the previous `'headPan' + i` lookup silently missed
+  // and the indicators never showed).
+  const headPanMod    = (i) => (mods && (mods ['head' + (i + 1) + 'Pan']   || 0)) || 0;
+  const headTimeMod   = (i) => (mods && (mods ['head' + (i + 1) + 'Ratio'] || 0)) || 0;
+  const headPanLive   = (i) => (mods && mods.live && (mods.live ['head' + (i + 1) + 'Pan']   || 0)) || 0;
+  const headTimeLive  = (i) => (mods && mods.live && (mods.live ['head' + (i + 1) + 'Ratio'] || 0)) || 0;
   return (
     <div className="panel" style={{ flex: 1 }}>
       <PHead title="Playback Heads" icon={Ico.heads} meta={heads.filter(h => h.on).length + '/4 on'} />
@@ -189,11 +194,12 @@ function HeadsPanel({ heads, setHead, mods, synced }) {
               <span className="letter">{h.id}</span>
             </button>
             <Fader value={h.level} onChange={(v) => setHead(i, 'level', v)} height={102} format={fmt.pct} lit={h.on} />
-            <Knob size="sm" label="Pan"  bipolar value={h.pan}  format={fmt.pan} mod={headPanMod(i)}
+            <Knob size="sm" label="Pan"  bipolar value={h.pan}  format={fmt.pan}
+                  mod={headPanMod(i)} modValue={headPanLive(i)}
                   onChange={(v) => setHead(i, 'pan', v)} />
             <Knob size="sm" label="Time" value={h.time}
                   format={synced ? (v) => snapHeadDiv (v).name : fmt.pct}
-                  mod={headTimeMod(i)}
+                  mod={headTimeMod(i)} modValue={headTimeLive(i)}
                   onChange={(v) => {
                     // Sync mode: snap to musical fractions of the master delay
                     // (Space-Echo head ladder feel). Anti-collision still
@@ -266,7 +272,9 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
         </div>
       </div>
       <div className="bigknobs" style={{ marginTop: 14 }}>
-        <Knob size="lg" label="Time" value={p.time} lit mod={mods ? mods.timeMs || 0 : 0}
+        <Knob size="lg" label="Time" value={p.time} lit
+              mod={mods ? mods.timeMs || 0 : 0}
+              modValue={mods && mods.live ? mods.live.timeMs || 0 : 0}
               format={p.sync ? () => p.division : fmt.ms}
               onChange={(v) => setP('time', v)} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, maxWidth: 220, paddingTop: 6 }}>
@@ -380,6 +388,7 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
         </div>
         <Knob size="lg" label="Feedback" value={p.feedback} lit format={fmt.pct} arcColor={fbCol}
               mod={mods ? mods.feedback || 0 : 0}
+              modValue={mods && mods.live ? mods.live.feedback || 0 : 0}
               onChange={(v) => setP('feedback', v)} />
       </div>
       <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: '1px solid var(--c-line-2)' }}>
@@ -634,6 +643,7 @@ function LfoCard({ n, p, setP, live }) {
   const syncK   = 'lfo' + n + 'Sync';
   const divK    = 'lfo' + n + 'Div';
   const smoothK = 'lfo' + n + 'Smooth';
+  const offsetK = 'lfo' + n + 'Offset';
   const isRnd   = p[waveK] === 'Random S&H';
   return (
     <div className="modcard">
@@ -660,6 +670,9 @@ function LfoCard({ n, p, setP, live }) {
                 format={(v) => (0.001 + v * 20).toFixed(2) + ' Hz'} size="md" lit />}
         <KB label="Depth"  k={depthK}  p={p} setP={setP} format={fmt.pct} size="md" lit />
         <KB label="Smooth" k={smoothK} p={p} setP={setP} format={fmt.pct} size="md" lit={isRnd} />
+        <KB label="Offset" k={offsetK} p={p} setP={setP} bipolar
+            format={(v) => { const d = (v - 0.5) * 2; return (d > 0 ? '+' : '') + d.toFixed(2); }}
+            size="md" lit />
         <div style={{ flex: 1 }}>
           <div className="sel">
             <select value={p[waveK]} onChange={(e) => setP(waveK, e.target.value)}>
@@ -771,8 +784,33 @@ function ModDrawer({ open, onClose, p, setP, matrix, setMx, numSlots, levels }) 
                       {JuceBridge.MOD_DESTS.map(o => <option key={o}>{o}</option>)}
                     </select>
                   </div>
-                  <input className="mslider" type="range" min="-1" max="1" step="0.001" value={m.amt}
-                         onChange={(e) => setMx(i, 'amt', parseFloat(e.target.value))} />
+                  {(() => {
+                    // Live applied modulation on this slot = source × amount.
+                    // Drawn as a coloured fill from centre (zero) out to the
+                    // applied position, so positive applied modulations grow
+                    // RIGHT and negative grow LEFT. A thin marker dot sits
+                    // at the current applied position. Reads at a glance
+                    // whether a slot is currently pulling the destination
+                    // toward + or − right now.
+                    const live = sourceLive (m.src) * m.amt;
+                    const applied = Math.max (-1, Math.min (1, live));
+                    const centrePct = 50;
+                    const liveLeft  = applied < 0 ? (50 + applied * 50) : 50;
+                    const liveWidth = Math.abs (applied) * 50;
+                    return (
+                      <div className="mslider-wrap">
+                        <input className="mslider" type="range" min="-1" max="1" step="0.001" value={m.amt}
+                               onChange={(e) => setMx(i, 'amt', parseFloat(e.target.value))} />
+                        <div className="mslider-live-fill"
+                             style={{ left: liveLeft + '%', width: liveWidth + '%',
+                                      background: applied >= 0 ? 'var(--accent)' : 'var(--peak, #d44)' }} />
+                        <div className="mslider-live-dot"
+                             style={{ left: (50 + applied * 50) + '%',
+                                      background: applied >= 0 ? 'var(--accent)' : 'var(--peak, #d44)' }} />
+                        <div className="mslider-zero" style={{ left: centrePct + '%' }} />
+                      </div>
+                    );
+                  })()}
                   <span className="mmval">{m.amt >= 0 ? '+' : ''}{m.amt.toFixed(3)}</span>
                 </div>
               )}

@@ -50,6 +50,11 @@ public:
     // = a one-pole low-pass with a time constant proportional to the
     // current period — keeps the character musical at any rate.
     void setSmoothing (float s)    noexcept { smoothing = juce::jlimit (0.0f, 1.0f, s); }
+    // Bipolar DC offset added to the post-depth waveform. Useful for
+    // shifting a symmetric sine into a unipolar swell, or biasing the
+    // random S&H so its average isn't centered on zero. Final output is
+    // still clipped to [-1, +1] after the sum.
+    void setOffset (float o)       noexcept { offset = juce::jlimit (-1.0f, 1.0f, o); }
 
     // Advance the LFO by `numSamples` and return the post-advance value, in
     // [-depth, +depth]. Called once per block from the mod matrix.
@@ -83,7 +88,8 @@ public:
             }
         }
 
-        return depth * compute();
+        const float raw = depth * compute() + offset;
+        return juce::jlimit (-1.0f, 1.0f, raw);
     }
 
     // For UIs / tests.
@@ -122,6 +128,7 @@ private:
     float held = 0.0f;
     float smoothed = 0.0f;   // glided S&H value (only used when smoothing > 0)
     float smoothing = 0.0f;  // 0 = stepwise S&H, 1 = full-period glide
+    float offset = 0.0f;     // bipolar DC bias, added to depth × shape
     uint32_t rngState = 0xC0FFEEu;
 };
 } // namespace doobie

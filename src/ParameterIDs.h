@@ -215,6 +215,14 @@ namespace dID
     inline constexpr auto lfo4Sync   = "lfo4Sync";
     inline constexpr auto lfo4Div    = "lfo4Div";
     inline constexpr auto lfo4Smooth = "lfo4Smooth";
+    // Per-LFO bipolar offset (DC bias). Lets you shift a sine that normally
+    // oscillates -1..+1 into a unipolar 0..+1 (for ducks / swells) or
+    // anywhere in between. Applied as: out = depth × shape + offset.
+    // Clamped after summation so the final LFO output never exceeds ±1.
+    inline constexpr auto lfo1Offset = "lfo1Offset";
+    inline constexpr auto lfo2Offset = "lfo2Offset";
+    inline constexpr auto lfo3Offset = "lfo3Offset";
+    inline constexpr auto lfo4Offset = "lfo4Offset";
     inline constexpr auto envAttack  = "envAttack";   // ms
     inline constexpr auto envRelease = "envRelease";  // ms
     inline constexpr auto envSens    = "envSens";     // dB
