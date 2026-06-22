@@ -649,6 +649,11 @@ input, textarea, [contenteditable="true"] {
   background:var(--accent); color:#1a1410; border-color:var(--accent);
   box-shadow:0 0 8px var(--accent-glow);
 }
+.midi-note{
+  display:inline-block; min-width:32px; padding:1px 6px; margin-left:4px;
+  background:var(--c-well); border:1px solid var(--c-line-2); border-radius:4px;
+  color:var(--accent); font-family:var(--mono); font-size:10px; text-align:center;
+}
 
 /* ============================================================
    Knob right-click context menu

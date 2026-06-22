@@ -201,8 +201,17 @@ function HeadsPanel({ heads, setHead, mods, synced }) {
   );
 }
 
+// MIDI note number -> "C4", "F#3", etc. Returns "—" for -1 (no note yet).
+// C3 == 60 is the unison reference for the MIDI pitch mode.
+const MIDI_NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+function midiNoteName (n) {
+  if (n == null || n < 0) return '—';
+  const oct = Math.floor (n / 12) - 1;
+  return MIDI_NOTE_NAMES[n % 12] + oct;
+}
+
 /* ============================== DELAY (hero) ============================== */
-function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', mods, fbCol }) {
+function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', mods, fbCol, midiNote }) {
   const tcChip = (key, label) => <Chip on={p[key]} onClick={() => setP(key, !p[key])}>{label}</Chip>;
   // Pitch-character interval picker. Normalised 0..1 from the slider relay
   // maps to -24..+24 st in unit steps (49 discrete steps). Sliding lands on
@@ -256,7 +265,10 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
             <div className="shimmer-int" style={{ marginBottom: 4 }}>
               <div className="shimmer-int-hd">
                 <span className="cluster-label">Interval</span>
-                <span className="shimmer-int-val">{pSemiName (pSemis)}{p.midiPitchMode ? ' · MIDI' : ''}</span>
+                <span className="shimmer-int-val">
+                  {pSemiName (pSemis)}
+                  {p.midiPitchMode && <> · MIDI <span className="midi-note">{midiNoteName (midiNote)}</span></>}
+                </span>
                 <span style={{ flex: 1 }} />
                 <button className={'midi-btn' + (p.midiPitchMode ? ' on' : '')}
                         onClick={() => setP ('midiPitchMode', !p.midiPitchMode)}
@@ -345,7 +357,7 @@ function PhaserPanel({ p, setP, mods }) {
 }
 
 /* ============================== REVERB ============================== */
-function ReverbPanel({ p, setP, mods, irInfo }) {
+function ReverbPanel({ p, setP, mods, irInfo, midiNote }) {
   const isGated   = p.revType === 'Gated';
   const isConv    = p.revType === 'Convolution';
   const isShimmer = p.revType === 'Shimmer';
@@ -422,7 +434,10 @@ function ReverbPanel({ p, setP, mods, irInfo }) {
         <div className="shimmer-int">
           <div className="shimmer-int-hd">
             <span className="cluster-label">Interval</span>
-            <span className="shimmer-int-val">{semiName (semis)}{p.midiPitchMode ? ' · MIDI' : ''}</span>
+            <span className="shimmer-int-val">
+              {semiName (semis)}
+              {p.midiPitchMode && <> · MIDI <span className="midi-note">{midiNoteName (midiNote)}</span></>}
+            </span>
             <span style={{ flex: 1 }} />
             <button className={'midi-btn' + (p.midiPitchMode ? ' on' : '')}
                     onClick={() => setP ('midiPitchMode', !p.midiPitchMode)}

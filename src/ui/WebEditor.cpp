@@ -423,6 +423,10 @@ void WebEditor::emitLevels()
     root->setProperty ("reverb", toDb (revLin));
     root->setProperty ("out",    toDb (outMono));
     root->setProperty ("peak",   juce::var (peakObj.get()));
+    // Diagnostic: latest MIDI note-on the processor saw (-1 = none).
+    // Surfaced so the user can confirm MIDI is reaching the plugin while
+    // wiring up a source in the host.
+    root->setProperty ("midiNote", doobieProcessor.getLastMidiNote());
 
     webView->emitEventIfBrowserIsVisible (juce::Identifier { "levels" }, juce::var (root.get()));
 }

@@ -244,7 +244,7 @@ function App() {
   // Native event subscriptions for live data
   const presetInfo = JB.useJuceEvent('presetInfo', { name: '—', cat: '' });
   const irInfo     = JB.useJuceEvent('irInfo',     { hasIR: false, factoryIndex: -1, isFactory: false, isFile: false, name: '(no IR)' });
-  const levels = JB.useJuceEvent('levels', { in: -90, delay: -90, reverb: -90, out: -90, peak: { in: -90, delay: -90, reverb: -90, out: -90, l: -90, r: -90 } });
+  const levels = JB.useJuceEvent('levels', { in: -90, delay: -90, reverb: -90, out: -90, midiNote: -1, peak: { in: -90, delay: -90, reverb: -90, out: -90, l: -90, r: -90 } });
 
   // Layout state (local UI only, not in APVTS)
   const [modOpen,     setModOpen]     = useState(false);
@@ -304,13 +304,13 @@ function App() {
           </div>
 
           <div className="col-mid">
-            <DelayPanel p={p} setP={setP} heads={heads} tapeSpeed={tapeSpeed} accent="var(--accent)" mods={mods} fbCol={fbCol} />
+            <DelayPanel p={p} setP={setP} heads={heads} tapeSpeed={tapeSpeed} accent="var(--accent)" mods={mods} fbCol={fbCol} midiNote={levels.midiNote} />
           </div>
 
           <div className="col-right">
             <FeedbackPanel p={p} setP={setP} mods={mods} />
             <PhaserPanel   p={p} setP={setP} mods={mods} />
-            <ReverbPanel   p={p} setP={setP} mods={mods} irInfo={irInfo} />
+            <ReverbPanel   p={p} setP={setP} mods={mods} irInfo={irInfo} midiNote={levels.midiNote} />
           </div>
 
           <div className="outbar">

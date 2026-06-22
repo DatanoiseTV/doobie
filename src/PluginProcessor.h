@@ -87,6 +87,11 @@ public:
     // weighted by mix / reverbMix so they reflect what the user perceives.
     float getInputLevel()  const { return inputLevel.load  (std::memory_order_relaxed); }
     float getDelayLevel()  const { return delayLevel.load  (std::memory_order_relaxed); }
+
+    // Most recent MIDI note-on. Surfaced to the WebView so the user can see
+    // whether MIDI is reaching the plugin at all (diagnostic when wiring up
+    // a MIDI source in the host). -1 if no note has been received yet.
+    int getLastMidiNote() const { return lastMidiNote.load (std::memory_order_relaxed); }
     float getReverbLevel() const { return reverbLevel.load (std::memory_order_relaxed); }
 
     // Latest LFO and envelope-follower values, for UI metering. Updated once
@@ -131,7 +136,7 @@ private:
     // the reference; semitone offset from 60 becomes the interval. Default
     // 72 (C4) so the engine sits at +12 st (the historical octave-up) until
     // the first note arrives.
-    std::atomic<int> lastMidiNote { 72 };
+    std::atomic<int> lastMidiNote { -1 };
     double sampleRate = 44100.0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (DoobieAudioProcessor)
