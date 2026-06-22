@@ -121,6 +121,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     // repeat is shifted by this, so +12 climbs an octave per echo, -5
     // descends a fourth, etc.
     layout.add (std::make_unique<FloatParam> (pid (dID::pitchSemis),   "Pitch Interval",   Range (-24.0f, 24.0f, 1.0f), 12.0f));
+    layout.add (std::make_unique<BoolParam>  (pid (dID::pitchOn),       "Pitch Shifter",   true));
     layout.add (std::make_unique<BoolParam>  (pid (dID::midiPitchMode), "MIDI Pitch Mode", false));
     layout.add (std::make_unique<BoolParam>  (pid (dID::midiPortaOn),   "MIDI Portamento", false));
     layout.add (std::make_unique<BoolParam>  (pid (dID::outLevelerOn),  "Auto Gain", true));
@@ -337,6 +338,7 @@ doobie::EngineParams DoobieAudioProcessor::buildEngineParams()
 
     p.shimmerSemis    = raw (dID::shimmerSemis);
     p.pitchSemis      = raw (dID::pitchSemis);
+    p.pitchOn         = raw (dID::pitchOn) > 0.5f;
 
     return p;
 }

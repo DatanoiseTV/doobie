@@ -272,7 +272,12 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
           {p.character === 'Pitch' && (
             <div className="shimmer-int" style={{ marginBottom: 4 }}>
               <div className="shimmer-int-hd">
-                <span className="cluster-label">Interval</span>
+                <button className={'midi-btn' + (p.pitchOn ? ' on' : '')}
+                        onClick={() => setP ('pitchOn', !p.pitchOn)}
+                        title="Bypass the pitch shifter (saturation still runs; clears the FFT latency)">
+                  {p.pitchOn ? 'ON' : 'OFF'}
+                </button>
+                <span className="cluster-label" style={{ marginLeft: 4 }}>Interval</span>
                 <span className="shimmer-int-val">
                   {pSemiName (pSemis)}
                   {p.midiPitchMode && <> · MIDI <span className="midi-note">{midiNoteName (midiNote)}</span></>}

@@ -75,8 +75,9 @@ const PARAM_MAP = {
   gateRel:    { kind: 'slider', id: 'gateRelease' },
   // Shimmer-only: pitch interval applied to the regen tail.
   shimmerSemis: { kind: 'slider', id: 'shimmerSemis' },
-  // Delay-Pitch-character only: per-repeat pitch interval.
+  // Delay-Pitch-character only: per-repeat pitch interval + on/off bypass.
   pitchSemis:  { kind: 'slider', id: 'pitchSemis' },
+  pitchOn:     { kind: 'toggle', id: 'pitchOn' },
   // MIDI Note Mode: incoming notes drive shimmer+pitch intervals.
   midiPitchMode: { kind: 'toggle', id: 'midiPitchMode' },
   midiPortaOn:   { kind: 'toggle', id: 'midiPortaOn'   },

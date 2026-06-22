@@ -97,6 +97,11 @@ struct EngineParams
     // across the feedback loop (climbing/falling octave per echo). Inert
     // unless delayMode == Pitch.
     float pitchSemis   = 12.0f;
+    // Pitch shifter on/off. When false, the Pitch character bypasses the
+    // shifter entirely (audio passes through saturation only, no FFT
+    // latency) — useful for A/B and to mute the shifter without changing
+    // character mode.
+    bool  pitchOn      = true;
 
     // Input multimode filter (TPT-SVF, ported from the hardware build).
     // Sits on the live input pre-delay. OFF = true bypass.

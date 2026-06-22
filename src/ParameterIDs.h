@@ -126,6 +126,12 @@ namespace dID
     // shimmerSemis so a UI control can be shared visually.
     inline constexpr auto pitchSemis    = "pitchSemis";     // semitones, -24..+24
 
+    // Pitch-shifter on/off (within Pitch character). Lets you keep the
+    // character selected — same interval picker, same MIDI / porta / bend
+    // routing — and bypass the actual shift in one click for A/B
+    // comparison or to mute the shifter's latency during arrangement.
+    inline constexpr auto pitchOn       = "pitchOn";        // bool, default ON
+
     // MIDI-note mode: when ON, incoming MIDI note-on messages set BOTH the
     // delay-pitch and shimmer-reverb intervals relative to a reference of
     // C3 (MIDI 60). C3 = 0 st, C4 = +12 st, C2 = -12 st, etc. The chip

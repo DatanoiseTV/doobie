@@ -331,9 +331,20 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
                 r = diffuseR.process (satR.process (r));
                 break;
 
-            case 4: // Pitch: an FFT shifter lifts everything an octave
-                l = pitchL.process (satL.process (l));
-                r = pitchR.process (satR.process (r));
+            case 4: // Pitch: an FFT shifter lifts everything by `pitchSemis`
+                // pitchOn=false bypasses the FFT entirely — saturation
+                // still runs (so the character mode still colours), but
+                // the shifter latency and effect are gone. A/B toggle.
+                if (params.pitchOn)
+                {
+                    l = pitchL.process (satL.process (l));
+                    r = pitchR.process (satR.process (r));
+                }
+                else
+                {
+                    l = satL.process (l);
+                    r = satR.process (r);
+                }
                 break;
 
             default: // Tape: saturation + low-mid head bump + HF loss
