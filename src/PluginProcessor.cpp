@@ -245,14 +245,52 @@ DoobieAudioProcessor::DoobieAudioProcessor()
     });
     presetManager.setPostLoadHook ([this] {
         suppressPresetDirty.store (false, std::memory_order_relaxed);
+        snapshotCurrentParams();
         presetDirty.store (false, std::memory_order_relaxed);
     });
+
+    // First-load snapshot so the initial state (before any preset is
+    // applied) is treated as clean — otherwise the WebView's first-tick
+    // relay syncs would diff against an empty snapshot and the asterisk
+    // would appear with no user interaction.
+    snapshotCurrentParams();
+}
+
+void DoobieAudioProcessor::snapshotCurrentParams()
+{
+    cleanSnapshot.clear();
+    for (auto* p : getParameters())
+    {
+        if (auto* rp = dynamic_cast<juce::RangedAudioParameter*> (p))
+            cleanSnapshot[rp->paramID] = rp->getValue();
+    }
+}
+
+bool DoobieAudioProcessor::currentMatchesSnapshot() const
+{
+    if (cleanSnapshot.empty()) return true;
+    for (auto* p : getParameters())
+    {
+        auto* rp = dynamic_cast<juce::RangedAudioParameter*> (p);
+        if (rp == nullptr) continue;
+        const auto it = cleanSnapshot.find (rp->paramID);
+        if (it == cleanSnapshot.end()) continue;
+        // 1e-4 covers rounding through the apvts step quantisation and
+        // any float-conversion wobble in the relays.
+        if (std::fabs (rp->getValue() - it->second) > 1.0e-4f)
+            return false;
+    }
+    return true;
 }
 
 void DoobieAudioProcessor::valueTreePropertyChanged (juce::ValueTree&, const juce::Identifier&)
 {
-    if (! suppressPresetDirty.load (std::memory_order_relaxed))
-        presetDirty.store (true, std::memory_order_relaxed);
+    if (suppressPresetDirty.load (std::memory_order_relaxed))
+        return;
+    // Diff against the post-load snapshot so smoothing/relay-init noise
+    // that happens AFTER applyPreset finished doesn't falsely re-flag
+    // the preset as dirty when no user control actually moved.
+    presetDirty.store (! currentMatchesSnapshot(), std::memory_order_relaxed);
 }
 
 DoobieAudioProcessor::IrThumb DoobieAudioProcessor::getIrThumbnail (int /*binCount*/) const

@@ -18,6 +18,7 @@
 #include "dsp/EnvelopeFollower.h"
 #include "dsp/ModMatrix.h"
 #include "presets/PresetManager.h"
+#include <unordered_map>
 
 // Top-level plugin. Owns the parameter tree, resolves tempo-synced delay times
 // from the host transport, converts raw parameters into engine units, and hands
@@ -140,6 +141,14 @@ private:
     void valueTreePropertyChanged (juce::ValueTree& tree, const juce::Identifier& prop) override;
     std::atomic<bool> presetDirty { false };
     std::atomic<bool> suppressPresetDirty { false };
+    // Snapshot of every parameter's normalised value at the last
+    // load/save. The dirty flag is computed by diffing the live state
+    // against this — "any state change" was too aggressive: smoothers
+    // and the web-relay initial syncs after a load all fired the value-
+    // tree listener and falsely re-marked the preset as dirty.
+    std::unordered_map<juce::String, float> cleanSnapshot;
+    void snapshotCurrentParams();
+    bool currentMatchesSnapshot() const;
 
     juce::AudioProcessorValueTreeState apvts;
     doobie::DubDelayEngine engine;
