@@ -21,6 +21,19 @@ const PARAM_MAP = {
   inHighCut:  { kind: 'slider', id: 'preLpFreq' },
   inBass:     { kind: 'slider', id: 'preBass'   },
   inTreble:   { kind: 'slider', id: 'preTreble' },
+  // --- input multimode filter (ported from hardware) ---
+  inFilterOn:     { kind: 'toggle', id: 'inFilterOn' },
+  inFilterType:   { kind: 'choice', id: 'inFilterType', opts: ['LP','HP','BP'] },
+  inFilterCutoff: { kind: 'slider', id: 'inFilterCutoff' },
+  inFilterRes:    { kind: 'slider', id: 'inFilterRes' },
+  // --- phaser (ported from hardware) ---
+  phaserOn:    { kind: 'toggle', id: 'phaserOn' },
+  phaserRoute: { kind: 'choice', id: 'phaserRoute', opts: ['Post','Pre','In Feedback'],
+                 aliases: { post:'Post', pre:'Pre', fb:'In Feedback' } },
+  phaserRate:  { kind: 'slider', id: 'phaserRate' },
+  phaserDepth: { kind: 'slider', id: 'phaserDepth' },
+  phaserFb:    { kind: 'slider', id: 'phaserFb' },
+  phaserMix:   { kind: 'slider', id: 'phaserMix' },
   // --- delay ---
   time:       { kind: 'slider', id: 'timeMs'   },
   feedback:   { kind: 'slider', id: 'feedback' },
@@ -60,6 +73,10 @@ const PARAM_MAP = {
   gateThr:    { kind: 'slider', id: 'gateThreshold' },
   gateHold:   { kind: 'slider', id: 'gateHold' },
   gateRel:    { kind: 'slider', id: 'gateRelease' },
+  // Shimmer-only: pitch interval applied to the regen tail.
+  shimmerSemis: { kind: 'slider', id: 'shimmerSemis' },
+  // Convolution-only: makeup gain on the wet IR signal (dB).
+  irGain:     { kind: 'slider', id: 'irGain' },
   // --- output ---
   mix:        { kind: 'slider', id: 'mix' },
   width:      { kind: 'slider', id: 'width' },
@@ -222,11 +239,13 @@ function App() {
 
   // Native event subscriptions for live data
   const presetInfo = JB.useJuceEvent('presetInfo', { name: '—', cat: '' });
+  const irInfo     = JB.useJuceEvent('irInfo',     { hasIR: false, factoryIndex: -1, isFactory: false, isFile: false, name: '(no IR)' });
   const levels = JB.useJuceEvent('levels', { in: -90, delay: -90, reverb: -90, out: -90, peak: { in: -90, delay: -90, reverb: -90, out: -90, l: -90, r: -90 } });
 
   // Layout state (local UI only, not in APVTS)
-  const [modOpen, setModOpen]   = useState(false);
-  const [saveOpen, setSaveOpen] = useState(false);
+  const [modOpen,     setModOpen]     = useState(false);
+  const [saveOpen,    setSaveOpen]    = useState(false);
+  const [browserOpen, setBrowserOpen] = useState(false);
   const rootRef = useRef(null);
 
   React.useEffect(() => {
@@ -268,7 +287,8 @@ function App() {
     <div id="stage">
       <div id="plugin" ref={rootRef} data-finish="glass" data-ticks="1">
         <Header preset={presetInfo} onPrev={() => presetClick(-1)} onNext={() => presetClick(1)}
-                onSave={onSave} modOpen={modOpen} setModOpen={setModOpen} />
+                onSave={onSave} modOpen={modOpen} setModOpen={setModOpen}
+                onBrowse={() => setBrowserOpen(true)} />
         <div className="body">
           <div className="flowbar">
             <VUStrip stages={stages} levels={levels} />
@@ -276,7 +296,7 @@ function App() {
 
           <div className="col-left">
             <InputPanel p={p} setP={setP} mods={mods} />
-            <HeadsPanel heads={heads} setHead={sH} mods={mods} />
+            <HeadsPanel heads={heads} setHead={sH} mods={mods} synced={p.sync} />
           </div>
 
           <div className="col-mid">
@@ -285,7 +305,8 @@ function App() {
 
           <div className="col-right">
             <FeedbackPanel p={p} setP={setP} mods={mods} />
-            <ReverbPanel p={p} setP={setP} mods={mods} />
+            <PhaserPanel   p={p} setP={setP} mods={mods} />
+            <ReverbPanel   p={p} setP={setP} mods={mods} irInfo={irInfo} />
           </div>
 
           <div className="outbar">
@@ -296,6 +317,8 @@ function App() {
 
       <ModDrawer open={modOpen} onClose={() => setModOpen(false)} p={p} setP={setP}
                  matrix={matrix} setMx={mX} numSlots={NUM_MOD_SLOTS} />
+
+      <PresetBrowser open={browserOpen} onClose={() => setBrowserOpen(false)} currentName={presetInfo.name} />
 
       <Modal open={saveOpen} title="Save preset" message="Pick a name for your patch."
              defaultValue={presetInfo.name || ''}

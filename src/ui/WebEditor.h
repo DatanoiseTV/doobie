@@ -54,6 +54,7 @@ private:
     // is lock-free.
     void emitLevels();
     void emitPresetInfo();
+    void emitIRInfo();
 
     ::DoobieAudioProcessor& doobieProcessor;
 
@@ -81,6 +82,9 @@ private:
     // Last-known preset name + category, pushed only when changed (so we're
     // not spamming the JS side with redundant events).
     juce::String lastPresetName, lastPresetCat;
+    juce::String lastIRName;
+    int          lastFactoryIRIndex = -1;
+    bool         lastHadIR = false;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WebEditor)
 };

@@ -13,6 +13,7 @@
 #include "WebEditor.h"
 #include "../PluginProcessor.h"
 #include "../ParameterIDs.h"
+#include "../dsp/FactoryIRs.h"
 
 #include <DoobieUIData.h>
 
@@ -115,22 +116,28 @@ namespace
         "plateDecay", "plateSize", "plateDamp", "platePredelay", "reverbMod",
         "irGain", "irSpeed",
         "gateThreshold", "gateHold", "gateRelease",
+        "shimmerSemis",
         "lfo1Rate", "lfo1Depth", "lfo2Rate", "lfo2Depth",
         "envAttack", "envRelease", "envSens",
         "head1Level", "head2Level", "head3Level", "head4Level",
         "head1Pan",   "head2Pan",   "head3Pan",   "head4Pan",
         "head1Ratio", "head2Ratio", "head3Ratio", "head4Ratio",
         "mod1Amt", "mod2Amt", "mod3Amt", "mod4Amt", "mod5Amt", "mod6Amt", "mod7Amt", "mod8Amt",
+        // Hardware-port additions (v0.14.0): input multimode filter + phaser
+        "inFilterCutoff", "inFilterRes",
+        "phaserRate", "phaserDepth", "phaserFb", "phaserMix",
     };
     constexpr const char* kBoolIds[] = {
         "syncMode", "pingPong", "freeze", "delayBypass",
         "head1On", "head2On", "head3On", "head4On",
+        "inFilterOn", "phaserOn",
     };
     constexpr const char* kChoiceIds[] = {
         "delayMode", "syncDiv", "reverbMode", "reverbRoute",
         "lfo1Wave",  "lfo2Wave",
         "mod1Src", "mod2Src", "mod3Src", "mod4Src", "mod5Src", "mod6Src", "mod7Src", "mod8Src",
         "mod1Dst", "mod2Dst", "mod3Dst", "mod4Dst", "mod5Dst", "mod6Dst", "mod7Dst", "mod8Dst",
+        "inFilterType", "phaserRoute",
     };
 }
 
@@ -224,10 +231,70 @@ WebEditor::WebEditor (::DoobieAudioProcessor& proc)
                 doobieProcessor.getPresetManager().next();
                 complete (juce::var());
             })
+        // Returns the factory preset name list to JS so the preset browser
+        // modal can render it. Resolves to an Array<String>.
+        .withNativeFunction (juce::Identifier { "listFactoryPresets" },
+            [this] (const juce::Array<juce::var>&, juce::WebBrowserComponent::NativeFunctionCompletion complete)
+            {
+                juce::Array<juce::var> arr;
+                for (const auto& n : doobieProcessor.getPresetManager().getFactoryNames())
+                    arr.add (juce::var (n));
+                complete (juce::var (arr));
+            })
+        // Returns the factory IR name list — used by the Convolution mode's
+        // dropdown / browser.
+        .withNativeFunction (juce::Identifier { "listFactoryIRs" },
+            [] (const juce::Array<juce::var>&, juce::WebBrowserComponent::NativeFunctionCompletion complete)
+            {
+                juce::Array<juce::var> arr;
+                for (const auto& n : doobie::factoryIRNames())
+                    arr.add (juce::var (n));
+                complete (juce::var (arr));
+            })
+        // Factory IR picker — index from JS, slot < 0 clears.
+        .withEventListener (juce::Identifier { "ir_load_factory" },
+            [this] (juce::var payload)
+            {
+                const int idx = (int) payload.getProperty ("index", -1);
+                if (idx >= 0)
+                    doobieProcessor.loadFactoryIR (idx);
+                else
+                    doobieProcessor.clearIR();
+            })
+        // Custom-file IR loader. JUCE's file chooser is the only sane way to
+        // produce a sandbox-friendly native path; ChooserComponent runs on
+        // the message thread and shouldn't block.
+        .withEventListener (juce::Identifier { "ir_load_file" },
+            [this] (juce::var)
+            {
+                auto chooser = std::make_shared<juce::FileChooser> (
+                    "Load impulse response",
+                    juce::File::getSpecialLocation (juce::File::userMusicDirectory),
+                    "*.wav;*.aif;*.aiff;*.flac");
+                chooser->launchAsync (
+                    juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                    [this, chooser] (const juce::FileChooser& fc)
+                    {
+                        const auto f = fc.getResult();
+                        if (f.existsAsFile())
+                            doobieProcessor.loadIR (f);
+                    });
+            })
+        .withEventListener (juce::Identifier { "ir_clear" },
+            [this] (juce::var) { doobieProcessor.clearIR(); })
         .withEventListener (juce::Identifier { "preset_prev" },
             [this] (juce::var) { doobieProcessor.getPresetManager().previous(); })
         .withEventListener (juce::Identifier { "preset_next" },
             [this] (juce::var) { doobieProcessor.getPresetManager().next(); })
+        .withEventListener (juce::Identifier { "preset_load" },
+            [this] (juce::var payload)
+            {
+                // Preset browser modal in the WebView clicks a row; the
+                // React side ships the preset name and we resolve it.
+                const auto name = payload.getProperty ("name", juce::String()).toString();
+                if (name.isNotEmpty())
+                    doobieProcessor.getPresetManager().loadByName (name);
+            })
         .withEventListener (juce::Identifier { "preset_save" },
             [this] (juce::var payload)
             {
@@ -322,6 +389,7 @@ void WebEditor::timerCallback()
 {
     emitLevels();
     emitPresetInfo();
+    emitIRInfo();
 }
 
 void WebEditor::emitLevels()
@@ -384,5 +452,30 @@ void WebEditor::emitPresetInfo()
     obj->setProperty ("name", name);
     obj->setProperty ("cat",  cat);
     webView->emitEventIfBrowserIsVisible (juce::Identifier { "presetInfo" }, juce::var (obj.get()));
+}
+
+void WebEditor::emitIRInfo()
+{
+    if (webView == nullptr) return;
+
+    const bool has        = doobieProcessor.hasIR();
+    const int  factoryIdx = doobieProcessor.irIsFactory() ? doobieProcessor.getFactoryIRIndex() : -1;
+    const auto name       = doobieProcessor.getIRDisplayName();
+
+    // Only push when something has actually changed; the timer ticks at
+    // 30 Hz and the WebView event listeners aren't free.
+    if (has == lastHadIR && factoryIdx == lastFactoryIRIndex && name == lastIRName)
+        return;
+    lastHadIR = has;
+    lastFactoryIRIndex = factoryIdx;
+    lastIRName = name;
+
+    juce::DynamicObject::Ptr obj = new juce::DynamicObject();
+    obj->setProperty ("hasIR",        has);
+    obj->setProperty ("factoryIndex", factoryIdx);
+    obj->setProperty ("isFactory",    doobieProcessor.irIsFactory());
+    obj->setProperty ("isFile",       doobieProcessor.irIsFile());
+    obj->setProperty ("name",         name);
+    webView->emitEventIfBrowserIsVisible (juce::Identifier { "irInfo" }, juce::var (obj.get()));
 }
 } // namespace doobie

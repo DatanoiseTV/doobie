@@ -99,6 +99,12 @@ void DubDelayEngine::prepare (double sr, int maxBlockSize)
 
     tapeAge.prepare (sr);
 
+    // Feedback-limiter time constants (2 ms attack / 250 ms release) — held
+    // here so we don't recompute them per sample. Matches the hardware port.
+    fbLimAttCoeff = 1.0f - std::exp (-1.0f / (0.002f * (float) sr));
+    fbLimRelCoeff = 1.0f - std::exp (-1.0f / (0.250f * (float) sr));
+    reloadCoeff   = 1.0f - std::exp (-1.0f / (0.012f * (float) sr));
+
     reset();
 }
 
@@ -126,6 +132,7 @@ void DubDelayEngine::reset()
     pitchR.reset();
     tapeWarmL = tapeWarmR = tapeDarkL = tapeDarkR = 0.0f;
     bbdLpL = bbdLpR = bbdBpL = bbdBpR = 0.0f;
+    fbLimEnv = 0.0f;
     wowFlutter.reset();
     duckEnv = 0.0f;
 
@@ -225,8 +232,10 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
     spring.setParams (params.springDecay, params.springTone, params.plateMod);
     plate.setParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
     hall.setParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
-    // In shimmer mode the MOD control sets the octave regeneration amount.
+    // In shimmer mode the MOD control sets the octave regeneration amount;
+    // the interval (in semitones) is a separate, user-selectable param.
     shimmer.setParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
+    shimmer.setIntervalSemitones (params.shimmerSemis);
     gated.setPlateParams (params.plateDecay, params.plateSize, params.plateDamp, params.platePredelay, params.plateMod);
     gated.setGateParams (params.gateThresholdDb, params.gateHoldMs, params.gateReleaseMs);
     // IR makeup gain (per-sample smoothed inside the wrapper).
@@ -291,6 +300,16 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
                 bbdBpL += bbdF * (l - bbdLpL - bbdQ * bbdBpL);
                 bbdLpR += bbdF * bbdBpR;
                 bbdBpR += bbdF * (r - bbdLpR - bbdQ * bbdBpR);
+                // BBD SVF non-finite latch guard (ported from hardware fix
+                // cc5e2a4). With aggressive feedback + a wow/flutter spike,
+                // the SVF state can occasionally rail to a non-finite value;
+                // once latched it recirculates through the feedback path
+                // forever (silence + a constant DC offset / NaN cascade).
+                // Cheap one-time check per sample; bypassed when sane.
+                if (! std::isfinite (bbdLpL) || ! std::isfinite (bbdBpL))
+                    bbdLpL = bbdBpL = 0.0f;
+                if (! std::isfinite (bbdLpR) || ! std::isfinite (bbdBpR))
+                    bbdLpR = bbdBpR = 0.0f;
                 l = bbdLpL + whiteNoise() * 0.006f;
                 r = bbdLpR + whiteNoise() * 0.006f;
                 break;
@@ -404,6 +423,25 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
             const float fbGain = params.freeze ? 1.0f : fb;
             float fbContribL = fbL * fbGain;
             float fbContribR = fbR * fbGain;
+
+            // Feedback limiter (linked stereo, ported from hardware): track
+            // the recirculating peak and, once it crosses the threshold,
+            // scale the re-injected signal so the loop plateaus there
+            // instead of running away. The linear characters (BBD
+            // especially) have no self-limiting; without this, fb>1 rails
+            // the output soft-clip. Below threshold = unity gain so the
+            // tone is unaffected for normal feedback amounts.
+            {
+                const float pk = std::max (std::fabs (fbContribL), std::fabs (fbContribR));
+                fbLimEnv += (pk - fbLimEnv) * (pk > fbLimEnv ? fbLimAttCoeff : fbLimRelCoeff);
+                if (fbLimEnv > kFbLimThresh)
+                {
+                    const float g = kFbLimThresh / fbLimEnv;
+                    fbContribL *= g;
+                    fbContribR *= g;
+                }
+            }
+
             if (params.pingPong)
                 std::swap (fbContribL, fbContribR);
 
@@ -521,8 +559,23 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
         wetR = dcOutR.process (wetR);
 
         // Dry/wet crossfade and output trim.
-        const float outL = (dryL * (1.0f - mix) + wetL * mix) * og;
-        const float outR = (dryR * (1.0f - mix) + wetR * mix) * og;
+        // Preset-swap fade-in (ported from hardware): fadeForReload() resets
+        // reloadGain to 0 and we ramp back to unity over ~12 ms here, masking
+        // the param-swap discontinuity ("DC pulse" click / loud pop on
+        // preset reload). Steady-state: reloadGain == 1, gain is unaffected.
+        reloadGain += (1.0f - reloadGain) * reloadCoeff;
+        const float rg = reloadGain;
+
+        float outL = (dryL * (1.0f - mix) + wetL * mix) * og * rg;
+        float outR = (dryR * (1.0f - mix) + wetR * mix) * og * rg;
+
+        // Final safety net (ported from hardware): if anything in the chain
+        // (a denorm not flushed, a BBD-style runaway not caught, a freezing
+        // reverb tail) produced a non-finite sample, mute it rather than
+        // hand the host a NaN that could propagate into the rest of its
+        // bus and need a session reload.
+        if (! std::isfinite (outL)) outL = 0.0f;
+        if (! std::isfinite (outR)) outR = 0.0f;
 
         L[n] = outL;
         if (stereo)

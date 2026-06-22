@@ -84,6 +84,11 @@ struct EngineParams
     float gateHoldMs      = 180.0f;
     float gateReleaseMs   = 6.0f;
 
+    // Shimmer-only: pitch interval in semitones applied to the regen tail.
+    // +12 is the classic octave-up shimmer; -12 gives a dark "fall" shimmer,
+    // +7 a chiming fifth, etc. Inert unless reverbMode == Shimmer.
+    float shimmerSemis = 12.0f;
+
     // Input multimode filter (TPT-SVF, ported from the hardware build).
     // Sits on the live input pre-delay. OFF = true bypass.
     bool  inFilterOn     = false;
@@ -178,6 +183,26 @@ private:
     float tapeDarkL = 0.0f, tapeDarkR = 0.0f;
     float bbdLpL = 0.0f, bbdLpR = 0.0f;   // SVF low-pass state
     float bbdBpL = 0.0f, bbdBpR = 0.0f;   // SVF band-pass state
+
+    // Feedback-runaway limiter state (ported from hardware). The recirculating
+    // peak is followed with a fast-attack / slow-release envelope; once it
+    // crosses kFbLimThresh we scale the re-injected signal so the loop
+    // plateaus instead of railing the output soft-clip. The linear characters
+    // (BBD especially) have no self-limiting and otherwise run away at fb>=1.
+    static constexpr float kFbLimThresh = 0.9f;
+    float fbLimEnv = 0.0f;
+    float fbLimAttCoeff = 0.0f, fbLimRelCoeff = 0.0f;
+
+    // Preset-swap fade (ported from hardware). On a preset load we dip the
+    // output to 0 and ramp back over ~12 ms, masking the param-swap
+    // discontinuity (the "DC pulse" pop the user hears as a click on every
+    // reload). The host calls fadeForReload() right before pushing the new
+    // values into the engine; steady-state reloadGain == 1.
+public:
+    void fadeForReload() noexcept { reloadGain = 0.0f; }
+private:
+    float reloadGain  = 1.0f;
+    float reloadCoeff = 0.0f;
 
     SpringReverb      spring;
     PlateReverb       plate;

@@ -109,6 +109,11 @@ namespace dID
     inline constexpr auto gateHold      = "gateHold";       // ms, time fully open after trigger
     inline constexpr auto gateRelease   = "gateRelease";    // ms, exponential close after hold
 
+    // Shimmer-only control: the pitch interval applied to the regeneration
+    // tail, in semitones. Default +12 (classic octave-up). Inert when the
+    // reverb mode is anything other than Shimmer.
+    inline constexpr auto shimmerSemis  = "shimmerSemis";   // semitones, -24..+24
+
     // ---- Modulation matrix --------------------------------------------------
     // Two LFOs + one envelope follower feed a 4-slot matrix; each slot picks a
     // source, a destination (curated subset of engine params, see ModMatrix.h)

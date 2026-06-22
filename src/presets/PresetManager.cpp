@@ -889,6 +889,12 @@ void PresetManager::resetToDefaults()
 
 void PresetManager::applyPreset (const Preset& preset)
 {
+    // Click-free preset swap (ported from hardware): the engine dips its
+    // output to silence and ramps back over ~12 ms while the new parameter
+    // values flow in. Without this, every reload produces an audible
+    // "DC pulse" pop as the smoothers chase the new targets.
+    if (preLoadHook) preLoadHook();
+
     resetToDefaults();
     for (const auto& [id, value] : preset.values)
         if (auto* p = apvts.getParameter (id))

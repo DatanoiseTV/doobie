@@ -177,3 +177,177 @@ function KnobContextMenu(){
 }
 
 Object.assign(window, { KnobContextMenu, parseValue });
+
+/* ============================================================
+   PresetBrowser — fullscreen-ish modal listing the factory bank
+   ============================================================
+   The C++ side ships the name list via Juce.getNativeFunction
+   ('listFactoryPresets'). We derive the same simple category
+   tag the WebEditor uses for the header so the rows match the
+   chip shown after load — that mapping lives in one place
+   conceptually even if it's evaluated twice (C++ + JS). When the
+   manager grows a real categoryOf() it'll feed both sides. */
+const PRESET_CATS = ['ALL', 'DUB', 'AMBIENT', 'VINTAGE', 'WIDE', 'OTHER'];
+function categoryOf (name) {
+  if (!name) return 'OTHER';
+  if (/Dub|Reggae/i.test(name)) return 'DUB';
+  if (/Ambient/i.test(name))    return 'AMBIENT';
+  if (/Vintage/i.test(name))    return 'VINTAGE';
+  if (/Cosmic/i.test(name))     return 'WIDE';
+  return 'OTHER';
+}
+
+function PresetBrowser ({ open, onClose, currentName }) {
+  const [names, setNames]   = React.useState([]);
+  const [query, setQuery]   = React.useState('');
+  const [cat,   setCat]     = React.useState('ALL');
+  const inputRef = React.useRef(null);
+
+  // Pull the list each time the modal opens — handles the case where the
+  // host injected presets via state restore between opens.
+  React.useEffect(() => {
+    if (!open) return;
+    setQuery('');
+    let cancelled = false;
+    const fn = window.Juce.getNativeFunction('listFactoryPresets');
+    Promise.resolve(fn()).then(list => {
+      if (!cancelled) setNames(Array.isArray(list) ? list : []);
+    });
+    setTimeout(() => { if (inputRef.current) inputRef.current.focus(); }, 60);
+    return () => { cancelled = true; };
+  }, [open]);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === 'Escape') onClose && onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+  const q = query.trim().toLowerCase();
+  const rows = names
+    .map(n => ({ name: n, cat: categoryOf(n) }))
+    .filter(r => (cat === 'ALL' || r.cat === cat) && (!q || r.name.toLowerCase().includes(q)));
+
+  // Stays open after a row is clicked so the user can audition through the
+  // bank without reopening the modal each time. The selected row stays
+  // highlighted (currentName updates via the presetInfo event) and Close /
+  // Esc dismiss when they're done.
+  const choose = (n) => {
+    window.Juce.backend.emitEvent('preset_load', { name: n });
+  };
+
+  return (
+    <div className="modal-scrim open" onMouseDown={(e) => { if (e.target.classList.contains('modal-scrim')) onClose && onClose(); }}>
+      <div className="modal browser" role="dialog" aria-modal="true">
+        <h3>Presets</h3>
+        <div className="br-head">
+          <input ref={inputRef} className="br-search" placeholder="Search..." value={query}
+                 onChange={(e) => setQuery(e.target.value)} />
+        </div>
+        <div className="br-cats">
+          {PRESET_CATS.map(c =>
+            <button key={c} data-on={cat === c ? '1' : '0'} onClick={() => setCat(c)}>{c}</button>
+          )}
+        </div>
+        <div className="br-list">
+          {rows.length === 0
+            ? <div className="br-empty">No presets match.</div>
+            : rows.map(r =>
+                <div key={r.name} className="br-row" data-on={r.name === currentName ? '1' : '0'}
+                     onClick={() => choose(r.name)}>
+                  <span>{r.name}</span>
+                  <span className="cat">{r.cat}</span>
+                </div>
+              )}
+        </div>
+        <div className="br-foot">
+          <span className="count">{rows.length} / {names.length}</span>
+          <span className="spacer" />
+          <button className="btn ghost" onClick={() => onClose && onClose()}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   IRPicker — used by the Convolution reverb mode
+   ============================================================ */
+function IRPicker ({ irInfo }) {
+  const [browserOpen, setBrowserOpen] = React.useState(false);
+  const [names, setNames] = React.useState([]);
+  const [query, setQuery] = React.useState('');
+
+  // Lazy-load the IR name list. The factory list is static so a one-shot is
+  // enough; we refresh when the modal opens in case the C++ side ever grows
+  // a user-IR bank later.
+  React.useEffect(() => {
+    if (!browserOpen) return;
+    setQuery('');
+    let cancelled = false;
+    Promise.resolve(window.Juce.getNativeFunction('listFactoryIRs')()).then(list => {
+      if (!cancelled) setNames(Array.isArray(list) ? list : []);
+    });
+    return () => { cancelled = true; };
+  }, [browserOpen]);
+
+  const has    = !!(irInfo && irInfo.hasIR);
+  const isFac  = !!(irInfo && irInfo.isFactory);
+  const isFile = !!(irInfo && irInfo.isFile);
+  const name   = (irInfo && irInfo.name) || (has ? 'Impulse Response' : '(no IR)');
+
+  const pickFactory = (idx) => {
+    window.Juce.backend.emitEvent('ir_load_factory', { index: idx });
+    setBrowserOpen(false);
+  };
+  const pickFile = () => window.Juce.backend.emitEvent('ir_load_file', {});
+  const clear    = () => window.Juce.backend.emitEvent('ir_clear', {});
+
+  const q = query.trim().toLowerCase();
+  const rows = names.map((n, i) => ({ name: n, idx: i }))
+                    .filter(r => !q || r.name.toLowerCase().includes(q));
+
+  return (
+    <>
+      <div className="ir-pick">
+        <span className="ir-tag">{isFile ? 'FILE' : isFac ? 'FACTORY' : 'OFF'}</span>
+        <span className="ir-name" title={name}>{name}</span>
+        <button className="ir-btn" onClick={() => setBrowserOpen(true)}>Browse</button>
+        <button className="ir-btn" onClick={pickFile}>Load file...</button>
+        {has && <button className="ir-btn" onClick={clear}>Clear</button>}
+      </div>
+      {browserOpen && (
+        <div className="modal-scrim open" onMouseDown={(e) => { if (e.target.classList.contains('modal-scrim')) setBrowserOpen(false); }}>
+          <div className="modal browser" role="dialog" aria-modal="true">
+            <h3>Impulse Responses</h3>
+            <div className="br-head">
+              <input className="br-search" placeholder="Search..." value={query}
+                     onChange={(e) => setQuery(e.target.value)} autoFocus />
+            </div>
+            <div className="br-list">
+              {rows.length === 0
+                ? <div className="br-empty">No IRs match.</div>
+                : rows.map(r =>
+                    <div key={r.idx} className="br-row"
+                         data-on={isFac && r.idx === irInfo.factoryIndex ? '1' : '0'}
+                         onClick={() => pickFactory(r.idx)}>
+                      <span>{r.name}</span>
+                      <span className="cat">#{r.idx + 1}</span>
+                    </div>
+                  )}
+            </div>
+            <div className="br-foot">
+              <span className="count">{rows.length} / {names.length}</span>
+              <span className="spacer" />
+              <button className="btn ghost"  onClick={() => setBrowserOpen(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+Object.assign(window, { PresetBrowser, IRPicker });

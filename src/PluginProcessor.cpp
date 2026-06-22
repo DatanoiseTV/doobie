@@ -113,6 +113,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
         Range grelRange (0.5f, 500.0f, 0.1f); grelRange.setSkewForCentre (30.0f);
         layout.add (std::make_unique<FloatParam> (pid (dID::gateRelease), "Gate Release", grelRange, 6.0f));
     }
+    // Shimmer pitch interval, in semitones. Discrete 1-st steps over a two-
+    // octave range; +12 (octave up) is the classic Brian-Eno default.
+    layout.add (std::make_unique<FloatParam> (pid (dID::shimmerSemis), "Shimmer Interval", Range (-24.0f, 24.0f, 1.0f), 12.0f));
 
     // ---- Input multimode filter (Svf, ported from hardware) ----------------
     layout.add (std::make_unique<BoolParam>   (pid (dID::inFilterOn),   "Input Filter", false));
@@ -189,6 +192,10 @@ DoobieAudioProcessor::DoobieAudioProcessor()
       presetManager (apvts)
 {
     apvts.addParameterListener (dID::irSpeed, this);
+
+    // Engine dips its output to silence and ramps back over ~12 ms whenever
+    // a preset starts loading — masks the "DC pulse" pop from the param swap.
+    presetManager.setPreLoadHook ([this] { engine.fadeForReload(); });
 }
 
 DoobieAudioProcessor::~DoobieAudioProcessor()
@@ -314,6 +321,8 @@ doobie::EngineParams DoobieAudioProcessor::buildEngineParams()
     p.gateThresholdDb = raw (dID::gateThreshold);
     p.gateHoldMs      = raw (dID::gateHold);
     p.gateReleaseMs   = raw (dID::gateRelease);
+
+    p.shimmerSemis    = raw (dID::shimmerSemis);
 
     return p;
 }

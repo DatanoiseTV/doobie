@@ -8,6 +8,23 @@
    native events instead of an in-JS PRESETS array.
    ============================================================ */
 
+// ---------------------------------------------------------------------------
+// Per-head sync-mode ratios. When the master time is locked to a tempo
+// division, the per-head TIME knobs become a stepped picker over these
+// musical fractions of the master delay instead of a continuous 0..1.
+// Same idea as a Space-Echo head ladder, but adjustable per head.
+// ---------------------------------------------------------------------------
+const HEAD_DIV_RATIOS = [1.0, 0.75, 2 / 3, 0.5, 3 / 8, 1 / 3, 0.25, 1 / 6, 0.125];
+const HEAD_DIV_NAMES  = ['1/1', '3/4', '2/3', '1/2', '3/8', '1/3', '1/4', '1/6', '1/8'];
+function snapHeadDiv (v) {
+  let best = 0, bestD = Infinity;
+  for (let i = 0; i < HEAD_DIV_RATIOS.length; ++i) {
+    const d = Math.abs (HEAD_DIV_RATIOS[i] - v);
+    if (d < bestD) { bestD = d; best = i; }
+  }
+  return { ratio: HEAD_DIV_RATIOS[best], name: HEAD_DIV_NAMES[best], idx: best };
+}
+
 const fmt = {
   pct:  (v) => Math.round(v * 100) + '%',
   db:   (v) => { const d = (v - 0.5) * 24; return (d > 0 ? '+' : '') + d.toFixed(1) + ' dB'; },
@@ -42,13 +59,21 @@ const PARAM_MOD_KEY = {
   time: 'timeMs', feedback: 'feedback', mix: 'mix', width: 'width',
   revMix: 'reverbMix', fbHighCut: 'lpFreq', inHighCut: 'preLpFreq',
   sat: 'drive', wow: 'wow', flutter: 'flutter', age: 'hiss',
-  duck: 'duck', revSize: 'plateSize', revPlate: 'plateDecay', revDamp: 'plateDamp',
+  duck: 'duck',
+  revSpring: 'springDecay', revStone: 'springTone', revMod: 'reverbMod',
+  revPlate: 'plateDecay', revSize: 'plateSize', revDamp: 'plateDamp',
+  revPre: 'platePredelay',
   fbLowCut: 'hpFreq', inLowCut: 'preHpFreq',
   fbBass: 'bass', fbTreble: 'treble', inBass: 'preBass', inTreble: 'preTreble',
+  // Hardware-port additions (v0.14): mods that destination-target these
+  // need the JS bridge to know which APVTS param to light.
+  inFilterCutoff: 'inFilterCutoff', inFilterRes: 'inFilterRes',
+  phaserRate: 'phaserRate', phaserDepth: 'phaserDepth', phaserMix: 'phaserMix',
+  output: 'outputGain',
 };
 
 /* ============================== HEADER ============================== */
-function Header({ preset, onPrev, onNext, onSave, modOpen, setModOpen }) {
+function Header({ preset, onPrev, onNext, onSave, modOpen, setModOpen, onBrowse }) {
   return (
     <div className="hdr">
       <div className="brand">
@@ -59,7 +84,7 @@ function Header({ preset, onPrev, onNext, onSave, modOpen, setModOpen }) {
       <span className="ver">{(window.DOOBIE_VERSION_STR || 'v0.13') + ' · main'}</span>
       <div className="preset">
         <button className="nav" onClick={onPrev} aria-label="Previous preset">‹</button>
-        <button className="name" onClick={onNext}>
+        <button className="name" onClick={() => onBrowse && onBrowse()} title="Browse presets">
           <span className="t">{preset.name || '—'}</span>
           {preset.cat && <span className="cat">{preset.cat}</span>}
         </button>
@@ -73,6 +98,14 @@ function Header({ preset, onPrev, onNext, onSave, modOpen, setModOpen }) {
 
 /* ============================== INPUT ============================== */
 function InputPanel({ p, setP, mods }) {
+  // Input multimode filter (ported from hardware). Its subsection collapses
+  // to a single TYPE chip + on-LED when off so the EQ knobs stay the
+  // headline of the panel; cutoff + res appear only when the filter is on,
+  // matching the hardware's "OFF = true bypass" framing.
+  const fOn = !!p.inFilterOn;
+  const typeSeg = (k, lab) =>
+    <button data-on={p.inFilterType === k ? '1' : '0'}
+            onClick={() => setP('inFilterType', k)}>{lab}</button>;
   return (
     <div className="panel">
       <PHead title="Input" icon={Ico.in} meta="pre-delay tone" />
@@ -86,12 +119,29 @@ function InputPanel({ p, setP, mods }) {
           <KB label="Treble"   k="inTreble"  p={p} setP={setP} bipolar format={fmt.db}     mods={mods} />
         </div>
       </div>
+      {/* ----- Input multimode filter (TPT-SVF, ported from the hardware
+              Keinedelay/DFM build). OFF = true bypass. ----- */}
+      <div className="route-row" style={{ marginTop: 14, marginBottom: fOn ? 12 : 0 }}>
+        <Chip on={fOn} onClick={() => setP('inFilterOn', !fOn)}>Filter</Chip>
+        {fOn && (
+          <div className="seg">{typeSeg('LP', 'LP')}{typeSeg('HP', 'HP')}{typeSeg('BP', 'BP')}</div>
+        )}
+      </div>
+      {fOn && (
+        <div className="eqrow" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+          <KB label="Cutoff" k="inFilterCutoff" p={p} setP={setP}
+              format={(v) => v < 1 ? Math.round(v * 18000) + ' Hz' : (v).toFixed(0) + ' Hz'}
+              mods={mods} modKey="inFilterCutoff" lit />
+          <KB label="Reso"   k="inFilterRes"    p={p} setP={setP}
+              format={fmt.pct} mods={mods} modKey="inFilterRes" />
+        </div>
+      )}
     </div>
   );
 }
 
 /* ============================== HEADS ============================== */
-function HeadsPanel({ heads, setHead, mods }) {
+function HeadsPanel({ heads, setHead, mods, synced }) {
   const GAP = 0.092;
   const clampTime = (i, v) => {
     let lo = 0, hi = 1;
@@ -134,8 +184,16 @@ function HeadsPanel({ heads, setHead, mods }) {
             <Fader value={h.level} onChange={(v) => setHead(i, 'level', v)} height={102} format={fmt.pct} lit={h.on} />
             <Knob size="sm" label="Pan"  bipolar value={h.pan}  format={fmt.pan} mod={headPanMod(i)}
                   onChange={(v) => setHead(i, 'pan', v)} />
-            <Knob size="sm" label="Time" value={h.time} format={fmt.pct} mod={headTimeMod(i)}
-                  onChange={(v) => setHead(i, 'time', clampTime(i, v))} />
+            <Knob size="sm" label="Time" value={h.time}
+                  format={synced ? (v) => snapHeadDiv (v).name : fmt.pct}
+                  mod={headTimeMod(i)}
+                  onChange={(v) => {
+                    // Sync mode: snap to musical fractions of the master delay
+                    // (Space-Echo head ladder feel). Anti-collision still
+                    // applies so two heads can't share a slot.
+                    const target = synced ? snapHeadDiv (v).ratio : v;
+                    setHead(i, 'time', clampTime (i, target));
+                  }} />
           </div>
         )}
       </div>
@@ -199,7 +257,7 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
 /* ============================== FEEDBACK ============================== */
 function FeedbackPanel({ p, setP, mods }) {
   return (
-    <div className="panel">
+    <div className="panel compact">
       <PHead title="Feedback Loop" icon={Ico.fb} meta="in-loop tone" />
       <div className="eqrow">
         <KB label="Low Cut"  k="fbLowCut"  p={p} setP={setP} format={fmt.hz(20, 800)}     mods={mods} />
@@ -211,15 +269,71 @@ function FeedbackPanel({ p, setP, mods }) {
   );
 }
 
+/* ============================== PHASER (hardware port) ============================== */
+// Six-stage all-pass with feedback. Three routing modes match the reverb's
+// insert points so signal flow stays one mental model: PRE = into the delay
+// input, IN FEEDBACK = cumulative per repeat (flange-y at high feedback),
+// POST = on the wet echoes (sits BEFORE the reverb's own insert).
+function PhaserPanel({ p, setP, mods }) {
+  const on = !!p.phaserOn;
+  const routeBtn = (k, lab) =>
+    <button data-on={p.phaserRoute === k ? '1' : '0'}
+            onClick={() => setP('phaserRoute', k)}>{lab}</button>;
+  return (
+    <div className="panel compact">
+      <PHead title="Phaser" icon={Ico.fb}
+             meta={on ? (p.phaserRoute === 'fb' ? 'in feedback' : p.phaserRoute === 'pre' ? 'pre' : 'post') : 'off'}
+             action={<PowerBtn on={on} onClick={() => setP('phaserOn', !on)} title="Bypass phaser" />} />
+      <div className="route-row" style={{ opacity: on ? 1 : 0.45 }}>
+        <span className="route-lab">Route</span>
+        <div className="seg">{routeBtn('pre', 'Pre')}{routeBtn('fb', 'In Feedback')}{routeBtn('post', 'Post')}</div>
+      </div>
+      <div className="eqrow" style={{ gridTemplateColumns: 'repeat(4, 1fr)', opacity: on ? 1 : 0.45 }}>
+        <KB label="Rate"  k="phaserRate"  p={p} setP={setP}
+            format={(v) => (0.01 + v * 7.99).toFixed(2) + ' Hz'}
+            mods={mods} modKey="phaserRate" lit />
+        <KB label="Depth" k="phaserDepth" p={p} setP={setP}
+            format={fmt.pct} mods={mods} modKey="phaserDepth" />
+        <KB label="Fb"    k="phaserFb"    p={p} setP={setP}
+            format={fmt.pct} />
+        <KB label="Mix"   k="phaserMix"   p={p} setP={setP}
+            format={fmt.pct} mods={mods} modKey="phaserMix" lit />
+      </div>
+    </div>
+  );
+}
+
 /* ============================== REVERB ============================== */
-function ReverbPanel({ p, setP, mods }) {
-  const isGated = p.revType === 'Gated';
+function ReverbPanel({ p, setP, mods, irInfo }) {
+  const isGated   = p.revType === 'Gated';
+  const isConv    = p.revType === 'Convolution';
+  const isShimmer = p.revType === 'Shimmer';
+  // Shimmer interval picker. The underlying APVTS param is integer
+  // semitones over -24..+24 (49 discrete steps), so the normalised 0..1 we
+  // get from the slider maps as v -> round(v * 48) - 24. Sliding lands on
+  // the named musical interval; the chips below jump to common ones in
+  // one click.
+  const semis     = Math.round (p.shimmerSemis * 48) - 24;
+  const setSemis  = (s) => setP ('shimmerSemis', (s + 24) / 48);
+  const semiName  = (s) => {
+    const sign = s > 0 ? '+' : s < 0 ? '−' : '';
+    const abs  = Math.abs (s);
+    const tag  = abs === 0  ? 'unison'
+              : abs === 5  ? '4th'
+              : abs === 7  ? '5th'
+              : abs === 12 ? 'octave'
+              : abs === 19 ? '8va+5'
+              : abs === 24 ? '2 octaves'
+              : '';
+    return sign + abs + ' st' + (tag ? ' · ' + tag : '');
+  };
+  const semiChips = [-12, -5, 0, 5, 7, 12, 19, 24];
   const routeBtn = (k, lab) =>
     <button data-on={p.route === k ? '1' : '0'} onClick={() => setP('route', k)}>{lab}</button>;
   return (
-    <div className="panel" style={{ flex: 1 }}>
+    <div className="panel compact" style={{ flex: 1 }}>
       <PHead title="Reverb" icon={Ico.rev} meta={p.route === 'fb' ? 'in feedback' : p.route === 'pre' ? 'pre' : 'post'} />
-      <div className="row" style={{ gap: 10, marginBottom: 10 }}>
+      <div className="row" style={{ gap: 10, marginBottom: 8 }}>
         <div className="sel" style={{ flex: 1 }}>
           <select value={p.revType} onChange={(e) => setP('revType', e.target.value)}>
             {['Off','Spring','Plate','Spring > Plate','Spring + Plate','Hall','Shimmer','Convolution','Gated'].map(o => <option key={o} value={o}>{o}</option>)}
@@ -227,35 +341,62 @@ function ReverbPanel({ p, setP, mods }) {
         </div>
         <KB label="Mix" k="revMix" p={p} setP={setP} format={fmt.pct} size="md" lit mods={mods} />
       </div>
-      <div className="rev-route" style={{ marginBottom: 14 }}>
-        <span className="cluster-label">Route</span>
+      <div className="route-row">
+        <span className="route-lab">Route</span>
         <div className="seg">{routeBtn('pre', 'Pre')}{routeBtn('fb', 'In Feedback')}{routeBtn('post', 'Post')}</div>
       </div>
-      <div className="eqrow" style={{ marginBottom: 14 }}>
-        <KB label="Spring" k="revSpring" p={p} setP={setP} format={fmt.pct} mods={mods} />
-        <KB label="S.Tone" k="revStone"  p={p} setP={setP} format={fmt.pct} mods={mods} />
-        <KB label="Damp"   k="revDamp"   p={p} setP={setP} format={fmt.pct} mods={mods} />
-        <KB label="Mod"    k="revMod"    p={p} setP={setP} format={fmt.pct} mods={mods} />
-      </div>
-      <div className="eqrow" style={{ marginBottom: 14 }}>
-        <KB label="Decay"     k="revPlate" p={p} setP={setP} format={fmt.pct} mods={mods} />
-        <KB label="Size"      k="revSize"  p={p} setP={setP} format={fmt.pct} mods={mods} />
-        <KB label="Pre-Delay" k="revPre"   p={p} setP={setP} format={(v) => (v * 200).toFixed(0) + ' ms'} />
-        <KB label="Width"     k="revWidth" p={p} setP={setP} format={fmt.pct} mods={mods} />
-      </div>
+      {isConv && <IRPicker irInfo={irInfo} />}
+      {/* Convolution doesn't use the spring/plate engine — the IR is the
+          reverb. Only IR gain + width apply, so the 8-knob block collapses
+          to two knobs and the panel fits comfortably alongside the Phaser. */}
+      {isConv ? (
+        <div className="eqrow" style={{ marginBottom: 8, gridTemplateColumns: 'repeat(2, 1fr)' }}>
+          <KB label="IR Gain" k="irGain"   p={p} setP={setP} format={fmt.db}  mods={mods} lit />
+          <KB label="Width"   k="revWidth" p={p} setP={setP} format={fmt.pct} mods={mods} />
+        </div>
+      ) : (
+        <>
+          <div className="eqrow" style={{ marginBottom: 8 }}>
+            <KB label="Spring" k="revSpring" p={p} setP={setP} format={fmt.pct} mods={mods} />
+            <KB label="S.Tone" k="revStone"  p={p} setP={setP} format={fmt.pct} mods={mods} />
+            <KB label="Damp"   k="revDamp"   p={p} setP={setP} format={fmt.pct} mods={mods} />
+            <KB label="Mod"    k="revMod"    p={p} setP={setP} format={fmt.pct} mods={mods} />
+          </div>
+          <div className="eqrow" style={{ marginBottom: 8 }}>
+            <KB label="Decay"     k="revPlate" p={p} setP={setP} format={fmt.pct} mods={mods} />
+            <KB label="Size"      k="revSize"  p={p} setP={setP} format={fmt.pct} mods={mods} />
+            <KB label="Pre-Delay" k="revPre"   p={p} setP={setP} format={(v) => (v * 200).toFixed(0) + ' ms'} />
+            <KB label="Width"     k="revWidth" p={p} setP={setP} format={fmt.pct} mods={mods} />
+          </div>
+        </>
+      )}
       {isGated && (
-        <div className="eqrow" style={{ marginBottom: 14, gridTemplateColumns: 'repeat(3, 1fr)' }}>
+        <div className="eqrow" style={{ marginBottom: 8, gridTemplateColumns: 'repeat(3, 1fr)' }}>
           <KB label="Gate Thr"  k="gateThr"  p={p} setP={setP} format={fmt.dbFs(-60, 0)} lit />
           <KB label="Gate Hold" k="gateHold" p={p} setP={setP} format={fmt.msSkew(1, 1000)} lit />
           <KB label="Gate Rel"  k="gateRel"  p={p} setP={setP} format={fmt.msSkew(0.5, 500)} lit />
         </div>
       )}
+      {isShimmer && (
+        <div className="shimmer-int">
+          <div className="shimmer-int-hd">
+            <span className="cluster-label">Interval</span>
+            <span className="shimmer-int-val">{semiName (semis)}</span>
+          </div>
+          <div className="shimmer-int-chips">
+            {semiChips.map (s =>
+              <button key={s} data-on={semis === s ? '1' : '0'} onClick={() => setSemis (s)}>
+                {s > 0 ? '+' + s : s}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       <div style={{ marginTop: 'auto' }}>
-        {/* The graph approximates RT60 from the decay knob (plate's actual
-            decay parameter); size influences density / early reflections,
-            not tail length, so feeding the curve off revSize gave the
-            misleading impression the graph was decorative. */}
-        <DecayGraph decay={p.revPlate} type={p.revType} height={104} />
+        {/* RT60 approximation: decay-knob driven; size affects density not
+            tail. Shorter than the v0.13 layout so the panel still fits
+            below the Phaser. */}
+        <DecayGraph decay={p.revPlate} type={p.revType} height={64} />
       </div>
     </div>
   );
@@ -389,4 +530,4 @@ function ModDrawer({ open, onClose, p, setP, matrix, setMx, numSlots }) {
   );
 }
 
-Object.assign(window, { Header, VUStrip, InputPanel, HeadsPanel, DelayPanel, FeedbackPanel, ReverbPanel, OutputBar, ModDrawer, fmt, KB, PARAM_MOD_KEY });
+Object.assign(window, { Header, VUStrip, InputPanel, HeadsPanel, DelayPanel, FeedbackPanel, PhaserPanel, ReverbPanel, OutputBar, ModDrawer, fmt, KB, PARAM_MOD_KEY });

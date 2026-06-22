@@ -13,6 +13,7 @@
 #pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
+#include <functional>
 
 // Manages factory and user presets on top of the APVTS. Factory presets are
 // defined in code (see PresetManager.cpp); user presets are stored as XML in
@@ -28,6 +29,13 @@ public:
     };
 
     explicit PresetManager (juce::AudioProcessorValueTreeState& state);
+
+    // Optional pre-load hook. Called once on the message thread before the
+    // first parameter of a preset is applied, so the audio side can dip its
+    // output to silence and ramp back over a few ms (masks the param-swap
+    // discontinuity / "DC pulse" click on every reload). The plugin
+    // processor wires this to engine.fadeForReload().
+    void setPreLoadHook (std::function<void()> fn) { preLoadHook = std::move (fn); }
 
     juce::StringArray getFactoryNames() const;
     juce::StringArray getUserNames() const;
@@ -59,4 +67,5 @@ private:
     juce::AudioProcessorValueTreeState& apvts;
     std::vector<Preset> factory;
     juce::String currentName;
+    std::function<void()> preLoadHook;
 };

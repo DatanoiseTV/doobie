@@ -87,38 +87,77 @@
   // (slider). The DELAY panel needs to display "this knob is being
   // modulated, by this much" so we compute a per-destination amount map
   // here and expose it.
-  const MOD_SOURCES = ['Off', 'LFO 1', 'LFO 2', 'Envelope'];
+  // MUST mirror src/dsp/ModMatrix.h's ModSource / ModDest enums exactly --
+  // the matrix combo box stores an integer index, so a mismatched name list
+  // would route source/dest to the wrong slot silently. Keep this in sync
+  // with modDestNames() in ModMatrix.h whenever destinations are added.
+  const MOD_SOURCES = ['Off', 'LFO 1', 'LFO 2', 'Env'];
   const MOD_DESTS   = [
-    'Off', 'Delay Time', 'Feedback', 'Wet Mix', 'Width', 'Reverb Mix',
-    'Filter Cutoff', 'Filter Resonance', 'Drive', 'Wow', 'Flutter', 'Age',
-    'Pan', 'Duck', 'Reverb Decay', 'Reverb Size', 'Reverb Damp',
-    'Pre HP', 'Pre LP', 'Bass', 'Treble',
-    'Head1 Pan', 'Head2 Pan', 'Head3 Pan', 'Head4 Pan',
-    'Head1 Time', 'Head2 Time', 'Head3 Time', 'Head4 Time',
+    'Off',
+    'Delay Time', 'Feedback', 'Mix', 'Width', 'Duck',
+    'Drive', 'Wow', 'Flutter', 'Age',
+    'Pre Low Cut', 'Pre High Cut', 'Low Cut', 'High Cut',
+    'Bass', 'Treble',
+    'Head 1 Level', 'Head 2 Level', 'Head 3 Level', 'Head 4 Level',
+    'Reverb Mix', 'Reverb Mod',
+    'Plate Decay', 'Plate Size', 'Plate Damp', 'Plate Predelay',
+    'Spring Decay', 'Spring Tone', 'IR Gain',
+    'Head 1 Pan', 'Head 2 Pan', 'Head 3 Pan', 'Head 4 Pan',
+    'Head 1 Time', 'Head 2 Time', 'Head 3 Time', 'Head 4 Time',
+    'In Filter Cutoff', 'In Filter Res',
+    'Pan', 'Out Level',
+    'Phaser Rate', 'Phaser Depth', 'Phaser Mix',
   ];
-  // Map from MOD_DEST string -> param IDs whose knob arc should show the mod range.
+  // Map from MOD_DEST string -> APVTS param IDs whose knob should display
+  // a live mod-range arc + dot. Multiple IDs means the destination affects
+  // more than one knob (e.g. Pan reaches all four head pans).
   const DEST_TO_PARAMS = {
     'Delay Time':       ['timeMs'],
     'Feedback':         ['feedback'],
-    'Wet Mix':          ['mix'],
+    'Mix':              ['mix'],
     'Width':            ['width'],
-    'Reverb Mix':       ['reverbMix'],
-    'Filter Cutoff':    ['lpFreq', 'preLpFreq'],
+    'Duck':             ['duck'],
     'Drive':            ['drive'],
     'Wow':              ['wow'],
     'Flutter':          ['flutter'],
     'Age':              ['hiss'],
-    'Pan':              ['headPan0', 'headPan1', 'headPan2', 'headPan3'],
-    'Duck':             ['duck'],
-    'Reverb Decay':     ['plateDecay'],
-    'Reverb Size':      ['plateSize'],
-    'Reverb Damp':      ['plateDamp'],
-    'Pre HP':           ['preHpFreq'],
-    'Pre LP':           ['preLpFreq'],
+    'Pre Low Cut':      ['preHpFreq'],
+    'Pre High Cut':     ['preLpFreq'],
+    'Low Cut':          ['hpFreq'],
+    'High Cut':         ['lpFreq'],
     'Bass':             ['bass'],
     'Treble':           ['treble'],
-    'Head1 Pan': ['headPan0'], 'Head2 Pan': ['headPan1'], 'Head3 Pan': ['headPan2'], 'Head4 Pan': ['headPan3'],
-    'Head1 Time': ['headRatio0'], 'Head2 Time': ['headRatio1'], 'Head3 Time': ['headRatio2'], 'Head4 Time': ['headRatio3'],
+    'Head 1 Level':     ['head1Level'],
+    'Head 2 Level':     ['head2Level'],
+    'Head 3 Level':     ['head3Level'],
+    'Head 4 Level':     ['head4Level'],
+    'Reverb Mix':       ['reverbMix'],
+    'Reverb Mod':       ['reverbMod'],
+    'Plate Decay':      ['plateDecay'],
+    'Plate Size':       ['plateSize'],
+    'Plate Damp':       ['plateDamp'],
+    'Plate Predelay':   ['platePredelay'],
+    'Spring Decay':     ['springDecay'],
+    'Spring Tone':      ['springTone'],
+    'IR Gain':          ['irGain'],
+    'Head 1 Pan':       ['head1Pan'],
+    'Head 2 Pan':       ['head2Pan'],
+    'Head 3 Pan':       ['head3Pan'],
+    'Head 4 Pan':       ['head4Pan'],
+    'Head 1 Time':      ['head1Ratio'],
+    'Head 2 Time':      ['head2Ratio'],
+    'Head 3 Time':      ['head3Ratio'],
+    'Head 4 Time':      ['head4Ratio'],
+    'In Filter Cutoff': ['inFilterCutoff'],
+    'In Filter Res':    ['inFilterRes'],
+    // Synthetic mod-only destinations (no dedicated knob — the modulation
+    // applies to a hidden EngineParams field). We still emit a row so
+    // panels.jsx can light any knob that visually tracks them.
+    'Pan':              ['headPan0', 'headPan1', 'headPan2', 'headPan3'],
+    'Out Level':        ['outputGain'],
+    'Phaser Rate':      ['phaserRate'],
+    'Phaser Depth':     ['phaserDepth'],
+    'Phaser Mix':       ['phaserMix'],
   };
 
   function useJuceModMap(numSlots) {

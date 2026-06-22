@@ -12,6 +12,7 @@
 
 #include "ShimmerReverb.h"
 #include <algorithm>
+#include <cmath>
 
 namespace doobie
 {
@@ -36,6 +37,17 @@ void ShimmerReverb::setParams (float decay, float size, float damp, float predel
     // The core runs fairly lush; modulation is fixed-moderate for movement.
     core.setParams (decay, size, damp, predelayMs, 0.4f);
     shimmerAmt = 0.2f + 0.6f * std::clamp (shimmer, 0.0f, 1.0f); // 0.2..0.8, always < 1
+}
+
+void ShimmerReverb::setIntervalSemitones (float semitones) noexcept
+{
+    // Clamp to a musically useful range; ±24 covers two octaves either way,
+    // which is plenty for shimmer textures without exposing the FFT shifter
+    // to extreme ratios that smear in audible artefacts.
+    const float clamped = std::clamp (semitones, -24.0f, 24.0f);
+    const float ratio   = std::pow (2.0f, clamped / 12.0f);
+    shiftL.setRatio (ratio);
+    shiftR.setRatio (ratio);
 }
 
 void ShimmerReverb::process (float inL, float inR, float& outL, float& outR) noexcept

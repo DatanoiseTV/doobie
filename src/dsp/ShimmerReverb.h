@@ -31,6 +31,12 @@ public:
     // decay/size/damp in 0..1, predelay in ms, shimmer 0..1 (regeneration).
     void setParams (float decay, float size, float damp, float predelayMs, float shimmer) noexcept;
 
+    // Pitch interval applied to the regeneration tail, in semitones. Default
+    // is +12 (octave up — classic shimmer). The full range is wider so the
+    // mode covers darker -12 (octave down), fifths, fourths, and so on. The
+    // value translates to a 2^(n/12) ratio fed to the FFT pitch shifter.
+    void setIntervalSemitones (float semitones) noexcept;
+
     void process (float inL, float inR, float& outL, float& outR) noexcept;
 
 private:
