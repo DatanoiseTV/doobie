@@ -432,12 +432,20 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
         }
 
         // Pre-route pitch shift: when delayMode == Pitch and pitchRoute == Pre,
-        // the shifter sits on the INPUT, before the delay writer. The delay
-        // then repeats the pre-pitched signal cleanly (no compounding into
-        // climbing octaves). The character chain inside the feedback loop
-        // becomes pass-through for Pitch mode in this case (see `case 4`
-        // above). Algo selected by pitchAlgo as elsewhere.
-        if (params.delayMode == 4 && params.pitchOn && params.pitchRoute == 1)
+        // Pitch shifter on the INPUT signal. Engages in two cases:
+        //   1. pitchOn + route == Pre (regardless of delayMode) — the
+        //      stand-alone pitch effect, works even with delay bypassed.
+        //   2. pitchOn + delayMode != Pitch (any route) — when the delay
+        //      character isn't Pitch the in-feedback path is silent for
+        //      the shifter, so we fall back to input processing so the
+        //      Pitch Shifter card always does something audible while
+        //      pitchOn is true.
+        // route=Feedback combined with delayMode=Pitch keeps its in-loop
+        // behaviour (case 4 below), so the shifter stays inside the
+        // feedback path for climbing-octave effects.
+        const bool pitchOnInput = params.pitchOn
+                                  && (params.pitchRoute == 1 || params.delayMode != 4);
+        if (pitchOnInput)
         {
             if (params.pitchAlgo == 1)
             {
@@ -462,7 +470,13 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
         // repeat. Without this, each repeat compounds the latency and the
         // wet drifts late vs the dry by hundreds of ms after a few echoes.
         float pitchComp = 0.0f;
-        if (params.delayMode == 4 && params.pitchOn)
+        // Compensate whenever the shifter is engaged anywhere in the
+        // chain — either inside the character loop (delayMode == Pitch
+        // + route Feedback) or on the input via the stand-alone path.
+        const bool pitchAnyPath = params.pitchOn
+                                  && (params.delayMode == 4 || params.pitchRoute == 1
+                                      || params.delayMode != 4);
+        if (pitchAnyPath)
             pitchComp = (float) (params.pitchAlgo == 1 ? granPitchL.getLatencySamples()
                                                        : pitchL.getLatencySamples());
 

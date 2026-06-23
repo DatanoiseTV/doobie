@@ -259,78 +259,85 @@ function PitchShifterPanel({ p, setP, midiNote }) {
               : '';
     return sign + abs + ' st' + (tag ? ' · ' + tag : '');
   };
+  // The pitch shifter is independent of the delay character: it runs on
+  // the INPUT signal whenever pitchOn is true, regardless of delayMode.
+  // When delayMode == Pitch AND route == Feedback, it's *additionally*
+  // injected into the delay's feedback character chain for the classic
+  // climbing-octave behaviour. The meta reflects that.
   const isPitchChar = p.character === 'Pitch';
+  const injectedIntoLoop = isPitchChar && p.pitchRoute === 'Feedback';
+  const meta = ! p.pitchOn ? 'bypassed'
+             : injectedIntoLoop ? 'in delay feedback'
+             : 'standalone · pre';
   return (
     <div className="panel compact">
-      <PHead title="Pitch Shifter" icon={Ico.fb}
-             meta={! isPitchChar ? 'inactive · delay char ≠ Pitch'
-                   : (p.pitchOn ? (p.pitchRoute === 'Pre' ? 'pre' : 'in feedback')
-                                : 'bypassed')}
-             action={
-               isPitchChar
-                 ? <PowerBtn on={p.pitchOn} onClick={() => setP('pitchOn', !p.pitchOn)} title="Bypass the pitch shifter" />
-                 : <button className="midi-btn on" onClick={() => setP('character', 'Pitch')}
-                           title="Set the delay character to Pitch so this shifter engages">
-                     ACTIVATE
-                   </button>
-             } />
-      <div style={isPitchChar ? null : { opacity: 0.5, pointerEvents: 'none' }}>
-        <div className="shimmer-int" style={{ marginBottom: 4 }}>
-          <div className="shimmer-int-hd">
-            <span className="cluster-label">Interval</span>
-            <span className="shimmer-int-val">
-              {pSemiName (pSemis)}
-              {p.midiPitchMode && <> · MIDI <span className="midi-note">{midiNoteName (midiNote)}</span></>}
-            </span>
-            <span style={{ flex: 1 }} />
-            {p.midiPitchMode && (
-              <button className={'midi-btn' + (p.midiPortaOn ? ' on' : '')}
-                      onClick={() => setP ('midiPortaOn', !p.midiPortaOn)}
-                      title="Glide between notes over the porta time (pitch bend always rides on top, ±2 st)">
-                PORTA
-              </button>
-            )}
-            <button className={'midi-btn' + (p.midiPitchMode ? ' on' : '')}
-                    onClick={() => setP ('midiPitchMode', !p.midiPitchMode)}
-                    title="Drive the interval from incoming MIDI notes (C3 = unison, pitch bend = ±2 st)">
-              MIDI
+      <PHead title="Pitch Shifter" icon={Ico.fb} meta={meta}
+             action={<PowerBtn on={p.pitchOn} onClick={() => setP('pitchOn', !p.pitchOn)} title="Bypass the pitch shifter" />} />
+      <div style={p.pitchOn ? null : { opacity: 0.5, pointerEvents: 'none' }}>
+        {/* Row 1: live interval read-out + MIDI/PORTA buttons */}
+        <div className="shimmer-int-hd" style={{ marginBottom: 6 }}>
+          <span className="cluster-label">Interval</span>
+          <span className="shimmer-int-val">
+            {pSemiName (pSemis)}
+            {p.midiPitchMode && <> · MIDI <span className="midi-note">{midiNoteName (midiNote)}</span></>}
+          </span>
+          <span style={{ flex: 1 }} />
+          {p.midiPitchMode && (
+            <button className={'midi-btn' + (p.midiPortaOn ? ' on' : '')}
+                    onClick={() => setP ('midiPortaOn', !p.midiPortaOn)}
+                    title="Glide between notes over the porta time (pitch bend always rides on top, ±2 st)">
+              PORTA
             </button>
+          )}
+          <button className={'midi-btn' + (p.midiPitchMode ? ' on' : '')}
+                  onClick={() => setP ('midiPitchMode', !p.midiPitchMode)}
+                  title="Drive the interval from incoming MIDI notes (C3 = unison, pitch bend = ±2 st)">
+            MIDI
+          </button>
+        </div>
+        {/* Row 2: chip row, full width */}
+        <div className="shimmer-int-chips"
+             style={{ marginBottom: 6, ...(p.midiPitchMode ? { opacity: 0.45, pointerEvents: 'none' } : {}) }}>
+          {pSemiChips.map (s =>
+            <button key={s} data-on={pSemis === s ? '1' : '0'} onClick={() => setPSemis (s)}>
+              {s > 0 ? '+' + s : s}
+            </button>
+          )}
+        </div>
+        {/* Row 3: Algo + Route side by side */}
+        <div className="row" style={{ gap: 10, marginBottom: 6, flexWrap: 'nowrap' }}>
+          <div className="route-row" style={{ flex: 1, gap: 6 }}>
+            <span className="route-lab">Algo</span>
+            <div className="seg" style={{ flex: 1 }}>
+              <button data-on={p.pitchAlgo === 'FFT' ? '1' : '0'}      onClick={() => setP('pitchAlgo', 'FFT')}>FFT</button>
+              <button data-on={p.pitchAlgo === 'Granular' ? '1' : '0'} onClick={() => setP('pitchAlgo', 'Granular')}>GRAN</button>
+            </div>
+          </div>
+          <div className="route-row" style={{ flex: 1.2, gap: 6 }}>
+            <span className="route-lab">Route</span>
+            <div className="seg" style={{ flex: 1 }}>
+              <button data-on={p.pitchRoute === 'Pre' ? '1' : '0'}      onClick={() => setP('pitchRoute', 'Pre')}>Pre</button>
+              <button data-on={p.pitchRoute === 'Feedback' ? '1' : '0'} onClick={() => setP('pitchRoute', 'Feedback')}>In FB</button>
+            </div>
+          </div>
+        </div>
+        {/* Row 4: Spread + (optional) Glide on the same row when porta is
+            on; otherwise Spread occupies the row alone. */}
+        <div className="row" style={{ gap: 10, flexWrap: 'nowrap' }}>
+          <div className="porta-row" style={{ flex: 1, margin: 0 }}>
+            <span className="porta-lab">Spread</span>
+            <input type="range" min="0" max="1" step="0.001" value={p.pitchSpread}
+                   onChange={(e) => setP ('pitchSpread', parseFloat (e.target.value))} />
+            <span className="porta-val">{Math.round (p.pitchSpread * 100)} c</span>
           </div>
           {p.midiPitchMode && p.midiPortaOn && (
-            <div className="porta-row">
+            <div className="porta-row" style={{ flex: 1, margin: 0 }}>
               <span className="porta-lab">Glide</span>
               <input type="range" min="0" max="1" step="0.001" value={p.midiPortaMs}
                      onChange={(e) => setP ('midiPortaMs', parseFloat (e.target.value))} />
               <span className="porta-val">{Math.round (p.midiPortaMs * 2000)} ms</span>
             </div>
           )}
-          <div className="porta-row">
-            <span className="porta-lab">Spread</span>
-            <input type="range" min="0" max="1" step="0.001" value={p.pitchSpread}
-                   onChange={(e) => setP ('pitchSpread', parseFloat (e.target.value))} />
-            <span className="porta-val">{Math.round (p.pitchSpread * 100)} c</span>
-          </div>
-          <div className="route-row" style={{ marginTop: 4 }}>
-            <span className="route-lab">Algo</span>
-            <div className="seg">
-              <button data-on={p.pitchAlgo === 'FFT' ? '1' : '0'}      onClick={() => setP('pitchAlgo', 'FFT')}>FFT</button>
-              <button data-on={p.pitchAlgo === 'Granular' ? '1' : '0'} onClick={() => setP('pitchAlgo', 'Granular')}>Granular</button>
-            </div>
-          </div>
-          <div className="route-row" style={{ marginTop: 4 }}>
-            <span className="route-lab">Route</span>
-            <div className="seg">
-              <button data-on={p.pitchRoute === 'Pre' ? '1' : '0'}      onClick={() => setP('pitchRoute', 'Pre')}>Pre</button>
-              <button data-on={p.pitchRoute === 'Feedback' ? '1' : '0'} onClick={() => setP('pitchRoute', 'Feedback')}>In Feedback</button>
-            </div>
-          </div>
-          <div className="shimmer-int-chips" style={p.midiPitchMode ? { opacity: 0.45, pointerEvents: 'none' } : null}>
-            {pSemiChips.map (s =>
-              <button key={s} data-on={pSemis === s ? '1' : '0'} onClick={() => setPSemis (s)}>
-                {s > 0 ? '+' + s : s}
-              </button>
-            )}
-          </div>
         </div>
       </div>
     </div>
@@ -340,8 +347,11 @@ function PitchShifterPanel({ p, setP, midiNote }) {
 /* ============================== DELAY (hero) ============================== */
 function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', mods, fbCol, midiNote, levels }) {
   const tcChip = (key, label) => <Chip on={p[key]} onClick={() => setP(key, !p[key])}>{label}</Chip>;
+  // Drop flex:1 so the Pitch Shifter card below us can share the column
+  // height. DelayPanel takes its natural size from the tape + knobs +
+  // tape-character rows; PitchShifterPanel fills the remainder.
   return (
-    <div className="panel" style={{ flex: 1 }}>
+    <div className="panel">
       <PHead title="Delay" icon={Ico.delay}
              meta={p.bypass ? 'bypassed' : p.sync ? 'sync · ' + p.division : 'free'}
              action={<PowerBtn on={p.bypass} onClick={() => setP('bypass', !p.bypass)} title="Bypass delay" />} />
@@ -402,7 +412,7 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
               modValue={mods && mods.live ? mods.live.feedback || 0 : 0}
               onChange={(v) => setP('feedback', v)} />
       </div>
-      <div style={{ marginTop: 'auto', paddingTop: 14, borderTop: '1px solid var(--c-line-2)' }}>
+      <div style={{ marginTop: 'auto', paddingTop: 12 }}>
         <div className="cluster-label" style={{ marginBottom: 10 }}>Tape Character</div>
         <div className="eqrow">
           <KB label="Wow"        k="wow"     p={p} setP={setP} format={fmt.pct} mods={mods} />
