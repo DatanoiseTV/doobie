@@ -208,6 +208,15 @@ private:
     FftPitchShifter pitchL, pitchR;     // Pitch mode (FFT algo)
     GranularPitchShifter granPitchL, granPitchR;  // Pitch mode (Granular algo)
 
+    // Dry-delay ring buffers — aligned to the shifter's algorithm latency
+    // when pitchOn so the dry and wet stay phase-coherent at the mix
+    // point. Plenty of headroom for the FFT shifter (768 samples = ~17 ms
+    // at 44.1 kHz); rounded up so high sample rates fit too.
+    static constexpr int kDryDelayMax = 4096;
+    std::array<float, kDryDelayMax> dryDelayBufL { };
+    std::array<float, kDryDelayMax> dryDelayBufR { };
+    int dryDelayWrite = 0;
+
     // Tape head-bump (low-mid lift) + HF loss, and the BBD resonant dark filter.
     float tapeWarmL = 0.0f, tapeWarmR = 0.0f;
     float tapeDarkL = 0.0f, tapeDarkR = 0.0f;

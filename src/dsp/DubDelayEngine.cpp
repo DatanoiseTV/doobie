@@ -676,6 +676,23 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
         wetR = dcOutR.process (wetR);
 
         // Dry/wet crossfade and output trim.
+        // Dry-delay: align the dry signal with the shifter's algorithm
+        // latency so dry and wet stay phase-coherent at the mix. Writes
+        // the current dry sample, reads from `pitchAnyPath ? lat : 0`
+        // samples ago. When the shifter isn't engaged, lat=0 → dryDelayed
+        // == dryL, so no extra latency added to the dry path.
+        const int dryLat = pitchAnyPath
+            ? juce::jmin (kDryDelayMax - 1,
+                          (int) (params.pitchAlgo == 1 ? granPitchL.getLatencySamples()
+                                                       : pitchL.getLatencySamples()))
+            : 0;
+        dryDelayBufL[(size_t) dryDelayWrite] = dryL;
+        dryDelayBufR[(size_t) dryDelayWrite] = dryR;
+        const int dryReadIdx = (dryDelayWrite - dryLat + kDryDelayMax) % kDryDelayMax;
+        const float dryDelayedL = dryDelayBufL[(size_t) dryReadIdx];
+        const float dryDelayedR = dryDelayBufR[(size_t) dryReadIdx];
+        dryDelayWrite = (dryDelayWrite + 1) % kDryDelayMax;
+
         // Preset-swap fade-in (ported from hardware): fadeForReload() resets
         // reloadGain to 0 and we ramp back to unity over ~12 ms here, masking
         // the param-swap discontinuity ("DC pulse" click / loud pop on
@@ -683,8 +700,10 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
         reloadGain += (1.0f - reloadGain) * reloadCoeff;
         const float rg = reloadGain;
 
-        float outL = (dryL * (1.0f - mix) + wetL * mix) * og * rg;
-        float outR = (dryR * (1.0f - mix) + wetR * mix) * og * rg;
+        // Use the latency-compensated dry samples so wet and dry stay
+        // phase-coherent when the pitch shifter is engaged.
+        float outL = (dryDelayedL * (1.0f - mix) + wetL * mix) * og * rg;
+        float outR = (dryDelayedR * (1.0f - mix) + wetR * mix) * og * rg;
 
         // Final safety net (ported from hardware): if anything in the chain
         // (a denorm not flushed, a BBD-style runaway not caught, a freezing
