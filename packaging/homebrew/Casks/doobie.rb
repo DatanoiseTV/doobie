@@ -21,10 +21,9 @@
 
 cask "doobie" do
   version "0.20.1"
-  # Replace with the actual SHA-256 of the zip from the GitHub release.
-  # `shasum -a 256 Doobie-<ver>-macOS-unsigned.zip` or pull it from the
-  # `gh release view` checksum output.
-  sha256 :no_check
+  # SHA-256 of the zip on the GitHub release. Recompute on every version
+  # bump: `shasum -a 256 Doobie-<ver>-macOS-unsigned.zip`.
+  sha256 "0acc998733f5bbb49ad278ef6c29f80e66837904f7ad16058e137a6c1461169f"
 
   url "https://github.com/DatanoiseTV/doobie/releases/download/v#{version}/Doobie-#{version}-macOS-unsigned.zip"
   name "Doobie"
