@@ -37,6 +37,22 @@ const fmt = {
   msSkew: (min, max) => (v) => { const t = min * Math.pow(max / min, v); return t < 10 ? t.toFixed(1) + ' ms' : Math.round(t) + ' ms'; },
 };
 
+// Hz -> nearest equal-temperament note name (A4 = 440 Hz). Used by the
+// feedback-loop filter readouts so the user can tune resonant repeats
+// to the song key. We label the closest note + signed cent offset
+// (rounded — "C3 +12¢"), so the user knows how far the cutoff is from
+// the nearest pitch class.
+const noteHzFmt = (min, max) => (v) => {
+  const hz = min * Math.pow(max / min, v);
+  if (!isFinite(hz) || hz < 16) return '--';
+  const m = 12 * Math.log2(hz / 440) + 69;
+  const idx = Math.round(m);
+  const cents = Math.round((m - idx) * 100);
+  const NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const note = NAMES[((idx % 12) + 12) % 12] + (Math.floor(idx / 12) - 1);
+  return note + (cents === 0 ? '' : (cents > 0 ? ' +' : ' ') + cents + '¢');
+};
+
 const Ico = {
   in:    <svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.2" fill="none" stroke="currentColor" strokeWidth="1.4" /><circle cx="5.5" cy="5.5" r="1.4" fill="currentColor" /></svg>,
   heads: <svg width="11" height="11" viewBox="0 0 11 11"><rect x="0.6" y="1.4" width="2" height="8.2" rx="1" fill="currentColor" /><rect x="4.5" y="1.4" width="2" height="8.2" rx="1" fill="currentColor" /><rect x="8.4" y="1.4" width="2" height="8.2" rx="1" fill="currentColor" /></svg>,
@@ -447,14 +463,33 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
 
 /* ============================== FEEDBACK ============================== */
 function FeedbackPanel({ p, setP, mods }) {
+  // Live key readout for the in-loop HP / LP cuts — same min/max as
+  // the Hz formatters above so the displayed note tracks what the
+  // knob shows. Lets the user tune resonant feedback peaks to the
+  // song key (Elektron-style hint).
+  const hpNote = noteHzFmt(20, 800);
+  const lpNote = noteHzFmt(1000, 20000);
   return (
     <div className="panel compact">
       <PHead title="Feedback Loop" icon={Ico.fb} meta="in-loop tone" />
       <div className="eqrow">
-        <KB label="Low Cut"  k="fbLowCut"  p={p} setP={setP} format={fmt.hz(20, 800)}     mods={mods} />
-        <KB label="High Cut" k="fbHighCut" p={p} setP={setP} format={fmt.hz(1000, 20000)} mods={mods} />
+        <div className="kb-with-sub">
+          <KB label="Low Cut"  k="fbLowCut"  p={p} setP={setP} format={fmt.hz(20, 800)}     mods={mods} />
+          <div className="kb-sub">{hpNote(p.fbLowCut || 0)}</div>
+        </div>
+        <div className="kb-with-sub">
+          <KB label="High Cut" k="fbHighCut" p={p} setP={setP} format={fmt.hz(1000, 20000)} mods={mods} />
+          <div className="kb-sub">{lpNote(p.fbHighCut || 0)}</div>
+        </div>
         <KB label="Bass"     k="fbBass"    p={p} setP={setP} bipolar format={fmt.db}      mods={mods} />
         <KB label="Treble"   k="fbTreble"  p={p} setP={setP} bipolar format={fmt.db}      mods={mods} />
+      </div>
+      {/* Resonance row — same scale as the Input filter's Res so muscle
+          memory carries over. Drives the new Svf-based ToneStack HP/LP. */}
+      <div className="eqrow" style={{ marginTop: 4 }}>
+        <KB label="LC Res"  k="hpRes" p={p} setP={setP} format={fmt.pct} size="sm" />
+        <KB label="HC Res"  k="lpRes" p={p} setP={setP} format={fmt.pct} size="sm" />
+        <div /> <div />
       </div>
     </div>
   );
@@ -535,6 +570,16 @@ function ReverbPanel({ p, setP, mods, irInfo, midiNote }) {
       <div className="route-row">
         <span className="route-lab">Route</span>
         <div className="seg">{routeBtn('pre', 'Pre')}{routeBtn('fb', 'In Feedback')}{routeBtn('post', 'Post')}</div>
+      </div>
+      {/* Post-reverb HP/LP — applies inside applyReverb() so all three
+          routes (post / pre / in-feedback) get the same shaping. Defaults
+          park at the extremes (Low Cut 20 Hz, High Cut 20 kHz) so they
+          stay out of the way until the user reaches for them. */}
+      <div className="eqrow" style={{ marginBottom: 8, gridTemplateColumns: 'repeat(2, 1fr)' }}>
+        <KB label="Verb Low Cut"  k="revHpFreq" p={p} setP={setP}
+            format={fmt.hz(20, 2000)} size="sm" />
+        <KB label="Verb High Cut" k="revLpFreq" p={p} setP={setP}
+            format={fmt.hz(200, 20000)} size="sm" />
       </div>
       {isConv && <IRPicker irInfo={irInfo} />}
       {/* Convolution doesn't use the spring/plate engine — the IR is the
@@ -636,6 +681,13 @@ function OutputBar({ p, setP, levels, mods }) {
           <KB label="Dry / Wet" k="mix"    p={p} setP={setP} format={fmt.pct}  size="md" lit mods={mods} />
           <WidthDial value={p.width} onChange={(v) => setP('width', v)} label="Width" format={fmt.pct} />
           <KB label="Duck"     k="duck"   p={p} setP={setP} format={fmt.pct}   size="md"     mods={mods} />
+          {/* Three-band ducker crossovers. Tucked next to Duck so the
+              relationship is obvious; small size so they don't dominate
+              the bar. The low crossover sets the L/M split, the high one
+              sets the M/H split. Each band has its own follower; the wet
+              only ducks in the band(s) the dry is hot in. */}
+          <KB label="Duck Low"  k="duckCrossLow"  p={p} setP={setP} format={fmt.hz(60, 1000)}  size="sm" />
+          <KB label="Duck High" k="duckCrossHigh" p={p} setP={setP} format={fmt.hz(500, 8000)} size="sm" />
           <KB label="Output"   k="output" p={p} setP={setP} format={fmt.trim}  size="md" lit />
           {/* Auto-gain pill — slow program leveler + fast ceiling catch on
               the output. Tames feedback near self-oscillation without

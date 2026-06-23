@@ -61,6 +61,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     layout.add (std::make_unique<BoolParam> (pid (dID::freeze), "Freeze", false));
     layout.add (std::make_unique<BoolParam> (pid (dID::delayBypass), "Delay Bypass", false));
     layout.add (std::make_unique<FloatParam> (pid (dID::duck), "Duck", Range (0.0f, 1.0f, 0.001f), 0.0f));
+    layout.add (std::make_unique<FloatParam> (pid (dID::duckCrossLow),  "Duck Low Cross",
+                                              juce::NormalisableRange<float> (60.0f, 1000.0f, 0.0f, 0.35f), 250.0f));
+    layout.add (std::make_unique<FloatParam> (pid (dID::duckCrossHigh), "Duck High Cross",
+                                              juce::NormalisableRange<float> (500.0f, 8000.0f, 0.0f, 0.35f), 2500.0f));
 
     // ---- Multi-head ---------------------------------------------------------
     // The head matrix: head 1 on by default (a single tap at the repeat time),
@@ -96,6 +100,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     layout.add (std::make_unique<FloatParam> (pid (dID::treble), "Treble", Range (-1.0f, 1.0f, 0.001f), 0.0f));
     layout.add (std::make_unique<FloatParam> (pid (dID::hpFreq), "Low Cut",  Range (20.0f, 1000.0f, 0.1f, 0.4f), 120.0f));
     layout.add (std::make_unique<FloatParam> (pid (dID::lpFreq), "High Cut", Range (1000.0f, 18000.0f, 1.0f, 0.4f), 6500.0f));
+    layout.add (std::make_unique<FloatParam> (pid (dID::hpRes),  "Low Cut Res",  Range (0.0f, 0.95f, 0.001f), 0.0f));
+    layout.add (std::make_unique<FloatParam> (pid (dID::lpRes),  "High Cut Res", Range (0.0f, 0.95f, 0.001f), 0.0f));
 
     // ---- Reverb -------------------------------------------------------------
     layout.add (std::make_unique<ChoiceParam> (pid (dID::reverbMode),  "Reverb", dID::reverbModeChoices, 1));
@@ -233,6 +239,15 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
         layout.add (std::make_unique<FloatParam> (pid (dID::irGain),  "IR Gain",  Range (-24.0f, 24.0f, 0.1f), 6.0f));
         layout.add (std::make_unique<FloatParam> (pid (dID::irSpeed), "IR Speed", irSpeedRange, 1.0f));
     }
+
+    // ---- Reverb post-filter -------------------------------------------------
+    // HP + LP on the reverb wet (sits inside applyReverb so every route gets
+    // the same shaping). Skew the cutoff like the input filter so the lower
+    // / upper extremes are easy to reach.
+    layout.add (std::make_unique<FloatParam> (pid (dID::revHpFreq), "Verb Low Cut",
+                                              juce::NormalisableRange<float> (20.0f, 2000.0f, 0.0f, 0.3f), 20.0f));
+    layout.add (std::make_unique<FloatParam> (pid (dID::revLpFreq), "Verb High Cut",
+                                              juce::NormalisableRange<float> (200.0f, 20000.0f, 0.0f, 0.3f), 20000.0f));
 
     return layout;
 }
@@ -379,7 +394,9 @@ doobie::EngineParams DoobieAudioProcessor::buildEngineParams()
     p.pingPong    = raw (dID::pingPong) > 0.5f;
     p.freeze      = raw (dID::freeze) > 0.5f;
     p.delayBypass = raw (dID::delayBypass) > 0.5f;
-    p.duck        = raw (dID::duck);
+    p.duck          = raw (dID::duck);
+    p.duckCrossLow  = raw (dID::duckCrossLow);
+    p.duckCrossHigh = raw (dID::duckCrossHigh);
 
     // Resolve the master delay length first (heads reference it). Sync uses a
     // musical division against host tempo; free uses milliseconds.
@@ -430,8 +447,12 @@ doobie::EngineParams DoobieAudioProcessor::buildEngineParams()
     p.treble = raw (dID::treble);
     p.hpFreq = raw (dID::hpFreq);
     p.lpFreq = raw (dID::lpFreq);
+    p.hpRes  = raw (dID::hpRes);
+    p.lpRes  = raw (dID::lpRes);
 
     p.irGain      = juce::Decibels::decibelsToGain (raw (dID::irGain));
+    p.revHpFreq   = raw (dID::revHpFreq);
+    p.revLpFreq   = raw (dID::revLpFreq);
     p.reverbMode  = (int) raw (dID::reverbMode);
     p.reverbRoute = (int) raw (dID::reverbRoute);
     p.reverbMix   = raw (dID::reverbMix);

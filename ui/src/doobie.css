@@ -194,6 +194,14 @@ body{ font-family:var(--font); color:var(--c-txt); -webkit-font-smoothing:antial
   color:var(--c-txt-3); text-align:center; line-height:1.1;
 }
 .knob.lit .klabel{ color:var(--c-txt-2); }
+/* Knob with a small secondary readout below the label — used by the
+   feedback HP/LP for the live key/note readout. The wrapper keeps the
+   knob and its annotation grouped so the eqrow grid still aligns. */
+.kb-with-sub{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+.kb-sub{
+  font-family:var(--mono); font-size:9px; letter-spacing:0.05em;
+  color:var(--c-txt-3); margin-top:-2px; min-height:11px;
+}
 .knob .kval{
   position:absolute; left:50%; top:-22px; transform:translateX(-50%);
   font-family:var(--mono); font-size:10px; color:var(--accent);

@@ -140,6 +140,12 @@ const PARAM_MAP = {
   envFiltType:{ kind: 'choice', id: 'envFilterType', opts: ['LP','HP','BP'] },
   envFiltCut: { kind: 'slider', id: 'envFilterCutoff' },
   envFiltRes: { kind: 'slider', id: 'envFilterRes'    },
+  hpRes:      { kind: 'slider', id: 'hpRes'        },
+  lpRes:      { kind: 'slider', id: 'lpRes'        },
+  revHpFreq:  { kind: 'slider', id: 'revHpFreq'    },
+  revLpFreq:  { kind: 'slider', id: 'revLpFreq'    },
+  duckCrossLow:  { kind: 'slider', id: 'duckCrossLow'  },
+  duckCrossHigh: { kind: 'slider', id: 'duckCrossHigh' },
 };
 
 function bindParams(force) {
