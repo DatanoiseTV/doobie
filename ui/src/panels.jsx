@@ -776,6 +776,30 @@ function ModDrawer({ open, onClose, p, setP, matrix, setMx, numSlots, levels }) 
                   <KB label="Release" k="envRel"  p={p} setP={setP} format={fmt.msSkew(1, 2000)} size="md" lit />
                   <KB label="Sens"    k="envSens" p={p} setP={setP} format={fmt.pct}             size="md" lit />
                 </div>
+                {/* Sidechain filter: lets the follower respond to a frequency
+                    band (e.g. LP for kick, HP for hats) instead of the full
+                    mix. OFF = follower sees the raw input. */}
+                <div className="row" style={{ gap: 10, alignItems: 'center', marginTop: 10, flexWrap: 'wrap' }}>
+                  <button
+                    className="midi-btn"
+                    data-on={p.envFiltOn ? '1' : '0'}
+                    onClick={() => setP('envFiltOn', !p.envFiltOn)}
+                    title="Sidechain filter on the env follower input"
+                  >FILT</button>
+                  <div className="seg" style={{ opacity: p.envFiltOn ? 1 : 0.45 }}>
+                    {['LP','HP','BP'].map(t =>
+                      <button key={t}
+                        data-on={p.envFiltType === t ? '1' : '0'}
+                        onClick={() => setP('envFiltType', t)}>{t}</button>)}
+                  </div>
+                  <div style={{ flex: 1 }} />
+                  <div style={{ opacity: p.envFiltOn ? 1 : 0.45 }}>
+                    <KB label="Cutoff" k="envFiltCut" p={p} setP={setP} format={fmt.hz(20, 18000)} size="md" lit />
+                  </div>
+                  <div style={{ opacity: p.envFiltOn ? 1 : 0.45 }}>
+                    <KB label="Res"    k="envFiltRes" p={p} setP={setP} format={fmt.pct} size="md" lit />
+                  </div>
+                </div>
               </div>
             </div>
             :

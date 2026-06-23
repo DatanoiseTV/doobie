@@ -205,6 +205,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
         layout.add (std::make_unique<FloatParam>  (pid (dID::envAttack), "Env Attack",   envAtkRange, 10.0f));
         layout.add (std::make_unique<FloatParam>  (pid (dID::envRelease),"Env Release",  envRelRange, 200.0f));
         layout.add (std::make_unique<FloatParam>  (pid (dID::envSens),   "Env Sensitivity", Range (-24.0f, 24.0f, 0.1f), 0.0f));
+        layout.add (std::make_unique<BoolParam>   (pid (dID::envFilterOn),   "Env Filter On", false));
+        layout.add (std::make_unique<ChoiceParam> (pid (dID::envFilterType), "Env Filter Type", dID::inFilterTypeChoices, 0));
+        layout.add (std::make_unique<FloatParam>  (pid (dID::envFilterCutoff), "Env Filter Cutoff",
+                                                   juce::NormalisableRange<float> (20.0f, 18000.0f, 0.0f, 0.3f), 1200.0f));
+        layout.add (std::make_unique<FloatParam>  (pid (dID::envFilterRes),  "Env Filter Res",  Range (0.0f, 0.95f, 0.001f), 0.15f));
 
         const juce::StringArray sourceChoices = doobie::modSourceNames();
         const juce::StringArray destChoices   = doobie::modDestNames();
@@ -555,6 +560,10 @@ void DoobieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
     envFollower.setAttack (raw (dID::envAttack));
     envFollower.setRelease (raw (dID::envRelease));
     envFollower.setSensitivity (raw (dID::envSens));
+    envFollower.setFilterEnabled (raw (dID::envFilterOn) > 0.5f);
+    envFollower.setFilterType ((doobie::EnvelopeFollower::FilterType) (int) raw (dID::envFilterType));
+    envFollower.setFilterFreq (raw (dID::envFilterCutoff));
+    envFollower.setFilterRes  (raw (dID::envFilterRes));
 
     const int numSamples = buffer.getNumSamples();
     if (numSamples > 0 && buffer.getNumChannels() > 0)

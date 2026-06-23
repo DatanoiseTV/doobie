@@ -227,6 +227,15 @@ namespace dID
     inline constexpr auto envRelease = "envRelease";  // ms
     inline constexpr auto envSens    = "envSens";     // dB
 
+    // Sidechain multimode filter on the envelope follower's input tap. Same
+    // TPT-SVF core as the input filter; OFF = follower sees raw input.
+    // Useful for triggering modulation only on a frequency band (bass duck on
+    // a LP, hi-hat tracker on a HP, vocal-band on a BP).
+    inline constexpr auto envFilterOn     = "envFilterOn";
+    inline constexpr auto envFilterType   = "envFilterType";   // 0=LP, 1=HP, 2=BP
+    inline constexpr auto envFilterCutoff = "envFilterCutoff"; // Hz
+    inline constexpr auto envFilterRes    = "envFilterRes";    // 0..1
+
     // Per-slot triples (source, destination, amount). The array size MUST
     // match kNumModSlots in dsp/ModMatrix.h. Appending here (mod5..8) keeps
     // existing saved slot indices for slots 1..4 stable.

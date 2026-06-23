@@ -123,6 +123,7 @@ namespace
         "lfo1Smooth", "lfo2Smooth", "lfo3Smooth", "lfo4Smooth",
         "lfo1Offset", "lfo2Offset", "lfo3Offset", "lfo4Offset",
         "envAttack", "envRelease", "envSens",
+        "envFilterCutoff", "envFilterRes",
         "head1Level", "head2Level", "head3Level", "head4Level",
         "head1Pan",   "head2Pan",   "head3Pan",   "head4Pan",
         "head1Ratio", "head2Ratio", "head3Ratio", "head4Ratio",
@@ -134,7 +135,7 @@ namespace
     constexpr const char* kBoolIds[] = {
         "syncMode", "pingPong", "freeze", "delayBypass", "midiPitchMode", "midiPortaOn", "outLevelerOn", "pitchOn", "feedbackKill",
         "head1On", "head2On", "head3On", "head4On",
-        "inFilterOn", "phaserOn",
+        "inFilterOn", "phaserOn", "envFilterOn",
         "lfo1Sync", "lfo2Sync", "lfo3Sync", "lfo4Sync",
     };
     constexpr const char* kChoiceIds[] = {
@@ -144,7 +145,7 @@ namespace
         "mod1Src", "mod2Src", "mod3Src", "mod4Src", "mod5Src", "mod6Src", "mod7Src", "mod8Src",
         "mod1Dst", "mod2Dst", "mod3Dst", "mod4Dst", "mod5Dst", "mod6Dst", "mod7Dst", "mod8Dst",
         "mod1Mode","mod2Mode","mod3Mode","mod4Mode","mod5Mode","mod6Mode","mod7Mode","mod8Mode",
-        "inFilterType", "phaserRoute",
+        "inFilterType", "phaserRoute", "envFilterType",
         "pitchAlgo", "pitchRoute",
     };
 }

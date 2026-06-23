@@ -136,6 +136,10 @@ const PARAM_MAP = {
   envAtk:     { kind: 'slider', id: 'envAttack'  },
   envRel:     { kind: 'slider', id: 'envRelease' },
   envSens:    { kind: 'slider', id: 'envSens'    },
+  envFiltOn:  { kind: 'toggle', id: 'envFilterOn'   },
+  envFiltType:{ kind: 'choice', id: 'envFilterType', opts: ['LP','HP','BP'] },
+  envFiltCut: { kind: 'slider', id: 'envFilterCutoff' },
+  envFiltRes: { kind: 'slider', id: 'envFilterRes'    },
 };
 
 function bindParams(force) {
