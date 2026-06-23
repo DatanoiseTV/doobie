@@ -240,27 +240,32 @@ function bindMatrix(force) {
   const arr = [];
   for (let i = 0; i < NUM_MOD_SLOTS; ++i) {
     const n = i + 1;
-    const src = window.Juce.getComboBoxState(`mod${n}Src`);
-    const dst = window.Juce.getComboBoxState(`mod${n}Dst`);
-    const amt = window.Juce.getSliderState(`mod${n}Amt`);
+    const src  = window.Juce.getComboBoxState(`mod${n}Src`);
+    const dst  = window.Juce.getComboBoxState(`mod${n}Dst`);
+    const amt  = window.Juce.getSliderState(`mod${n}Amt`);
+    const mode = window.Juce.getComboBoxState(`mod${n}Mode`);
     src.valueChangedEvent.addListener(force);
     dst.valueChangedEvent.addListener(force);
     amt.valueChangedEvent.addListener(force);
-    arr.push({ src, dst, amt });
+    mode.valueChangedEvent.addListener(force);
+    arr.push({ src, dst, amt, mode });
   }
   return arr;
 }
+const MOD_MODES = ['Bipolar', 'Unipolar'];
 function makeMatrix(handles) {
   return handles.map(h => ({
-    src: JB.MOD_SOURCES[h.src.getChoiceIndex()] || 'Off',
-    dst: JB.MOD_DESTS[h.dst.getChoiceIndex()] || 'Off',
-    amt: h.amt.getNormalisedValue() * 2 - 1,
+    src:  JB.MOD_SOURCES[h.src.getChoiceIndex()]   || 'Off',
+    dst:  JB.MOD_DESTS [h.dst.getChoiceIndex()]    || 'Off',
+    amt:  h.amt.getNormalisedValue() * 2 - 1,
+    mode: MOD_MODES[h.mode.getChoiceIndex()]       || 'Bipolar',
   }));
 }
 function setMx(handles, i, key, v) {
-  if (key === 'src') handles[i].src.setChoiceIndex(Math.max(0, JB.MOD_SOURCES.indexOf(v)));
-  else if (key === 'dst') handles[i].dst.setChoiceIndex(Math.max(0, JB.MOD_DESTS.indexOf(v)));
-  else if (key === 'amt') handles[i].amt.setNormalisedValue((Math.max(-1, Math.min(1, v)) + 1) * 0.5);
+  if      (key === 'src')  handles[i].src.setChoiceIndex(Math.max(0, JB.MOD_SOURCES.indexOf(v)));
+  else if (key === 'dst')  handles[i].dst.setChoiceIndex(Math.max(0, JB.MOD_DESTS.indexOf(v)));
+  else if (key === 'amt')  handles[i].amt.setNormalisedValue((Math.max(-1, Math.min(1, v)) + 1) * 0.5);
+  else if (key === 'mode') handles[i].mode.setChoiceIndex(Math.max(0, MOD_MODES.indexOf(v)));
 }
 
 /* ---- App ---- */
@@ -288,7 +293,7 @@ function App() {
   // Native event subscriptions for live data
   const presetInfo = JB.useJuceEvent('presetInfo', { name: '—', cat: '', dirty: false });
   const irInfo     = JB.useJuceEvent('irInfo',     { hasIR: false, factoryIndex: -1, isFactory: false, isFile: false, name: '(no IR)' });
-  const levels = JB.useJuceEvent('levels', { in: -90, delay: -90, reverb: -90, out: -90, midiNote: -1, grDb: 0, env: 0, lfo1v: 0, lfo2v: 0, lfo3v: 0, lfo4v: 0, peak: { in: -90, delay: -90, reverb: -90, out: -90, l: -90, r: -90 } });
+  const levels = JB.useJuceEvent('levels', { in: -90, delay: -90, reverb: -90, out: -90, midiNote: -1, grDb: 0, env: 0, lfo1v: 0, lfo2v: 0, lfo3v: 0, lfo4v: 0, headMag: [0, 0, 0, 0], peak: { in: -90, delay: -90, reverb: -90, out: -90, l: -90, r: -90 } });
 
   // Layout state (local UI only, not in APVTS)
   const [modOpen,     setModOpen]     = useState(false);
@@ -352,7 +357,7 @@ function App() {
 
           <div className="col-left">
             <InputPanel p={p} setP={setP} mods={mods} />
-            <HeadsPanel heads={heads} setHead={sH} mods={mods} synced={p.sync} />
+            <HeadsPanel heads={heads} setHead={sH} mods={mods} synced={p.sync} headMag={levels.headMag} />
           </div>
 
           <div className="col-mid">

@@ -148,7 +148,7 @@ function InputPanel({ p, setP, mods }) {
 }
 
 /* ============================== HEADS ============================== */
-function HeadsPanel({ heads, setHead, mods, synced }) {
+function HeadsPanel({ heads, setHead, mods, synced, headMag }) {
   const GAP = 0.092;
   const clampTime = (i, v) => {
     let lo = 0, hi = 1;
@@ -193,7 +193,8 @@ function HeadsPanel({ heads, setHead, mods, synced }) {
             <button className="hbtn" onClick={() => toggle(i, h)} aria-label={'Head ' + h.id + (h.on ? ' on' : ' off')}>
               <span className="letter">{h.id}</span>
             </button>
-            <Fader value={h.level} onChange={(v) => setHead(i, 'level', v)} height={102} format={fmt.pct} lit={h.on} />
+            <Fader value={h.level} onChange={(v) => setHead(i, 'level', v)} height={102} format={fmt.pct} lit={h.on}
+                   meter={headMag && headMag[i] != null ? headMag[i] : 0} />
             <Knob size="sm" label="Pan"  bipolar value={h.pan}  format={fmt.pan}
                   mod={headPanMod(i)} modValue={headPanLive(i)}
                   onChange={(v) => setHead(i, 'pan', v)} />
@@ -759,8 +760,8 @@ function ModDrawer({ open, onClose, p, setP, matrix, setMx, numSlots, levels }) 
             </div>
             :
             <div className="modcard">
-              <div className="subhead" style={{ display: 'grid', gridTemplateColumns: '24px 1fr 56px 22px 1fr 1.2fr 64px', gap: 10 }}>
-                <span>#</span><span>Source</span><span>Scope</span><span /><span>Destination</span><span>Amount</span><span style={{ textAlign: 'right' }}>Value</span>
+              <div className="subhead" style={{ display: 'grid', gridTemplateColumns: '24px 1fr 56px 22px 1fr 56px 1.2fr 64px', gap: 10 }}>
+                <span>#</span><span>Source</span><span>Scope</span><span /><span>Destination</span><span>Mode</span><span>Amount</span><span style={{ textAlign: 'right' }}>Value</span>
               </div>
               {matrix.map((m, i) =>
                 <div className="mm-row mm-row-scoped" key={i}>
@@ -783,6 +784,15 @@ function ModDrawer({ open, onClose, p, setP, matrix, setMx, numSlots, levels }) 
                     <select value={m.dst} onChange={(e) => setMx(i, 'dst', e.target.value)}>
                       {JuceBridge.MOD_DESTS.map(o => <option key={o}>{o}</option>)}
                     </select>
+                  </div>
+                  {/* Per-slot polarity. Bi = bipolar (default — LFO swings
+                      ±). Uni = unipolar (folded to one-sided swell;
+                      amount sign picks direction). The env follower is
+                      already unipolar so Bi/Uni is a visual hint only
+                      for it. */}
+                  <div className="seg mm-mode-seg">
+                    <button data-on={m.mode === 'Bipolar'  ? '1' : '0'} onClick={() => setMx(i, 'mode', 'Bipolar')}>Bi</button>
+                    <button data-on={m.mode === 'Unipolar' ? '1' : '0'} onClick={() => setMx(i, 'mode', 'Unipolar')}>Uni</button>
                   </div>
                   {(() => {
                     // Live applied modulation on this slot = source × amount.

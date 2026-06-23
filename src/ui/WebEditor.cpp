@@ -143,6 +143,7 @@ namespace
         "lfo1Div",   "lfo2Div",  "lfo3Div",  "lfo4Div",
         "mod1Src", "mod2Src", "mod3Src", "mod4Src", "mod5Src", "mod6Src", "mod7Src", "mod8Src",
         "mod1Dst", "mod2Dst", "mod3Dst", "mod4Dst", "mod5Dst", "mod6Dst", "mod7Dst", "mod8Dst",
+        "mod1Mode","mod2Mode","mod3Mode","mod4Mode","mod5Mode","mod6Mode","mod7Mode","mod8Mode",
         "inFilterType", "phaserRoute",
         "pitchAlgo", "pitchRoute",
     };
@@ -445,6 +446,16 @@ void WebEditor::emitLevels()
     // Surfaced so the user can confirm MIDI is reaching the plugin while
     // wiring up a source in the host.
     root->setProperty ("midiNote", doobieProcessor.getLastMidiNote());
+    // Per-head live magnitudes (0..~1, post-level, before per-head pan).
+    // The Fader strip below each head reads these to draw a tiny VU on
+    // top of the fader track.
+    {
+        const auto& hm = doobieProcessor.getEngine().headMagnitudes();
+        juce::Array<juce::var> ha;
+        for (int i = 0; i < 4; ++i)
+            ha.add (juce::var (hm[(size_t) i].load (std::memory_order_relaxed)));
+        root->setProperty ("headMag", juce::var (ha));
+    }
     // Output leveler gain-reduction in dB (0 = no GR, negative = reducing).
     // Shown as a marker on the main L/R VU meters.
     root->setProperty ("grDb",     doobieProcessor.getOutputGrDb());

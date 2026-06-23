@@ -1169,6 +1169,11 @@ void PresetManager::saveUser (const juce::String& name)
         xml->writeTo (userPresetDirectory().getChildFile (name + ".xml"));
         currentName = name;
     }
+    // After saving, the current state IS the clean reference. Fire the
+    // post-load hook so the processor re-anchors its dirty snapshot —
+    // without this, the dirty asterisk stays on after a save because the
+    // saved values still differ from the OLD snapshot.
+    if (postLoadHook) postLoadHook();
 }
 
 bool PresetManager::deleteUser (const juce::String& name)

@@ -386,9 +386,11 @@ function IRPicker ({ irInfo }) {
   const isFile = !!(irInfo && irInfo.isFile);
   const name   = (irInfo && irInfo.name) || (has ? 'Impulse Response' : '(no IR)');
 
+  // Stays open after a pick so the user can audition multiple IRs in a
+  // row without reopening the modal. The selected row's highlight
+  // updates from the irInfo prop. Close / Esc dismiss when done.
   const pickFactory = (idx) => {
     window.Juce.backend.emitEvent('ir_load_factory', { index: idx });
-    setBrowserOpen(false);
   };
   const pickFile = () => window.Juce.backend.emitEvent('ir_load_file', {});
   const clear    = () => window.Juce.backend.emitEvent('ir_clear', {});

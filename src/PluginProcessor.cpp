@@ -206,6 +206,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
             layout.add (std::make_unique<ChoiceParam> (pid (dID::modSlotSrc[(size_t) i]), "Mod " + n + " Source",      sourceChoices, 0));
             layout.add (std::make_unique<ChoiceParam> (pid (dID::modSlotDst[(size_t) i]), "Mod " + n + " Destination", destChoices,   0));
             layout.add (std::make_unique<FloatParam>  (pid (dID::modSlotAmt[(size_t) i]), "Mod " + n + " Amount",      Range (-1.0f, 1.0f, 0.001f), 0.0f));
+            layout.add (std::make_unique<ChoiceParam> (pid (dID::modSlotMode[(size_t) i]),"Mod " + n + " Mode",        dID::modModeChoices, 0));
         }
     }
 
@@ -579,6 +580,7 @@ void DoobieAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce:
         modSlots[(size_t) i].source = (doobie::ModSource) (int) raw (dID::modSlotSrc[(size_t) i]);
         modSlots[(size_t) i].dest   = (doobie::ModDest)   (int) raw (dID::modSlotDst[(size_t) i]);
         modSlots[(size_t) i].amount = raw (dID::modSlotAmt[(size_t) i]);
+        modSlots[(size_t) i].mode   = (int) raw (dID::modSlotMode[(size_t) i]);
     }
 
     auto p = buildEngineParams();

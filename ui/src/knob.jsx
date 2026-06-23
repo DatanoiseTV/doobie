@@ -226,7 +226,7 @@ function WidthDial({ value = 0.6, onChange, label = 'Width', format }){
 
 
 /* ---- Vertical Fader (for levels — the mixer metaphor) ---- */
-function Fader({ value = 0.7, onChange, label, height = 100, format, lit = false }){
+function Fader({ value = 0.7, onChange, label, height = 100, format, lit = false, meter = 0 }){
   const [drag, setDrag] = useState(false);
   const stash = useRef({ y: 0, v: 0 });
   const onDown = useCallback((e) => {
@@ -243,12 +243,17 @@ function Fader({ value = 0.7, onChange, label, height = 100, format, lit = false
     const up = () => { setDrag(false); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
     window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
   }, [value, onChange, height]);
+  // Live VU overlay — vertical bar on the LEFT edge of the fader track
+  // showing the head's instantaneous magnitude (post-level). Scales to
+  // [0, 1.2] so transient peaks above unity still register.
+  const meterPct = Math.max(0, Math.min(1, (meter || 0) / 1.2)) * 100;
   return (
     <div className={'fader' + (lit ? ' lit' : '')}>
       <div className={'fader-track' + (drag ? ' dragging' : '')} style={{ height }}
            onPointerDown={onDown} onDoubleClick={() => onChange && onChange(0.7)}>
         {format && <div className="fader-val">{format(value)}</div>}
         <div className="fader-fill" style={{ height: (value * 100) + '%' }} />
+        <div className="fader-meter" style={{ height: meterPct + '%' }} />
         <div className="fader-cap" style={{ bottom: `calc(${value * 100}% - 8px)` }} />
       </div>
       {label && <div className="klabel">{label}</div>}

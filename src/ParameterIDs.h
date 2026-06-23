@@ -239,6 +239,13 @@ namespace dID
     inline constexpr std::array<const char*, 8> modSlotAmt {
         "mod1Amt", "mod2Amt", "mod3Amt", "mod4Amt",
         "mod5Amt", "mod6Amt", "mod7Amt", "mod8Amt" };
+    // Per-slot polarity mode: 0 = bipolar (source as-is), 1 = unipolar
+    // (source folded to one-sided 0..1 swell). Amount sign still picks
+    // direction.
+    inline constexpr std::array<const char*, 8> modSlotMode {
+        "mod1Mode", "mod2Mode", "mod3Mode", "mod4Mode",
+        "mod5Mode", "mod6Mode", "mod7Mode", "mod8Mode" };
+    inline const juce::StringArray modModeChoices { "Bipolar", "Unipolar" };
 
     inline const juce::StringArray lfoWaveChoices {
         "Sine", "Triangle", "Saw Up", "Saw Down", "Square", "Random S&H"

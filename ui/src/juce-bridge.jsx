@@ -109,6 +109,7 @@
     'Pan', 'Out Level',
     'Phaser Rate', 'Phaser Depth', 'Phaser Mix',
     'Input Gain',
+    'Head 1 Offset', 'Head 2 Offset', 'Head 3 Offset', 'Head 4 Offset',
   ];
   // Map from MOD_DEST string -> APVTS param IDs whose knob should display
   // a live mod-range arc + dot. Multiple IDs means the destination affects
@@ -161,6 +162,10 @@
     'Phaser Depth':     ['phaserDepth'],
     'Phaser Mix':       ['phaserMix'],
     'Input Gain':       ['inputDrive'],
+    'Head 1 Offset':    ['head1Offset'],
+    'Head 2 Offset':    ['head2Offset'],
+    'Head 3 Offset':    ['head3Offset'],
+    'Head 4 Offset':    ['head4Offset'],
   };
 
   // Subscribes to every slot's relays + the live LFO/env values published in

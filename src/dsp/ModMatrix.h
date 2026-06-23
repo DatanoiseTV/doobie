@@ -86,6 +86,7 @@ enum class ModDest : int
     // Append-only: the slot Dst combo box stores ints, so adding here keeps
     // existing saved slot indices stable.
     InputGain,         // ±12 dB on the input drive (pre-tone)
+    Head1Offset, Head2Offset, Head3Offset, Head4Offset,   // ±50 ms additive
     Count
 };
 
@@ -111,7 +112,8 @@ inline juce::StringArray modDestNames()
         "In Filter Cutoff", "In Filter Res",
         "Pan", "Out Level",
         "Phaser Rate", "Phaser Depth", "Phaser Mix",
-        "Input Gain"
+        "Input Gain",
+        "Head 1 Offset", "Head 2 Offset", "Head 3 Offset", "Head 4 Offset"
     };
 }
 
@@ -120,6 +122,14 @@ struct ModSlot
     ModSource source = ModSource::Off;
     ModDest   dest   = ModDest::Off;
     float     amount = 0.0f;   // -1..+1
+    // 0 = bipolar (default — source value used as-is). 1 = unipolar
+    // (the source value is remapped so it only deflects in one
+    // direction). For LFOs this folds the bipolar shape into a one-sided
+    // swell ((shape + 1) * 0.5 → 0..1); for the envelope follower
+    // (already 0..1) it's a no-op. The amount's sign still selects
+    // direction so amount=+0.5 in unipolar mode swells UP only, and
+    // amount=-0.5 swells DOWN only — handy for sidechain ducks etc.
+    int       mode   = 0;
 };
 
 struct ModSourceValues
@@ -150,6 +160,12 @@ inline void applyModSlot (EngineParams& p, const ModSlot& slot, const ModSourceV
         default: return;
     }
 
+    // Unipolar fold: collapse a bipolar source (LFOs) into a one-sided
+    // [0, +1] swell. The amount's sign still picks the direction (positive
+    // amount → upward swell, negative amount → downward / ducking swell).
+    // The envelope follower is already unipolar so it's a no-op for it.
+    if (slot.mode == 1)
+        src = (src + 1.0f) * 0.5f;
     const float k = src * slot.amount;            // signed modulation in roughly [-1, 1]
     const auto add = [] (float& v, float delta, float lo, float hi)
     { v = juce::jlimit (lo, hi, v + delta); };
@@ -206,6 +222,14 @@ inline void applyModSlot (EngineParams& p, const ModSlot& slot, const ModSourceV
         // can pump the dry input level into the delay (tremolo-style) or
         // the envelope can duck it. ±12 dB ≈ 0.25..4× gain.
         case ModDest::InputGain:      p.inputGain *= juce::jlimit (0.0f, 4.0f, std::pow (2.0f, 2.0f * k)); break;
+        // Per-head additive offset. k is in [-amount, +amount] (bipolar)
+        // or [0, amount] (unipolar via slot mode). Scaled to ±50 ms here
+        // for fine micro-timing modulation — total still clamped to the
+        // engine's ±200 ms range so it can't break the head's tap math.
+        case ModDest::Head1Offset:    add (p.headOffsetMs[0], 50.0f * k, -200.0f, 200.0f); break;
+        case ModDest::Head2Offset:    add (p.headOffsetMs[1], 50.0f * k, -200.0f, 200.0f); break;
+        case ModDest::Head3Offset:    add (p.headOffsetMs[2], 50.0f * k, -200.0f, 200.0f); break;
+        case ModDest::Head4Offset:    add (p.headOffsetMs[3], 50.0f * k, -200.0f, 200.0f); break;
         case ModDest::Off:
         case ModDest::Count:
         default: break;
