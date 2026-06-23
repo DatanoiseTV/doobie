@@ -4,6 +4,34 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.21.0] — 2026-06-24
+
+### Added
+- **Reverb post-filter.** Low Cut + High Cut on the reverb wet, sits
+  inside `applyReverb()` so every route (post / pre / in-feedback)
+  picks up the same shaping. Defaults are extreme = bypassed so
+  existing presets sound unchanged. New params: `revHpFreq`,
+  `revLpFreq`.
+- **Three-band ducking.** New `MultiBandDucker` splits the dry
+  sidechain and the wet into Low / Mid / High via two tunable
+  crossovers; each band ducks independently. A kick (low band) now
+  pumps the wet's low band only and leaves HF reverb / delay trails
+  ringing. The existing `duck` knob still controls the master depth.
+  New params: `duckCrossLow` (60 Hz–1 kHz, default 250 Hz),
+  `duckCrossHigh` (500 Hz–8 kHz, default 2.5 kHz).
+- **Feedback-loop filter resonance + key readout.** The in-loop HP /
+  LP are now `Svf`-based with user-controllable Q. New params:
+  `hpRes`, `lpRes` (0..0.95, default 0 = Butterworth so older
+  presets sound identical). The Feedback Loop panel shows the
+  nearest note + cent offset under each cut knob, so you can tune
+  resonant repeats to the song key.
+
+### Changed
+- **Knob drag is twice as sensitive.** Default 240 px per full range
+  (was 480 px in 0.20.x). One vertical mouse sweep covers 0 → 100 %
+  without lifting on a 13" laptop. Shift-hold still drops to 1/4
+  speed for fine adjustments (effective 60 px / range).
+
 ## [0.20.1] — 2026-06-23
 
 Re-tag of 0.20.0 to pick up the unsigned-release CI plumbing — the
