@@ -243,10 +243,32 @@ function Fader({ value = 0.7, onChange, label, height = 100, format, lit = false
     const up = () => { setDrag(false); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
     window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
   }, [value, onChange, height]);
-  // Live VU overlay — vertical bar on the LEFT edge of the fader track
-  // showing the head's instantaneous magnitude (post-level). Scales to
-  // [0, 1.2] so transient peaks above unity still register.
-  const meterPct = Math.max(0, Math.min(1, (meter || 0) / 1.2)) * 100;
+  // Live VU overlay with envelope-follower-style smoothing on the UI
+  // side. The engine publishes a per-block peak which can flicker at
+  // higher block sizes / sparse signals; a fast-attack / slow-release
+  // smoother keeps the bar readable. Scales to [0, 1.2] so transient
+  // peaks above unity still register.
+  const meterSmooth = useRef(0);
+  const meterRender = useRef(0);
+  const [, forceMeter] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    let last = performance.now();
+    const tick = (now) => {
+      const dt = Math.min(0.1, (now - last) / 1000); last = now;
+      const target = Math.max(0, Math.min(1, (meter || 0) / 1.2));
+      const k = target > meterSmooth.current ? 1 - Math.exp(-dt / 0.02) : 1 - Math.exp(-dt / 0.18);
+      meterSmooth.current += (target - meterSmooth.current) * k;
+      if (Math.abs(meterSmooth.current - meterRender.current) > 0.002) {
+        meterRender.current = meterSmooth.current;
+        forceMeter(n => n + 1);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [meter]);
+  const meterPct = meterRender.current * 100;
   return (
     <div className={'fader' + (lit ? ' lit' : '')}>
       <div className={'fader-track' + (drag ? ' dragging' : '')} style={{ height }}
