@@ -263,41 +263,13 @@ jobs:
           TAG="${GITHUB_REF#refs/tags/}"
           # UNSIGNED-RELEASE: prepend the unsigned-build banner to the
           # changelog notes so users see the xattr -cr requirement first.
-          # Remove this block (and revert the body to --notes-file <(awk ...))
-          # when signed releases resume.
+          # Body content lives in .github/release-notes/unsigned-banner.md
+          # (kept outside this YAML so heredoc-vs-block-scalar indentation
+          # rules don't fight each other). Remove this concatenation and
+          # revert the body to a direct --notes-file <(awk ...) when
+          # signed releases resume.
           {
-            cat <<'EOM'
-## macOS build is currently unsigned
-
-Doobie's Apple Developer agreement is in the process of being
-re-accepted. While that's pending, the macOS build ships as an
-unsigned `.zip` instead of the usual signed + notarized `.pkg`
-installer. Drop the bundles into:
-
-  ~/Library/Audio/Plug-Ins/Components/Doobie.component
-  ~/Library/Audio/Plug-Ins/VST3/Doobie.vst3
-  /Applications/Doobie.app   (or anywhere)
-
-Then strip the Gatekeeper quarantine attribute once per bundle:
-
-```
-xattr -cr ~/Library/Audio/Plug-Ins/Components/Doobie.component
-xattr -cr ~/Library/Audio/Plug-Ins/VST3/Doobie.vst3
-xattr -cr /Applications/Doobie.app
-```
-
-Or install via the Homebrew tap, which does the xattr step for you:
-
-```
-brew tap DatanoiseTV/doobie
-brew install --cask doobie
-```
-
-Linux is unaffected (no signing concept).
-
----
-
-EOM
+            cat .github/release-notes/unsigned-banner.md
             awk '/^## \['"${TAG#v}"'\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md \
               || echo "See CHANGELOG.md for details."
           } > "$RUNNER_TEMP/release-notes.md"
@@ -315,12 +287,16 @@ EOM
           SHORT_SHA="$(git rev-parse --short HEAD)"
           # Replace the rolling nightly release with the current artefacts.
           gh release delete nightly --yes --cleanup-tag 2>/dev/null || true
-          # UNSIGNED-RELEASE: macOS bundle is unsigned; xattr -cr required.
+          # UNSIGNED-RELEASE: nightly notes pulled from the same banner
+          # file as the tagged release. Append the standard "main /
+          # nightly" disclaimer below it.
+          {
+            cat .github/release-notes/unsigned-banner.md
+            printf 'Latest build from `main` (%s). Unstable — use a tagged release if you need a stable version.\n' "$SHORT_SHA"
+          } > "$RUNNER_TEMP/nightly-notes.md"
           gh release create nightly dist/* \
               --title "Doobie nightly ($(date -u +%Y-%m-%d) $SHORT_SHA)" \
-              --notes "Latest build from \`main\` ($SHORT_SHA). Unstable — use a tagged release if you need a stable version.
-
-**macOS:** this nightly is unsigned while the Apple Developer agreement is being re-accepted. After dropping the bundles into place, run \`xattr -cr <path>\` on each. Or install via the Homebrew tap — see the tagged release notes for details. Linux is unaffected." \
+              --notes-file "$RUNNER_TEMP/nightly-notes.md" \
               --prerelease
 
       - name: publish (manual dispatch)
