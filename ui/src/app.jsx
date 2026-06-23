@@ -362,6 +362,7 @@ function App() {
 
           <div className="col-mid">
             <DelayPanel p={p} setP={setP} heads={heads} tapeSpeed={tapeSpeed} accent="var(--accent)" mods={mods} fbCol={fbCol} midiNote={levels.midiNote} levels={levels} />
+            <PitchShifterPanel p={p} setP={setP} midiNote={levels.midiNote} />
           </div>
 
           <div className="col-right">

@@ -232,14 +232,18 @@ function midiNoteName (n) {
   return MIDI_NOTE_NAMES[n % 12] + oct;
 }
 
-/* ============================== DELAY (hero) ============================== */
-function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', mods, fbCol, midiNote, levels }) {
-  const tcChip = (key, label) => <Chip on={p[key]} onClick={() => setP(key, !p[key])}>{label}</Chip>;
-  // Pitch-character interval picker. Normalised 0..1 from the slider relay
-  // maps to -24..+24 st in unit steps (49 discrete steps). Sliding lands on
-  // the named musical interval; the chip row jumps to common ones with
-  // one click. Same shape as the shimmer reverb picker so both feel like
-  // siblings of the same control.
+/* ============================== PITCH SHIFTER ============================== */
+// Stand-alone card for the delay-chain pitch shifter. The engine still
+// gates it on `delayMode === Pitch` (because the shifter lives in the
+// character chain), but the panel is visible at all times so the
+// effect's controls don't hide behind the delay character dropdown.
+// When the character isn't Pitch, the panel dims and shows an Activate
+// button that flips delayMode for you. Works fine with delay bypassed —
+// the character chain still processes through the active heads / dry
+// path, so this is usable as a stand-alone pitch effect.
+function PitchShifterPanel({ p, setP, midiNote }) {
+  // Interval picker. Same -24..+24 chip row as before, plus the named
+  // helper labels and the full algo / route / spread / MIDI controls.
   const pSemis    = Math.round (p.pitchSemis * 48) - 24;
   const setPSemis = (s) => setP ('pitchSemis', (s + 24) / 48);
   const pSemiChips = [-24, -19, -12, -7, -5, 0, 5, 7, 12, 19, 24];
@@ -255,6 +259,87 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
               : '';
     return sign + abs + ' st' + (tag ? ' · ' + tag : '');
   };
+  const isPitchChar = p.character === 'Pitch';
+  return (
+    <div className="panel compact">
+      <PHead title="Pitch Shifter" icon={Ico.fb}
+             meta={! isPitchChar ? 'inactive · delay char ≠ Pitch'
+                   : (p.pitchOn ? (p.pitchRoute === 'Pre' ? 'pre' : 'in feedback')
+                                : 'bypassed')}
+             action={
+               isPitchChar
+                 ? <PowerBtn on={p.pitchOn} onClick={() => setP('pitchOn', !p.pitchOn)} title="Bypass the pitch shifter" />
+                 : <button className="midi-btn on" onClick={() => setP('character', 'Pitch')}
+                           title="Set the delay character to Pitch so this shifter engages">
+                     ACTIVATE
+                   </button>
+             } />
+      <div style={isPitchChar ? null : { opacity: 0.5, pointerEvents: 'none' }}>
+        <div className="shimmer-int" style={{ marginBottom: 4 }}>
+          <div className="shimmer-int-hd">
+            <span className="cluster-label">Interval</span>
+            <span className="shimmer-int-val">
+              {pSemiName (pSemis)}
+              {p.midiPitchMode && <> · MIDI <span className="midi-note">{midiNoteName (midiNote)}</span></>}
+            </span>
+            <span style={{ flex: 1 }} />
+            {p.midiPitchMode && (
+              <button className={'midi-btn' + (p.midiPortaOn ? ' on' : '')}
+                      onClick={() => setP ('midiPortaOn', !p.midiPortaOn)}
+                      title="Glide between notes over the porta time (pitch bend always rides on top, ±2 st)">
+                PORTA
+              </button>
+            )}
+            <button className={'midi-btn' + (p.midiPitchMode ? ' on' : '')}
+                    onClick={() => setP ('midiPitchMode', !p.midiPitchMode)}
+                    title="Drive the interval from incoming MIDI notes (C3 = unison, pitch bend = ±2 st)">
+              MIDI
+            </button>
+          </div>
+          {p.midiPitchMode && p.midiPortaOn && (
+            <div className="porta-row">
+              <span className="porta-lab">Glide</span>
+              <input type="range" min="0" max="1" step="0.001" value={p.midiPortaMs}
+                     onChange={(e) => setP ('midiPortaMs', parseFloat (e.target.value))} />
+              <span className="porta-val">{Math.round (p.midiPortaMs * 2000)} ms</span>
+            </div>
+          )}
+          <div className="porta-row">
+            <span className="porta-lab">Spread</span>
+            <input type="range" min="0" max="1" step="0.001" value={p.pitchSpread}
+                   onChange={(e) => setP ('pitchSpread', parseFloat (e.target.value))} />
+            <span className="porta-val">{Math.round (p.pitchSpread * 100)} c</span>
+          </div>
+          <div className="route-row" style={{ marginTop: 4 }}>
+            <span className="route-lab">Algo</span>
+            <div className="seg">
+              <button data-on={p.pitchAlgo === 'FFT' ? '1' : '0'}      onClick={() => setP('pitchAlgo', 'FFT')}>FFT</button>
+              <button data-on={p.pitchAlgo === 'Granular' ? '1' : '0'} onClick={() => setP('pitchAlgo', 'Granular')}>Granular</button>
+            </div>
+          </div>
+          <div className="route-row" style={{ marginTop: 4 }}>
+            <span className="route-lab">Route</span>
+            <div className="seg">
+              <button data-on={p.pitchRoute === 'Pre' ? '1' : '0'}      onClick={() => setP('pitchRoute', 'Pre')}>Pre</button>
+              <button data-on={p.pitchRoute === 'Feedback' ? '1' : '0'} onClick={() => setP('pitchRoute', 'Feedback')}>In Feedback</button>
+            </div>
+          </div>
+          <div className="shimmer-int-chips" style={p.midiPitchMode ? { opacity: 0.45, pointerEvents: 'none' } : null}>
+            {pSemiChips.map (s =>
+              <button key={s} data-on={pSemis === s ? '1' : '0'} onClick={() => setPSemis (s)}>
+                {s > 0 ? '+' + s : s}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================== DELAY (hero) ============================== */
+function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', mods, fbCol, midiNote, levels }) {
+  const tcChip = (key, label) => <Chip on={p[key]} onClick={() => setP(key, !p[key])}>{label}</Chip>;
   return (
     <div className="panel" style={{ flex: 1 }}>
       <PHead title="Delay" icon={Ico.delay}
@@ -293,81 +378,6 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
             </select>
           </div>
           <div className="cluster-label" style={{ marginTop: 2 }}>Character</div>
-          {p.character === 'Pitch' && (
-            <div className="shimmer-int" style={{ marginBottom: 4 }}>
-              <div className="shimmer-int-hd">
-                <button className={'midi-btn' + (p.pitchOn ? ' on' : '')}
-                        onClick={() => setP ('pitchOn', !p.pitchOn)}
-                        title="Bypass the pitch shifter (saturation still runs; clears the FFT latency)">
-                  {p.pitchOn ? 'ON' : 'OFF'}
-                </button>
-                <span className="cluster-label" style={{ marginLeft: 4 }}>Interval</span>
-                <span className="shimmer-int-val">
-                  {pSemiName (pSemis)}
-                  {p.midiPitchMode && <> · MIDI <span className="midi-note">{midiNoteName (midiNote)}</span></>}
-                </span>
-                <span style={{ flex: 1 }} />
-                {p.midiPitchMode && (
-                  <button className={'midi-btn' + (p.midiPortaOn ? ' on' : '')}
-                          onClick={() => setP ('midiPortaOn', !p.midiPortaOn)}
-                          title="Glide between notes over the porta time (pitch bend always rides on top, ±2 st)">
-                    PORTA
-                  </button>
-                )}
-                <button className={'midi-btn' + (p.midiPitchMode ? ' on' : '')}
-                        onClick={() => setP ('midiPitchMode', !p.midiPitchMode)}
-                        title="Drive the interval from incoming MIDI notes (C3 = unison, pitch bend = ±2 st)">
-                  MIDI
-                </button>
-              </div>
-              {p.midiPitchMode && p.midiPortaOn && (
-                <div className="porta-row">
-                  <span className="porta-lab">Glide</span>
-                  <input type="range" min="0" max="1" step="0.001" value={p.midiPortaMs}
-                         onChange={(e) => setP ('midiPortaMs', parseFloat (e.target.value))} />
-                  <span className="porta-val">{Math.round (p.midiPortaMs * 2000)} ms</span>
-                </div>
-              )}
-              {/* Stereo spread: detunes L/R symmetrically around the
-                  chosen interval (cents). 0 = true bypass (both channels
-                  shift identically); 25 c ≈ subtle chorus thickening at
-                  unison; 100 c = wide harmony shimmer. */}
-              <div className="porta-row">
-                <span className="porta-lab">Spread</span>
-                <input type="range" min="0" max="1" step="0.001" value={p.pitchSpread}
-                       onChange={(e) => setP ('pitchSpread', parseFloat (e.target.value))} />
-                <span className="porta-val">{Math.round (p.pitchSpread * 100)} c</span>
-              </div>
-              {/* Algo + route pickers. FFT = phase vocoder (smoother on
-                  sustained pitched material). Granular = dual-head
-                  Eventide-style (lower latency, cleaner transients, full
-                  ±24 st without bin-shift aliasing). Route Feedback (the
-                  classic): shifter sits inside the loop, repeats compound
-                  octaves. Route Pre: shift once on input, delay repeats
-                  the pre-shifted signal at a fixed interval. */}
-              <div className="route-row" style={{ marginTop: 4 }}>
-                <span className="route-lab">Algo</span>
-                <div className="seg">
-                  <button data-on={p.pitchAlgo === 'FFT' ? '1' : '0'}      onClick={() => setP('pitchAlgo', 'FFT')}>FFT</button>
-                  <button data-on={p.pitchAlgo === 'Granular' ? '1' : '0'} onClick={() => setP('pitchAlgo', 'Granular')}>Granular</button>
-                </div>
-              </div>
-              <div className="route-row" style={{ marginTop: 4 }}>
-                <span className="route-lab">Route</span>
-                <div className="seg">
-                  <button data-on={p.pitchRoute === 'Pre' ? '1' : '0'}      onClick={() => setP('pitchRoute', 'Pre')}>Pre</button>
-                  <button data-on={p.pitchRoute === 'Feedback' ? '1' : '0'} onClick={() => setP('pitchRoute', 'Feedback')}>In Feedback</button>
-                </div>
-              </div>
-              <div className="shimmer-int-chips" style={p.midiPitchMode ? { opacity: 0.45, pointerEvents: 'none' } : null}>
-                {pSemiChips.map (s =>
-                  <button key={s} data-on={pSemis === s ? '1' : '0'} onClick={() => setPSemis (s)}>
-                    {s > 0 ? '+' + s : s}
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
           {/* Transport chips on a single line. Compact variant (smaller
               padding + shorter labels) so all three fit the column width
               without wrapping. */}
@@ -832,4 +842,4 @@ function ModDrawer({ open, onClose, p, setP, matrix, setMx, numSlots, levels }) 
   );
 }
 
-Object.assign(window, { Header, VUStrip, InputPanel, HeadsPanel, DelayPanel, FeedbackPanel, PhaserPanel, ReverbPanel, OutputBar, ModDrawer, fmt, KB, PARAM_MOD_KEY });
+Object.assign(window, { Header, VUStrip, InputPanel, HeadsPanel, DelayPanel, PitchShifterPanel, FeedbackPanel, PhaserPanel, ReverbPanel, OutputBar, ModDrawer, fmt, KB, PARAM_MOD_KEY });
