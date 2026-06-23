@@ -57,7 +57,12 @@ jobs:
       - name: install ninja
         run: brew install ninja
 
+      # UNSIGNED-RELEASE: signing + notarization disabled while the Apple
+      # Developer agreement is being re-accepted. Flip these `if: false`
+      # back to `if: true` (or just drop the gate) once the team can
+      # store-credentials with notarytool again.
       - name: import signing certs into a temp keychain
+        if: false
         env:
           MACOS_CERTIFICATE:               ${{ secrets.MACOS_CERTIFICATE }}
           MACOS_CERTIFICATE_PWD:           ${{ secrets.MACOS_CERTIFICATE_PWD }}
@@ -95,7 +100,9 @@ jobs:
           echo "imported identities:"
           security find-identity -v -p codesigning "$KEYCHAIN"
 
+      # UNSIGNED-RELEASE: also gated; re-enable together with the cert step.
       - name: register notarytool credentials
+        if: false
         env:
           APPLE_NOTARY_KEY_P8:    ${{ secrets.APPLE_NOTARY_KEY_P8 }}
           APPLE_NOTARY_KEY_ID:    ${{ secrets.APPLE_NOTARY_KEY_ID }}
@@ -122,7 +129,11 @@ jobs:
       - name: tests
         run: ctest --test-dir build --output-on-failure
 
+      # UNSIGNED-RELEASE: pkg+sign+notarize replaced with an unsigned zip
+      # while the Apple Developer agreement is being re-accepted. Flip the
+      # `if: ...` back when ready.
       - name: sign + notarize + package
+        if: false
         env:
           APPLICATION_IDENTITY: ${{ secrets.MACOS_APPLICATION_IDENTITY }}
           INSTALLER_IDENTITY:   ${{ secrets.MACOS_INSTALLER_IDENTITY }}
@@ -135,10 +146,18 @@ jobs:
           export OUTPUT_PKG="$PWD/dist/Doobie-${DOOBIE_VERSION}-macOS.pkg"
           bash packaging/macos/build-pkg.sh
 
+      - name: package unsigned zip
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          export ARTEFACT_DIR="$PWD/build/Doobie_artefacts/Release"
+          export OUTPUT_ZIP="$PWD/dist/Doobie-${DOOBIE_VERSION}-macOS-unsigned.zip"
+          bash packaging/macos/build-zip.sh
+
       - uses: actions/upload-artifact@v4
         with:
           name: doobie-macos
-          path: dist/*.pkg
+          path: dist/*.zip
           if-no-files-found: error
           retention-days: 14
 
@@ -242,9 +261,49 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${GITHUB_REF#refs/tags/}"
+          # UNSIGNED-RELEASE: prepend the unsigned-build banner to the
+          # changelog notes so users see the xattr -cr requirement first.
+          # Remove this block (and revert the body to --notes-file <(awk ...))
+          # when signed releases resume.
+          {
+            cat <<'EOM'
+## macOS build is currently unsigned
+
+Doobie's Apple Developer agreement is in the process of being
+re-accepted. While that's pending, the macOS build ships as an
+unsigned `.zip` instead of the usual signed + notarized `.pkg`
+installer. Drop the bundles into:
+
+  ~/Library/Audio/Plug-Ins/Components/Doobie.component
+  ~/Library/Audio/Plug-Ins/VST3/Doobie.vst3
+  /Applications/Doobie.app   (or anywhere)
+
+Then strip the Gatekeeper quarantine attribute once per bundle:
+
+```
+xattr -cr ~/Library/Audio/Plug-Ins/Components/Doobie.component
+xattr -cr ~/Library/Audio/Plug-Ins/VST3/Doobie.vst3
+xattr -cr /Applications/Doobie.app
+```
+
+Or install via the Homebrew tap, which does the xattr step for you:
+
+```
+brew tap DatanoiseTV/doobie
+brew install --cask doobie
+```
+
+Linux is unaffected (no signing concept).
+
+---
+
+EOM
+            awk '/^## \['"${TAG#v}"'\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md \
+              || echo "See CHANGELOG.md for details."
+          } > "$RUNNER_TEMP/release-notes.md"
           gh release create "$TAG" dist/* \
               --title "Doobie $TAG" \
-              --notes-file <(awk '/^## \['"${TAG#v}"'\]/{flag=1; next} /^## \[/{flag=0} flag' CHANGELOG.md || echo "See CHANGELOG.md for details.") \
+              --notes-file "$RUNNER_TEMP/release-notes.md" \
               --latest
 
       - name: publish (nightly)
@@ -256,9 +315,12 @@ jobs:
           SHORT_SHA="$(git rev-parse --short HEAD)"
           # Replace the rolling nightly release with the current artefacts.
           gh release delete nightly --yes --cleanup-tag 2>/dev/null || true
+          # UNSIGNED-RELEASE: macOS bundle is unsigned; xattr -cr required.
           gh release create nightly dist/* \
               --title "Doobie nightly ($(date -u +%Y-%m-%d) $SHORT_SHA)" \
-              --notes "Latest build from \`main\` ($SHORT_SHA). Unstable — use a tagged release if you need a stable version." \
+              --notes "Latest build from \`main\` ($SHORT_SHA). Unstable — use a tagged release if you need a stable version.
+
+**macOS:** this nightly is unsigned while the Apple Developer agreement is being re-accepted. After dropping the bundles into place, run \`xattr -cr <path>\` on each. Or install via the Homebrew tap — see the tagged release notes for details. Linux is unaffected." \
               --prerelease
 
       - name: publish (manual dispatch)
