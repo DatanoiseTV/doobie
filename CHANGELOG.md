@@ -4,6 +4,31 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.20.1] — 2026-06-23
+
+Re-tag of 0.20.0 to pick up the unsigned-release CI plumbing — the
+0.20.0 tag's release workflow failed on Apple's notary credential
+check (the team's Developer Program License Agreement was re-issued
+and needs to be re-accepted), so no artifacts were ever attached to
+that tag.
+
+### Changed
+- macOS now ships an unsigned `.zip` instead of the signed + notarized
+  `.pkg` while the agreement is being sorted. Drop the bundles into
+  the standard plug-in locations and `xattr -cr` each one to strip
+  the Gatekeeper quarantine attribute. The release notes on GitHub
+  spell out the exact commands.
+- Homebrew tap at `DatanoiseTV/homebrew-doobie` automates the install
+  + `xattr -cr` step:
+  ```sh
+  brew tap DatanoiseTV/doobie
+  brew install --cask doobie
+  ```
+- Linux is unaffected (no signing concept).
+
+No DSP or UI changes vs. 0.20.0 — everything in the 0.20.0 entry
+below also applies here.
+
 ## [0.20.0] — 2026-06-23
 
 ### Added

@@ -20,7 +20,7 @@
 # bottom for the shape.
 
 cask "doobie" do
-  version "0.20.0"
+  version "0.20.1"
   # Replace with the actual SHA-256 of the zip from the GitHub release.
   # `shasum -a 256 Doobie-<ver>-macOS-unsigned.zip` or pull it from the
   # `gh release view` checksum output.
