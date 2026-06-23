@@ -80,6 +80,7 @@ public:
 
     // For the editor's echo visualiser.
     const doobie::DubDelayEngine& getEngine() const { return engine; }
+    doobie::DubDelayEngine&       getEngine()       { return engine; }
     double getCurrentBpm() const { return currentBpm.load(); }
     double getSampleRateForUI() const { return sampleRate; }
 

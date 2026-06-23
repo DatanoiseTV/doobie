@@ -367,18 +367,36 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
           <StereoScope levels={levels} />
         </div>
       </div>
+      {/* In sync mode the master TIME control drives the syncDiv list
+          (one notch per division) instead of writing to `time` which
+          the engine ignores when sync is on. Keeps the same physical
+          control useful in both modes; the dropdown next to it stays
+          authoritative for keyboard / preset cases. */}
+      {(() => {
+        const DIVS = ['1/64','1/32T','1/32','1/16T','1/16','1/8T','1/16.','1/8','1/4T','1/8.','1/4','1/2T','1/4.','1/2','1/1T','1/2.','1/1','2 bars','4 bars'];
+        const divIdx = Math.max(0, DIVS.indexOf(p.division));
+        const knobVal = p.sync ? (divIdx / (DIVS.length - 1)) : p.time;
+        const onKnob = (v) => {
+          if (p.sync) {
+            const idx = Math.max(0, Math.min(DIVS.length - 1, Math.round(v * (DIVS.length - 1))));
+            setP('division', DIVS[idx]);
+          } else {
+            setP('time', v);
+          }
+        };
+        return (
       <div className="bigknobs" style={{ marginTop: 14 }}>
-        <Knob size="lg" label="Time" value={p.time} lit
+        <Knob size="lg" label="Time" value={knobVal} lit
               mod={mods ? mods.timeMs || 0 : 0}
               modValue={mods && mods.live ? mods.live.timeMs || 0 : 0}
               format={p.sync ? () => p.division : fmt.ms}
-              onChange={(v) => setP('time', v)} />
+              onChange={onKnob} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, maxWidth: 220, paddingTop: 6 }}>
           <div className="row" style={{ gap: 8 }}>
             <Chip on={p.sync} onClick={() => setP('sync', !p.sync)}>Sync</Chip>
             <div className="sel" style={{ flex: 1 }}>
               <select value={p.division} onChange={(e) => setP('division', e.target.value)} disabled={!p.sync}>
-                {['1/64','1/32T','1/32','1/16T','1/16','1/8T','1/16.','1/8','1/4T','1/8.','1/4','1/2T','1/4.','1/2','1/1T','1/2.','1/1','2 bars','4 bars'].map(o => <option key={o} value={o}>{o}</option>)}
+                {DIVS.map(o => <option key={o} value={o}>{o}</option>)}
               </select>
             </div>
           </div>
@@ -412,6 +430,8 @@ function DelayPanel({ p, setP, heads, tapeSpeed = 1, accent = 'var(--accent)', m
               modValue={mods && mods.live ? mods.live.feedback || 0 : 0}
               onChange={(v) => setP('feedback', v)} />
       </div>
+        );
+      })()}
       <div style={{ marginTop: 'auto', paddingTop: 12 }}>
         <div className="cluster-label" style={{ marginBottom: 10 }}>Tape Character</div>
         <div className="eqrow">

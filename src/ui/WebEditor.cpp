@@ -451,10 +451,14 @@ void WebEditor::emitLevels()
     // The Fader strip below each head reads these to draw a tiny VU on
     // top of the fader track.
     {
-        const auto& hm = doobieProcessor.getEngine().headMagnitudes();
+        // Drain the per-head peak-hold atomics. Engine accumulates the max
+        // across all blocks since the last UI tick; consume zeros the slot
+        // so the next tick reads a fresh window. Without this drain the UI
+        // sampled only the LATEST block's peak (one block in ~6 at 30 Hz UI
+        // vs 256-sample blocks at 48 k), missing most transients.
         juce::Array<juce::var> ha;
         for (int i = 0; i < 4; ++i)
-            ha.add (juce::var (hm[(size_t) i].load (std::memory_order_relaxed)));
+            ha.add (juce::var (doobieProcessor.getEngine().consumeHeadMagnitude (i)));
         root->setProperty ("headMag", juce::var (ha));
     }
     // Output leveler gain-reduction in dB (0 = no GR, negative = reducing).

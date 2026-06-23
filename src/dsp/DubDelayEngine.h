@@ -151,7 +151,18 @@ public:
     void process (juce::AudioBuffer<float>& buffer);
 
     // Latest per-head output magnitudes, for the echo visualiser (read by UI).
+    // Peak-hold semantics: the engine accumulates the max across all blocks
+    // since the last call to `consumeHeadMagnitude` (or `headMagnitudes` for a
+    // read-only peek). The UI reader uses `consume…` so that brief peaks
+    // landing between the UI's 30 Hz polls are not dropped — sampling the raw
+    // per-block peak directly would miss ~80 % of the time slots at typical
+    // 256-sample buffers.
     const std::array<std::atomic<float>, 4>& headMagnitudes() const { return headMag; }
+    float consumeHeadMagnitude (int idx) noexcept
+    {
+        // Atomic exchange-with-zero: read the held peak, reset the slot.
+        return headMag[(size_t) juce::jlimit (0, 3, idx)].exchange (0.0f, std::memory_order_relaxed);
+    }
     float currentDelaySamples() const { return (float) smoothedDelay.getCurrentValue(); }
 
     // Impulse-response convolution reverb access for the editor / processor.

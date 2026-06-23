@@ -724,7 +724,17 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
             R[n] = outR;
     }
 
+    // Merge this block's peak into the held atomic so the UI (which polls at
+    // 30 Hz, much slower than the block rate) doesn't miss transients that
+    // landed in earlier blocks within the same UI tick.
     for (int i = 0; i < 4; ++i)
-        headMag[(size_t) i].store (headPeak[(size_t) i], std::memory_order_relaxed);
+    {
+        const float fresh = headPeak[(size_t) i];
+        auto& slot = headMag[(size_t) i];
+        float prev = slot.load (std::memory_order_relaxed);
+        while (fresh > prev
+               && ! slot.compare_exchange_weak (prev, fresh, std::memory_order_relaxed))
+        { /* CAS loop until we either lose the race or land the higher value */ }
+    }
 }
 } // namespace doobie

@@ -43,11 +43,18 @@ function DigitalMeter({ label, liveDb = -90, big = false, scale = false }){
   // smoothed bar position (one-pole follower on dB), independent of how
   // often the prop ticks
   const smooth = React.useRef({ rms: -90, last: performance.now() });
+  // Pin the latest liveDb in a ref so the rAF reads the fresh value
+  // without restarting whenever the parent re-renders (every 33 ms when
+  // levels-events arrive). Earlier versions had liveDb in the dep array,
+  // which tore down and rebuilt the rAF before it could draw → meters
+  // appeared to update at the event rate (~30 fps) instead of at refresh.
+  const liveRef = React.useRef(liveDb);
+  liveRef.current = liveDb;
   React.useEffect(() => {
     let raf = 0;
     const tick = (now) => {
       const dt = Math.min(0.05, (now - smooth.current.last) / 1000); smooth.current.last = now;
-      const target = isFinite(liveDb) ? liveDb : -90;
+      const target = isFinite(liveRef.current) ? liveRef.current : -90;
       // 80 ms attack, 200 ms release in the visual smoother
       const k = target > smooth.current.rms ? 1 - Math.exp(-dt / 0.08) : 1 - Math.exp(-dt / 0.20);
       smooth.current.rms += (target - smooth.current.rms) * k;
@@ -62,7 +69,7 @@ function DigitalMeter({ label, liveDb = -90, big = false, scale = false }){
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [liveDb]);
+  }, []);
   const marks = [0, -6, -12, -24, -48];
   return (
     <div className={'dm' + (big ? ' big' : '')}>

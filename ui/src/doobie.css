@@ -292,7 +292,7 @@ body{ font-family:var(--font); color:var(--c-txt); -webkit-font-smoothing:antial
    peak red above ~85% so a clipping head is obvious at a glance. */
 .fader-meter{ position:absolute; left:3px; bottom:6px; width:3px; border-radius:2px;
   background:var(--accent-dim, var(--accent)); opacity:0.85;
-  max-height:calc(100% - 12px); transition:height .04s linear; pointer-events:none; }
+  max-height:calc(100% - 12px); pointer-events:none; }
 .fader-cap{ position:absolute; left:3px; right:3px; height:16px; border-radius:4px;
   background:linear-gradient(180deg, var(--c-raise), oklch(0.19 0.006 60));
   border:1px solid var(--c-line); box-shadow:0 2px 5px rgba(0,0,0,0.55), 0 1px 0 oklch(0.36 0.006 60) inset; }

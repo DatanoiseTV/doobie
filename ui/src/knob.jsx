@@ -247,39 +247,41 @@ function Fader({ value = 0.7, onChange, label, height = 100, format, lit = false
     const up = () => { setDrag(false); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); };
     window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
   }, [value, onChange, height]);
-  // Live VU overlay with envelope-follower-style smoothing on the UI
-  // side. The engine publishes a per-block peak which can flicker at
-  // higher block sizes / sparse signals; a fast-attack / slow-release
-  // smoother keeps the bar readable. Scales to [0, 1.2] so transient
-  // peaks above unity still register.
-  const meterSmooth = useRef(0);
-  const meterRender = useRef(0);
-  const [, forceMeter] = useState(0);
+  // Live VU overlay. The engine publishes a peak-held magnitude (max
+  // across all blocks since the last UI poll), updated at 30 Hz via the
+  // levels event. We animate at full display refresh by mutating the
+  // bar's height directly from a rAF tick, bypassing React's render
+  // path entirely — going through state caused ~30 Hz repaints (one per
+  // levels event) because the parent re-render forced the rAF effect to
+  // tear down. Scales to [0, 1.2] so transient peaks above unity register.
+  const meterRef = useRef(0);
+  meterRef.current = meter || 0;
+  const meterBarRef = useRef(null);
+  const smoothRef = useRef(0);
   useEffect(() => {
     let raf = 0;
     let last = performance.now();
     const tick = (now) => {
       const dt = Math.min(0.1, (now - last) / 1000); last = now;
-      const target = Math.max(0, Math.min(1, (meter || 0) / 1.2));
-      const k = target > meterSmooth.current ? 1 - Math.exp(-dt / 0.02) : 1 - Math.exp(-dt / 0.18);
-      meterSmooth.current += (target - meterSmooth.current) * k;
-      if (Math.abs(meterSmooth.current - meterRender.current) > 0.002) {
-        meterRender.current = meterSmooth.current;
-        forceMeter(n => n + 1);
-      }
+      const target = Math.max(0, Math.min(1, meterRef.current / 1.2));
+      // 20 ms attack, 180 ms release — fast enough to catch transients,
+      // slow enough to read at a glance.
+      const k = target > smoothRef.current ? 1 - Math.exp(-dt / 0.02) : 1 - Math.exp(-dt / 0.18);
+      smoothRef.current += (target - smoothRef.current) * k;
+      if (meterBarRef.current)
+        meterBarRef.current.style.height = (smoothRef.current * 100) + '%';
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [meter]);
-  const meterPct = meterRender.current * 100;
+  }, []);
   return (
     <div className={'fader' + (lit ? ' lit' : '')}>
       <div className={'fader-track' + (drag ? ' dragging' : '')} style={{ height }}
            onPointerDown={onDown} onDoubleClick={() => onChange && onChange(0.7)}>
         {format && <div className="fader-val">{format(value)}</div>}
         <div className="fader-fill" style={{ height: (value * 100) + '%' }} />
-        <div className="fader-meter" style={{ height: meterPct + '%' }} />
+        <div className="fader-meter" ref={meterBarRef} style={{ height: 0 }} />
         <div className="fader-cap" style={{ bottom: `calc(${value * 100}% - 8px)` }} />
       </div>
       {label && <div className="klabel">{label}</div>}
