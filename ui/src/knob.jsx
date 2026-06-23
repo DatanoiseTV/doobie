@@ -57,7 +57,11 @@ function Knob({ value = 0.5, onChange, size = 'md', label, format, lit = false, 
     const move = (ev) => {
       const p = ev.touches ? ev.touches[0] : ev;
       const fine = ev.shiftKey ? 0.25 : 1;
-      const dv = (stash.current.y - p.clientY) / 240 * fine;
+      // 480 px per full knob range (was 240) — doubles pointer-to-value
+      // resolution so log-skewed params (delay TIME, filter cutoff, etc.)
+      // don't feel like they "snap" through coarse increments in their
+      // upper region. Shift still drops to 1/4 speed for fine tweaks.
+      const dv = (stash.current.y - p.clientY) / 480 * fine;
       let nv = Math.max(0, Math.min(1, stash.current.v + dv));
       onChange && onChange(nv);
     };

@@ -43,8 +43,16 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
         // chorus (10..30 ms), slapback (~100 ms) and the long dub-delay
         // territory in one log-skewed knob. The skew is set so 100 ms sits
         // at the centre of the dial.
-        Range timeRange (0.5f, 8000.0f, 0.01f);
-        timeRange.setSkewForCentre (100.0f);
+        // Skew centre 500 ms (was 100 ms). 100 ms put 100..8000 ms in the
+        // upper half of the knob and 0..100 ms in the lower half, so a
+        // single pixel of mouse movement around 1000 ms was worth ~65 ms
+        // — felt like the knob was snapping. 500 ms re-centres so the
+        // useful 0..1000 ms range takes ~70% of the knob travel and the
+        // upper "ambient" range (1..8 s) takes the rest. Step shrunk
+        // from 0.01 → 0.001 ms so the underlying APVTS quantisation never
+        // limits fine control either.
+        Range timeRange (0.5f, 8000.0f, 0.001f);
+        timeRange.setSkewForCentre (500.0f);
         layout.add (std::make_unique<FloatParam> (pid (dID::timeMs), "Time", timeRange, 375.0f));
     }
     layout.add (std::make_unique<ChoiceParam> (pid (dID::syncDiv), "Division", dID::syncDivChoices, 10));

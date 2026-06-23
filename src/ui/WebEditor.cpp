@@ -486,8 +486,9 @@ void WebEditor::emitPresetInfo()
         : juce::String();
 
     const bool dirty = doobieProcessor.isCurrentPresetDirty();
-    if (name == lastPresetName && cat == lastPresetCat && dirty == lastPresetDirty)
-        return;
+    // Same reasoning as emitIRInfo — broadcast every tick so the JS side
+    // never gets stuck on stale defaults if the listener registered
+    // late.
     lastPresetDirty = dirty;
 
     lastPresetName = name;
@@ -508,10 +509,14 @@ void WebEditor::emitIRInfo()
     const int  factoryIdx = doobieProcessor.irIsFactory() ? doobieProcessor.getFactoryIRIndex() : -1;
     const auto name       = doobieProcessor.getIRDisplayName();
 
-    // Only push when something has actually changed; the timer ticks at
-    // 30 Hz and the WebView event listeners aren't free.
-    if (has == lastHadIR && factoryIdx == lastFactoryIRIndex && name == lastIRName)
-        return;
+    // Previously this gated emission on "value changed since last tick"
+    // for performance. That created a startup race: if the IR is loaded
+    // BEFORE the editor's JS-side event listener is registered (which
+    // happens on every fresh project load), the first emit was sent
+    // into the void, and subsequent ticks saw "no change vs cache" so
+    // nothing else fired — the UI would forever show "(no IR)" while
+    // the engine happily convolved. Just broadcast every tick instead;
+    // the payload is a tiny JSON object and 30 Hz is fine.
     lastHadIR = has;
     lastFactoryIRIndex = factoryIdx;
     lastIRName = name;
