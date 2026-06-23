@@ -155,7 +155,12 @@ WebEditor::WebEditor (::DoobieAudioProcessor& proc)
     : juce::AudioProcessorEditor (&proc), doobieProcessor (proc)
 {
     setResizable (true, true);
-    setResizeLimits (760, 480, 3040, 1920);
+    // Limits cover ~50 % of design size up through ~2x. The WebView's
+    // JS fit-to-window scaler (see ui/src/index.html) keeps the 1520x960
+    // layout filling whatever bounds JUCE hands us, so the min just has
+    // to be small enough that the smallest screen size we care about
+    // (13" MacBook ~1440x900) renders sensibly.
+    setResizeLimits (608, 384, 3040, 1920);
 
    #if JUCE_LINUX
     // ---- WebKitGTK environment hardening --------------------------------
@@ -381,7 +386,10 @@ WebEditor::WebEditor (::DoobieAudioProcessor& proc)
 
     // 4) Now we have the WebView, set the editor size — resized() will lay
     // it out. (Doing this before the WebView existed left it bounds-less.)
-    setSize (1520, 960);
+    // 1216 x 768 fits a 13" MBP (1440 x 900) at default scaling with
+    // headroom for menu bar + dock. The JS fit-to-window scaler in
+    // index.html shrinks the 1520x960 design canvas to match.
+    setSize (1216, 768);
 
     // 5) Load the HTML shell.
     webView->goToURL (juce::WebBrowserComponent::getResourceProviderRoot() + "index.html");

@@ -36,6 +36,13 @@
     #diag .err.on { display: block; }
     /* Once React mounts (root has children), hide the banner. */
     body:has(#root > *) #diag { display: none; }
+    /* Fit-to-window scaling drives `#plugin` (the actual 1520x960 UI
+       container, defined in doobie.css). `#stage` already uses
+       `place-items: center` to centre `#plugin` in the viewport, so
+       we only need to apply a uniform scale — the centering is done
+       in CSS. doobie.css sets `#plugin { transform-origin: center
+       center }` which keeps the painted output centred on the layout
+       box's centre regardless of scale. */
   </style>
 </head>
 <body>
@@ -57,6 +64,43 @@
     };
     window.addEventListener('error',           (e) => fail('JS error: ' + (e.message || e.error) + ' @ ' + (e.filename || '?') + ':' + (e.lineno || '?')));
     window.addEventListener('unhandledrejection', (e) => fail('unhandled rejection: ' + e.reason));
+    // Fit-to-window: target `#plugin` (the 1520x960 UI container; see
+    // doobie.css). transform: scale() makes browsers translate
+    // pointer events through the matrix, so clicks and drags still
+    // land on the correct widget. transform-origin is already
+    // center-center on #plugin so we only need the scale factor.
+    //
+    // The element doesn't exist until React mounts, so we poll for
+    // it on the first run, and re-bind once mounted. Multiple resize
+    // triggers — DOM 'resize', plus a ResizeObserver on the body
+    // (catches the case where JUCE sets WebView bounds from C++
+    // without bubbling a window 'resize' event).
+    (function () {
+      var DESIGN_W = 1520, DESIGN_H = 960;
+      function fit() {
+        var el = document.getElementById('plugin');
+        if (!el) return;
+        var w = window.innerWidth  || document.documentElement.clientWidth;
+        var h = window.innerHeight || document.documentElement.clientHeight;
+        if (!w || !h) return;
+        var s = Math.min(w / DESIGN_W, h / DESIGN_H);
+        el.style.transform = 'scale(' + s + ')';
+      }
+      window.addEventListener('resize', fit);
+      window.addEventListener('load', fit);
+      window.addEventListener('DOMContentLoaded', fit);
+      // Body covers the WebView area; observe it so we re-fit when
+      // JUCE sets the bounds from C++.
+      if (typeof ResizeObserver === 'function') {
+        try { new ResizeObserver(fit).observe(document.body); } catch (_) {}
+      }
+      // #plugin is React-mounted; retry until it exists, then settle.
+      (function poll(tries) {
+        if (document.getElementById('plugin')) { fit(); return; }
+        if (tries <= 0) return;
+        setTimeout(function () { poll(tries - 1); }, 30);
+      })(60);
+    })();
     // Native-app feel: kill the browser context menu + drag-select gestures.
     document.addEventListener('contextmenu', (e) => e.preventDefault());
     document.addEventListener('dragstart',   (e) => e.preventDefault());
