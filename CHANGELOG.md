@@ -4,6 +4,38 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.20.0] — 2026-06-23
+
+### Added
+- **Env follower sidechain filter.** LP / HP / BP TPT-SVF on the
+  envelope follower's input tap, so modulation can be driven by a
+  chosen band (kick-triggered ducks on LP, hat-triggered chops on
+  HP, vocal-band swells on BP) instead of the broadband mix. Off =
+  follower sees raw input. The filter is internal to the follower;
+  the main audio path is untouched. New params: `envFilterOn`,
+  `envFilterType`, `envFilterCutoff`, `envFilterRes`.
+
+### Changed
+- **UI auto-scales to the window.** The 1520x960 design canvas now
+  uniformly scales to fill whatever WebView bounds JUCE hands us,
+  via a JS handler driving the existing `#plugin` transform.
+  Default editor size dropped to 1216x768 so the plug-in opens
+  comfortably on a 13" MacBook; resize freely from there.
+- **Master TIME knob is now useful in sync mode.** In sync mode the
+  knob maps to the syncDiv list (one notch per division) instead of
+  writing to a value the engine ignores. The dropdown beside it
+  stays authoritative for keyboard / preset cases.
+
+### Fixed
+- **Per-head VUs were sluggish.** Three layered fixes: the engine
+  now peak-holds each head magnitude across all blocks since the
+  last UI tick (previously sampled one block in ~6 at 30 Hz UI vs
+  256-sample blocks at 48 k); the Fader / DigitalMeter rAF loops no
+  longer tear down on every `levels` event (live value moved to a
+  ref); and a fighting 40 ms CSS transition on the fader meter bar
+  was removed. Meters now register transients and animate at
+  display refresh.
+
 ## [0.14.0] — 2026-06-22
 
 ### Added — hardware-port features
