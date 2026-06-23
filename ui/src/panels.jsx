@@ -681,13 +681,25 @@ function OutputBar({ p, setP, levels, mods }) {
           <KB label="Dry / Wet" k="mix"    p={p} setP={setP} format={fmt.pct}  size="md" lit mods={mods} />
           <WidthDial value={p.width} onChange={(v) => setP('width', v)} label="Width" format={fmt.pct} />
           <KB label="Duck"     k="duck"   p={p} setP={setP} format={fmt.pct}   size="md"     mods={mods} />
-          {/* Three-band ducker crossovers. Tucked next to Duck so the
-              relationship is obvious; small size so they don't dominate
-              the bar. The low crossover sets the L/M split, the high one
-              sets the M/H split. Each band has its own follower; the wet
-              only ducks in the band(s) the dry is hot in. */}
-          <KB label="Duck Low"  k="duckCrossLow"  p={p} setP={setP} format={fmt.hz(60, 1000)}  size="sm" />
-          <KB label="Duck High" k="duckCrossHigh" p={p} setP={setP} format={fmt.hz(500, 8000)} size="sm" />
+          {/* Three-band ducker — opt-in. OFF (default) keeps the
+              broadband ducker from v0.20.x so old presets sound
+              identical. ON splits the dry sidechain and the wet into
+              Low/Mid/High via the two crossovers; only the band(s)
+              the dry is hot in pump the wet. The crossover knobs
+              dim when multiband is off (they're inert in that mode). */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <button className="midi-btn"
+                    data-on={p.duckMultiband ? '1' : '0'}
+                    onClick={() => setP('duckMultiband', !p.duckMultiband)}
+                    title="Split the duck into Low / Mid / High bands">3-BAND</button>
+            <span className="cluster-label" style={{ fontSize: 9 }}>Duck Mode</span>
+          </div>
+          <div style={{ opacity: p.duckMultiband ? 1 : 0.4 }}>
+            <KB label="Duck Low"  k="duckCrossLow"  p={p} setP={setP} format={fmt.hz(60, 1000)}  size="sm" />
+          </div>
+          <div style={{ opacity: p.duckMultiband ? 1 : 0.4 }}>
+            <KB label="Duck High" k="duckCrossHigh" p={p} setP={setP} format={fmt.hz(500, 8000)} size="sm" />
+          </div>
           <KB label="Output"   k="output" p={p} setP={setP} format={fmt.trim}  size="md" lit />
           {/* Auto-gain pill — slow program leveler + fast ceiling catch on
               the output. Tames feedback near self-oscillation without

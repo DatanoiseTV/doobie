@@ -41,9 +41,11 @@ namespace dID
     inline constexpr auto freeze      = "freeze";
     inline constexpr auto delayBypass = "delayBypass";   // skip the tape; let the user run the rest of the chain alone
     inline constexpr auto duck        = "duck";
-    // Duck crossover frequencies for the 3-band ducker. Master `duck`
-    // amount is still the depth knob; these two only shape WHICH bands
-    // react to the dry sidechain.
+    // Three-band duck opt-in. Default OFF -> broadband ducker (matches
+    // every release up to and including 0.20.x, so old presets are
+    // unaffected). ON -> 3-band split with per-band followers driven by
+    // the two crossover params below.
+    inline constexpr auto duckMultiband = "duckMultiband";
     inline constexpr auto duckCrossLow  = "duckCrossLow";  // 60..1000 Hz, default 250
     inline constexpr auto duckCrossHigh = "duckCrossHigh"; // 500..8000 Hz, default 2500
 

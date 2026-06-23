@@ -145,6 +145,7 @@ void DubDelayEngine::reset()
     fbLimEnv = 0.0f;
     outLeveler.reset();
     wowFlutter.reset();
+    duckEnv = 0.0f;
     ducker.reset();
 
     dcFbL.reset();
@@ -320,8 +321,12 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
     const float bbdF = 2.0f * std::sin (3.14159265f * 2500.0f / (float) sampleRate);          // SVF cutoff
     const float bbdQ = 0.85f;                                                                  // low value = resonant (0.85 -> mild lift, no shriek)
 
-    // (Ducking ballistics live inside MultiBandDucker now — see the
-    // call to `ducker.processSample(...)` in the wet stage below.)
+    // Broadband-ducker ballistics — used when params.duckMultiband == false.
+    // The 3-band ducker carries its own copies of these constants and only
+    // runs when the flag is on, so the broadband fast path costs nothing
+    // extra.
+    const float atk = 1.0f - std::exp (-1.0f / (0.005f * (float) sampleRate));
+    const float rel = 1.0f - std::exp (-1.0f / (0.200f * (float) sampleRate));
 
     std::array<float, 4> headPeak { 0.0f, 0.0f, 0.0f, 0.0f };
 
@@ -687,11 +692,24 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
         wetL = mid + side;
         wetR = mid - side;
 
-        // Three-band wet ducking driven by per-band envelopes on the dry
-        // input. Configured per block (cheap); the followers + filters
-        // update per sample inside MultiBandDucker.
-        ducker.setCrossovers (params.duckCrossLow, params.duckCrossHigh);
-        ducker.processSample (dryL, dryR, wetL, wetR, params.duck);
+        // Wet ducking. Default (backwards-compatible) path is the broadband
+        // peak-follower from v0.20.x — single gain on the whole wet, so
+        // existing presets sound identical. Opt in to the 3-band path
+        // (kick pumps wet's low band only, HF trails ring under it) via
+        // `duckMultiband`.
+        if (params.duckMultiband)
+        {
+            ducker.setCrossovers (params.duckCrossLow, params.duckCrossHigh);
+            ducker.processSample (dryL, dryR, wetL, wetR, params.duck);
+        }
+        else
+        {
+            const float dryAbs = std::max (std::fabs (dryL), std::fabs (dryR));
+            duckEnv += (dryAbs > duckEnv ? atk : rel) * (dryAbs - duckEnv);
+            const float duckGain = std::clamp (1.0f - params.duck * duckEnv * 2.0f, 0.0f, 1.0f);
+            wetL *= duckGain;
+            wetR *= duckGain;
+        }
 
         // Keep the wet path centred (reverb/character can introduce a small
         // offset); the dry signal is passed through untouched.

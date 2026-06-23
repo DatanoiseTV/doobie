@@ -77,12 +77,14 @@
     // without bubbling a window 'resize' event).
     (function () {
       var DESIGN_W = 1520, DESIGN_H = 960;
+      var lastW = 0, lastH = 0;
       function fit() {
         var el = document.getElementById('plugin');
         if (!el) return;
         var w = window.innerWidth  || document.documentElement.clientWidth;
         var h = window.innerHeight || document.documentElement.clientHeight;
         if (!w || !h) return;
+        lastW = w; lastH = h;
         var s = Math.min(w / DESIGN_W, h / DESIGN_H);
         el.style.transform = 'scale(' + s + ')';
       }
@@ -100,6 +102,18 @@
         if (tries <= 0) return;
         setTimeout(function () { poll(tries - 1); }, 30);
       })(60);
+      // Persistent watchdog: every 500 ms, if window.innerWidth/Height
+      // disagrees with the size we last fit to, re-fit. Belt-and-braces
+      // for the case where JUCE's WebView setBounds() from C++ doesn't
+      // bubble as a DOM 'resize' event and the ResizeObserver also
+      // misses it (some engine builds do not invalidate body's layout
+      // box on bounds change). Cheap — no work unless dimensions
+      // changed.
+      setInterval(function () {
+        var w = window.innerWidth  || document.documentElement.clientWidth;
+        var h = window.innerHeight || document.documentElement.clientHeight;
+        if (w !== lastW || h !== lastH) fit();
+      }, 500);
     })();
     // Native-app feel: kill the browser context menu + drag-select gestures.
     document.addEventListener('contextmenu', (e) => e.preventDefault());

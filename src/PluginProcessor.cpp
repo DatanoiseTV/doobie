@@ -61,6 +61,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     layout.add (std::make_unique<BoolParam> (pid (dID::freeze), "Freeze", false));
     layout.add (std::make_unique<BoolParam> (pid (dID::delayBypass), "Delay Bypass", false));
     layout.add (std::make_unique<FloatParam> (pid (dID::duck), "Duck", Range (0.0f, 1.0f, 0.001f), 0.0f));
+    layout.add (std::make_unique<BoolParam>  (pid (dID::duckMultiband), "Duck Multiband", false));
     layout.add (std::make_unique<FloatParam> (pid (dID::duckCrossLow),  "Duck Low Cross",
                                               juce::NormalisableRange<float> (60.0f, 1000.0f, 0.0f, 0.35f), 250.0f));
     layout.add (std::make_unique<FloatParam> (pid (dID::duckCrossHigh), "Duck High Cross",
@@ -395,6 +396,7 @@ doobie::EngineParams DoobieAudioProcessor::buildEngineParams()
     p.freeze      = raw (dID::freeze) > 0.5f;
     p.delayBypass = raw (dID::delayBypass) > 0.5f;
     p.duck          = raw (dID::duck);
+    p.duckMultiband = raw (dID::duckMultiband) > 0.5f;
     p.duckCrossLow  = raw (dID::duckCrossLow);
     p.duckCrossHigh = raw (dID::duckCrossHigh);
 

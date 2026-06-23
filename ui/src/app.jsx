@@ -146,6 +146,7 @@ const PARAM_MAP = {
   revLpFreq:  { kind: 'slider', id: 'revLpFreq'    },
   duckCrossLow:  { kind: 'slider', id: 'duckCrossLow'  },
   duckCrossHigh: { kind: 'slider', id: 'duckCrossHigh' },
+  duckMultiband: { kind: 'toggle', id: 'duckMultiband' },
 };
 
 function bindParams(force) {

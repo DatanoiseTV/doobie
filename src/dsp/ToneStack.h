@@ -47,7 +47,9 @@ public:
         high.reset();
     }
 
-    // bass/treble in -1..1 (shelf gain), hp/lp in Hz, hpRes/lpRes in 0..1.
+    // bass/treble in -1..1 (shelf gain), hp/lp in Hz, hpRes/lpRes in 0..1
+    // (user-facing 0 = Butterworth, matches the pre-0.21 biquad response;
+    // 1 = heavy resonance just under self-osc).
     void update (float bass, float treble, float hpHz, float lpHz,
                  float hpResonance, float lpResonance)
     {
@@ -56,8 +58,18 @@ public:
         const auto lowGain  = juce::Decibels::decibelsToGain (bass   * 12.0f);
         const auto highGain = juce::Decibels::decibelsToGain (treble * 12.0f);
 
-        hp.setParams (juce::jlimit (20.0f, 2000.0f,  hpHz), hpResonance);
-        lp.setParams (juce::jlimit (400.0f, 20000.0f, lpHz), lpResonance);
+        // Remap user 0..1 -> Svf res 0.308..1.0 so user=0 lands at
+        // k = 1.414 (Q = 0.707, Butterworth — matches the old
+        // juce::dsp::IIR makeHighPass/makeLowPass response sample-for-sample
+        // for existing presets). user=1 still reaches the high-Q region
+        // (k = 0.1, Q = 10). Done here rather than in Svf so other Svf
+        // users (input filter, env follower) keep their "0 = gentle"
+        // semantics.
+        const float svfHpRes = 0.308f + 0.692f * juce::jlimit (0.0f, 1.0f, hpResonance);
+        const float svfLpRes = 0.308f + 0.692f * juce::jlimit (0.0f, 1.0f, lpResonance);
+
+        hp.setParams (juce::jlimit (20.0f, 2000.0f,  hpHz), svfHpRes);
+        lp.setParams (juce::jlimit (400.0f, 20000.0f, lpHz), svfLpRes);
         low.coefficients  = Coefs::makeLowShelf  (sampleRate, 220.0f,  0.5f, lowGain);
         high.coefficients = Coefs::makeHighShelf (sampleRate, 3200.0f, 0.5f, highGain);
     }

@@ -57,11 +57,13 @@ struct EngineParams
     bool   freeze       = false;
     bool   delayBypass  = false;   // skip the tape entirely; run the rest of the chain on dry
     float  duck         = 0.0f;    // 0..1 wet ducking by dry level
-    // Per-band split for the ducker. Two crossover Hz values define the
-    // Low / Mid / High bands. Each band gets its own envelope follower on
-    // the dry sidechain; the wet is split into the same bands and only the
-    // band(s) currently being driven duck. Lets HF reverb trails ring under
-    // a low-mid pad / kick.
+    // Multiband-ducker opt-in. Default false keeps the broadband behaviour
+    // that v0.20.x and earlier shipped, so loading an older preset that
+    // already has `duck > 0` sounds identical. When true, the dry sidechain
+    // and the wet are split into Low / Mid / High via the two crossovers
+    // below and each band ducks independently — kick (low band) pumps the
+    // wet's low band only, leaving HF reverb / delay trails ringing.
+    bool   duckMultiband = false;
     float  duckCrossLow  = 250.0f;  // 60 Hz .. 1 kHz — low/mid split
     float  duckCrossHigh = 2500.0f; // 500 Hz .. 8 kHz — mid/high split
 
@@ -338,7 +340,10 @@ private:
     // transport instability), applied to the recirculating feedback.
     TapeAge tapeAge;
 
-    // Three-band ducker — replaces the previous broadband `duckEnv` scalar.
+    // Broadband ducker state — used when params.duckMultiband == false
+    // (default; matches the v0.20.x and earlier behaviour). The 3-band
+    // ducker below opts in via the same flag.
+    float duckEnv = 0.0f;
     MultiBandDucker ducker;
     uint32_t rngState = 0x1234567u;
 
