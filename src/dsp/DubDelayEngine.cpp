@@ -41,6 +41,9 @@ void DubDelayEngine::prepare (double sr, int maxBlockSize)
     gated.prepare (sr);
     inFilterL.prepare (sr); inFilterR.prepare (sr);
     phaserL.prepare (sr);   phaserR.prepare (sr);
+    revHpL.prepare (sr); revHpR.prepare (sr);
+    revLpL.prepare (sr); revLpR.prepare (sr);
+    ducker.prepare (sr);
     // Stereo phaser: right channel sweeps 1/4 cycle out of phase so the
     // notch motion paints across the image instead of summing to mono.
     phaserL.setPhaseOffset (0.0f); phaserR.setPhaseOffset (0.25f);
@@ -142,7 +145,7 @@ void DubDelayEngine::reset()
     fbLimEnv = 0.0f;
     outLeveler.reset();
     wowFlutter.reset();
-    duckEnv = 0.0f;
+    ducker.reset();
 
     dcFbL.reset();
     dcFbR.reset();
@@ -201,6 +204,26 @@ void DubDelayEngine::applyReverb (float inL, float inR, float& outL, float& outR
         case 8: gated.process   (inL, inR, outL, outR); break; // classic 80s gated reverb
         default: outL = inL; outR = inR; break;
     }
+
+    // Reverb post-filter — stereo HP + LP on the wet only. Fixed gentle Q
+    // (0.15) keeps it a mix-shaper, not a resonator. Skipped entirely when
+    // both params are at their bypass extremes so the common case is free.
+    const bool hpOn = params.revHpFreq > 25.0f;
+    const bool lpOn = params.revLpFreq < 18000.0f;
+    if (hpOn)
+    {
+        revHpL.setParams (params.revHpFreq, 0.15f);
+        revHpR.copyCoefsFrom (revHpL);
+        outL = revHpL.process (outL, 1); // 1 = HP
+        outR = revHpR.process (outR, 1);
+    }
+    if (lpOn)
+    {
+        revLpL.setParams (params.revLpFreq, 0.15f);
+        revLpR.copyCoefsFrom (revLpL);
+        outL = revLpL.process (outL, 0); // 0 = LP
+        outR = revLpR.process (outR, 0);
+    }
 }
 
 void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
@@ -226,10 +249,12 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
     smoothedDrive.setTargetValue  (params.drive);
     smoothedAge.setTargetValue    (params.age);
 
-    toneL.update (params.bass, params.treble, params.hpFreq, params.lpFreq);
-    toneR.update (params.bass, params.treble, params.hpFreq, params.lpFreq);
-    preToneL.update (params.preBass, params.preTreble, params.preHp, params.preLp);
-    preToneR.update (params.preBass, params.preTreble, params.preHp, params.preLp);
+    toneL.update (params.bass, params.treble, params.hpFreq, params.lpFreq,
+                  params.hpRes, params.lpRes);
+    toneR.update (params.bass, params.treble, params.hpFreq, params.lpFreq,
+                  params.hpRes, params.lpRes);
+    preToneL.update (params.preBass, params.preTreble, params.preHp, params.preLp, 0.0f, 0.0f);
+    preToneR.update (params.preBass, params.preTreble, params.preHp, params.preLp, 0.0f, 0.0f);
     // satL/R drive and tapeAge amount are pulled from their smoothers inside
     // the per-sample loop so knob twiddles ramp instead of stepping. The
     // wowFlutter targets are set per block (its own internal smoothing is
@@ -295,9 +320,8 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
     const float bbdF = 2.0f * std::sin (3.14159265f * 2500.0f / (float) sampleRate);          // SVF cutoff
     const float bbdQ = 0.85f;                                                                  // low value = resonant (0.85 -> mild lift, no shriek)
 
-    // Ducking ballistics (fast attack, slow release).
-    const float atk = 1.0f - std::exp (-1.0f / (0.005f * (float) sampleRate));
-    const float rel = 1.0f - std::exp (-1.0f / (0.200f * (float) sampleRate));
+    // (Ducking ballistics live inside MultiBandDucker now — see the
+    // call to `ducker.processSample(...)` in the wet stage below.)
 
     std::array<float, 4> headPeak { 0.0f, 0.0f, 0.0f, 0.0f };
 
@@ -663,12 +687,11 @@ void DubDelayEngine::process (juce::AudioBuffer<float>& buffer)
         wetL = mid + side;
         wetR = mid - side;
 
-        // Wet ducking driven by the dry input level.
-        const float dryAbs = std::max (std::abs (dryL), std::abs (dryR));
-        duckEnv += (dryAbs > duckEnv ? atk : rel) * (dryAbs - duckEnv);
-        const float duckGain = std::clamp (1.0f - params.duck * duckEnv * 2.0f, 0.0f, 1.0f);
-        wetL *= duckGain;
-        wetR *= duckGain;
+        // Three-band wet ducking driven by per-band envelopes on the dry
+        // input. Configured per block (cheap); the followers + filters
+        // update per sample inside MultiBandDucker.
+        ducker.setCrossovers (params.duckCrossLow, params.duckCrossHigh);
+        ducker.processSample (dryL, dryR, wetL, wetR, params.duck);
 
         // Keep the wet path centred (reverb/character can introduce a small
         // offset); the dry signal is passed through untouched.

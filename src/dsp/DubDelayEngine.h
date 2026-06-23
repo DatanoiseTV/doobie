@@ -16,6 +16,7 @@
 #include "WowFlutter.h"
 #include "Phaser.h"
 #include "Svf.h"
+#include "MultiBandDucker.h"
 #include "OutputLeveler.h"
 #include "Saturation.h"
 #include "ToneStack.h"
@@ -56,6 +57,13 @@ struct EngineParams
     bool   freeze       = false;
     bool   delayBypass  = false;   // skip the tape entirely; run the rest of the chain on dry
     float  duck         = 0.0f;    // 0..1 wet ducking by dry level
+    // Per-band split for the ducker. Two crossover Hz values define the
+    // Low / Mid / High bands. Each band gets its own envelope follower on
+    // the dry sidechain; the wet is split into the same bands and only the
+    // band(s) currently being driven duck. Lets HF reverb trails ring under
+    // a low-mid pad / kick.
+    float  duckCrossLow  = 250.0f;  // 60 Hz .. 1 kHz — low/mid split
+    float  duckCrossHigh = 2500.0f; // 500 Hz .. 8 kHz — mid/high split
 
     std::array<bool,  4> headOn    { true, false, false, false }; // the head matrix
     std::array<float, 4> headLevel { 0.9f, 0.0f, 0.0f, 0.7f };
@@ -74,6 +82,11 @@ struct EngineParams
 
     float bass = 0.0f, treble = 0.0f;   // feedback shelves (-1..1)
     float hpFreq = 120.0f, lpFreq = 6500.0f;
+    // Resonance for the in-loop HP / LP. 0 = Butterworth (matches pre-0.21
+    // behaviour); higher values pile a resonant peak at the cutoff that
+    // recirculates with the feedback — useful for tuning the echo's pitched
+    // ringing to the song key. Clamped < self-osc in Svf.
+    float hpRes = 0.0f, lpRes = 0.0f;
 
     int   reverbMode  = 1;   // 0 off, 1 spring, 2 plate, 3 series, 4 parallel,
                              // 5 hall, 6 shimmer, 7 convolution, 8 gated
@@ -82,6 +95,13 @@ struct EngineParams
     float springDecay = 0.5f, springTone = 0.5f;
     float plateDecay = 0.6f, plateSize = 0.6f, plateDamp = 0.4f, platePredelay = 20.0f, plateMod = 0.3f;
     float irGain     = 1.0f;  // linear makeup gain on the convolution wet
+
+    // Reverb post-filter: HP and LP on the reverb wet (sits inside
+    // applyReverb() so all routes — post/pre/in-feedback — get the same
+    // shaping). Defaults are extreme = bypassed so existing presets are
+    // unchanged.
+    float revHpFreq  = 20.0f;     // 20 Hz .. 2 kHz, default off
+    float revLpFreq  = 20000.0f;  // 200 Hz .. 20 kHz, default off
 
     // Gated-reverb-only controls. The plate beneath the gate reuses the
     // plate{Decay,Size,Damp,Mod,Predelay} so users don't have a second
@@ -275,6 +295,12 @@ private:
     Svf    inFilterL, inFilterR;
     Phaser phaserL,   phaserR;
 
+    // Reverb-wet post filter: stereo HP + LP on the reverb output (regardless
+    // of route). Gentle fixed Q (0.15) — this is a mix-shaping filter, not
+    // a screamer. Bypassed when params are at their extremes (HP <= 25 Hz
+    // AND LP >= 18 kHz) so the common "no filter" case costs nothing.
+    Svf    revHpL, revHpR, revLpL, revLpR;
+
     // Output leveler (slow program leveler + fast ceiling catcher). Tames
     // feedback runaway at the output stage so live use doesn't clip the
     // bus or get aggressively loud as repeats build. Linked stereo.
@@ -312,7 +338,8 @@ private:
     // transport instability), applied to the recirculating feedback.
     TapeAge tapeAge;
 
-    float duckEnv = 0.0f;
+    // Three-band ducker — replaces the previous broadband `duckEnv` scalar.
+    MultiBandDucker ducker;
     uint32_t rngState = 0x1234567u;
 
     std::array<std::atomic<float>, 4> headMag { };

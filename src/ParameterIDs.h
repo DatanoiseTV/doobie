@@ -41,6 +41,11 @@ namespace dID
     inline constexpr auto freeze      = "freeze";
     inline constexpr auto delayBypass = "delayBypass";   // skip the tape; let the user run the rest of the chain alone
     inline constexpr auto duck        = "duck";
+    // Duck crossover frequencies for the 3-band ducker. Master `duck`
+    // amount is still the depth knob; these two only shape WHICH bands
+    // react to the dry sidechain.
+    inline constexpr auto duckCrossLow  = "duckCrossLow";  // 60..1000 Hz, default 250
+    inline constexpr auto duckCrossHigh = "duckCrossHigh"; // 500..8000 Hz, default 2500
 
     // ---- Multi-head ---------------------------------------------------------
     // Four read heads tapping one tape. Each head has an on/off switch (the head
@@ -93,6 +98,12 @@ namespace dID
     inline constexpr auto treble      = "treble";      // high shelf in feedback
     inline constexpr auto hpFreq      = "hpFreq";      // feedback high-pass
     inline constexpr auto lpFreq      = "lpFreq";      // feedback low-pass
+    // Resonance for the in-loop HP / LP. 0 = Butterworth (matches pre-0.21
+    // behaviour, no change to existing presets); higher values pile a
+    // resonant peak that recirculates with the feedback so the user can
+    // tune ringing repeats to the song key.
+    inline constexpr auto hpRes       = "hpRes";       // 0..0.95
+    inline constexpr auto lpRes       = "lpRes";       // 0..0.95
 
     // ---- Reverb -------------------------------------------------------------
     inline constexpr auto reverbMode    = "reverbMode";    // off/spring/plate/series/parallel
@@ -107,6 +118,11 @@ namespace dID
     inline constexpr auto reverbMod     = "reverbMod";
     inline constexpr auto irGain        = "irGain";    // dB, makeup gain on the convolution wet
     inline constexpr auto irSpeed       = "irSpeed";   // playback speed multiplier (0.25..4.0)
+    // Reverb post-filter (HP + LP on the wet, sits inside applyReverb so
+    // every route gets the same shaping). Defaults sit at the extremes so
+    // existing presets sound unchanged.
+    inline constexpr auto revHpFreq     = "revHpFreq"; // 20..2000 Hz, default 20
+    inline constexpr auto revLpFreq     = "revLpFreq"; // 200..20000 Hz, default 20000
     // Gated-reverb-only controls. Only consulted when reverbMode == "Gated"
     // (index 8); inert otherwise. Plate-shape knobs (size/decay/damp/mod) are
     // reused for the gate's underlying reverb so users don't have a second
