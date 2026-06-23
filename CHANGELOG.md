@@ -4,6 +4,27 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [0.21.1] — 2026-06-24
+
+Bug-fix release on top of the unreleased 0.21.0 commit. Fixes two
+regressions that affected existing presets, and the UI fit-to-window
+behaviour that was sometimes stuck at 1× in a larger window.
+
+### Fixed
+- **In-loop HP / LP at default Res sounds the same as before.** The
+  Svf-based ToneStack remapped to give Butterworth Q (0.707) at the
+  user-facing `0` instead of the previous Q = 0.5 (overdamped). Old
+  presets with `hpRes = lpRes = 0` now match v0.20.x sample-for-sample.
+- **`duck > 0` in old presets sounds the same as before.** The
+  3-band ducker is now opt-in via a new `duckMultiband` toggle
+  (default OFF). With it off the engine uses the original broadband
+  ducker verbatim. Flip the new **3-BAND** button in the Output bar
+  to opt into the band-split behaviour.
+- **UI fit-to-window watchdog.** The fit JS now re-checks every 500
+  ms and re-fits if `window.innerWidth/Height` have drifted —
+  covers the case where JUCE's `setBounds()` on the WebView from C++
+  doesn't bubble as a DOM resize.
+
 ## [0.21.0] — 2026-06-24
 
 ### Added
