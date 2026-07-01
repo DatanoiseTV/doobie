@@ -7,20 +7,23 @@ the Listen section stays hidden — the page is clean without it.
 ## Generating the demos
 
 From the repo root, run the renderer with any short, dry, loop-able source
-(a drum groove, a chord, a vocal phrase — 4–8 seconds is plenty):
+(a Rhodes phrase, a drum groove, a vocal — a few seconds is plenty). wav, aiff,
+flac or mp3 all work; ffmpeg decodes it:
 
 ```sh
 tools/render-demos.sh path/to/source-loop.wav
 ```
 
-It builds the `doobie_render_demo` tool, runs your loop through a curated set of
-factory presets (Classic Dub, King Tubby, Space Echo, Ambient Wash, Cathedral,
-Shimmer Drift, Phaser Bloom, Gated 80s), and writes the clips plus `dry.wav` and
-`manifest.json` here. If `ffmpeg` is on your PATH the clips are transcoded to
-mp3 and the manifest is updated to match.
+It builds the `doobie_render_demo` tool, runs your loop through **every non-MIDI
+factory preset** (MIDI-note presets are skipped — they need incoming notes),
+auto-derives a category and one-line descriptor for each from the engine state,
+and writes one clip per preset plus `dry.wav` and `manifest.json` here. With
+`ffmpeg` present the clips are transcoded to mp3 and the manifest updated to
+match.
 
-Edit the `kDemos` list in `tools/RenderDemo.cpp` to change which presets are
-showcased.
+The current demos were rendered from a Rhodes electric-piano loop. Category
+grouping and the MIDI-skip logic live in `describe()` / the render loop in
+`tools/RenderDemo.cpp`.
 
 ## manifest.json shape
 

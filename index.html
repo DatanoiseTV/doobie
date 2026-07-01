@@ -237,8 +237,18 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
 }
 .pl-dry:hover{ color:var(--txt); border-color:var(--amber-dim); }
 .pl-dry[aria-pressed="true"]{ color:oklch(0.16 0.02 60); background:linear-gradient(180deg, var(--amber), var(--amber-2)); border-color:transparent; }
-.pl-list{ display:grid; grid-template-columns:repeat(2,1fr); gap:1px; background:var(--line-2); }
-@media(max-width:560px){ .pl-list{ grid-template-columns:1fr; } .player-now{ flex-wrap:wrap; } .pl-meta{ order:3; flex-basis:100%; } }
+.pl-list{ max-height:min(60vh, 560px); overflow-y:auto; overscroll-behavior:contain; }
+.pl-list::-webkit-scrollbar{ width:10px; }
+.pl-list::-webkit-scrollbar-thumb{ background:var(--raise); border-radius:10px; border:3px solid var(--panel); }
+.pl-group{ display:grid; grid-template-columns:repeat(2,1fr); gap:1px; background:var(--line-2); }
+.pl-cat{
+  grid-column:1 / -1; display:flex; align-items:center; gap:10px;
+  padding:11px 20px; background:var(--panel-2); position:sticky; top:0; z-index:2;
+  font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:var(--amber-2);
+  border-top:1px solid var(--line-2);
+}
+.pl-cat .cnt{ color:var(--txt-3); letter-spacing:0.06em; }
+@media(max-width:560px){ .pl-group{ grid-template-columns:1fr; } .player-now{ flex-wrap:wrap; } .pl-meta{ order:3; flex-basis:100%; } }
 .pl-item{
   display:flex; align-items:center; gap:12px; padding:15px 20px; cursor:pointer;
   background:var(--panel); border:0; width:100%; text-align:left; color:var(--txt); font-family:var(--font);
@@ -487,8 +497,8 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="sec-tag">Listen</span>
-      <h2>The same loop, eight ways.</h2>
-      <p>One dry phrase run through the factory presets — dub, ambient, hall, shimmer, phaser and more. Hit a preset to hear it; tap <b>Dry</b> to compare against the source.</p>
+      <h2>One Rhodes loop, every preset.</h2>
+      <p>The same dry electric-piano phrase run through all <span id="pl-count">79</span> non-MIDI factory presets, grouped by character. Hit any preset to hear it; tap <b>Dry</b> to A/B against the untreated source.</p>
     </div>
 
     <div class="player reveal">
@@ -627,7 +637,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
         </h3>
         <div class="os">Universal — Apple Silicon &amp; Intel</div>
         <p>VST3, Audio Unit and Standalone. Drop the plug-ins in your Library folder and rescan.</p>
-        <a class="btn btn-amber" href="https://github.com/DatanoiseTV/doobie/releases/latest" target="_blank" rel="noopener">Latest release</a>
+        <a id="dl-macos" class="btn btn-amber" href="https://github.com/DatanoiseTV/doobie/releases/latest" target="_blank" rel="noopener">Latest release</a>
       </div>
 
       <div class="dl-card">
@@ -637,7 +647,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
         </h3>
         <div class="os">x86_64 tarball</div>
         <p>VST3 and Standalone, built on Ubuntu. Extract into your VST3 path and you're done.</p>
-        <a class="btn btn-amber" href="https://github.com/DatanoiseTV/doobie/releases/latest" target="_blank" rel="noopener">Latest release</a>
+        <a id="dl-linux" class="btn btn-amber" href="https://github.com/DatanoiseTV/doobie/releases/latest" target="_blank" rel="noopener">Latest release</a>
       </div>
 
       <div class="dl-card">
@@ -685,6 +695,24 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
   els.forEach(function(e){ io.observe(e); });
 })();
 
+/* point the download buttons at the actual latest release assets */
+(function(){
+  var mac = document.getElementById('dl-macos');
+  var lin = document.getElementById('dl-linux');
+  fetch('https://api.github.com/repos/DatanoiseTV/doobie/releases/latest', { headers:{ Accept:'application/vnd.github+json' } })
+    .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(function(rel){
+      var assets = rel.assets || [];
+      function find(re){ for(var i=0;i<assets.length;i++){ if(re.test(assets[i].name)) return assets[i].browser_download_url; } return null; }
+      var m = find(/mac|osx|darwin|\.pkg$|\.dmg$/i) || find(/\.zip$/i);
+      var l = find(/linux/i) || find(/\.tar\.(gz|xz)$/i) || find(/\.AppImage$/i);
+      var ver = rel.tag_name ? (' ' + rel.tag_name) : '';
+      if(m && mac){ mac.href = m; mac.textContent = 'Download' + ver; }
+      if(l && lin){ lin.href = l; lin.textContent = 'Download' + ver; }
+    })
+    .catch(function(){ /* keep the /releases/latest fallback hrefs */ });
+})();
+
 /* preset demo player — only shows if assets/demos/manifest.json exists */
 (function(){
   fetch('assets/demos/manifest.json', { cache:'no-cache' })
@@ -711,18 +739,35 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
     var dryBtn = document.getElementById('pl-dry');
     var cur = -1, dry = false;
 
+    var countEl = document.getElementById('pl-count');
+    if(countEl) countEl.textContent = m.presets.length;
+
+    // group by category, preserving first-appearance order
+    var groups = [], byCat = {};
     m.presets.forEach(function(p, i){
-      var b = document.createElement('button');
-      b.className = 'pl-item'; b.type = 'button';
-      b.innerHTML = '<span class="num">'+String(i+1).padStart(2,'0')+'</span>'+
-        '<span class="pi-name"></span>'+
-        '<span class="chip"></span>'+
-        '<span class="pi-eq"><i></i><i></i><i></i><i></i></span>';
-      b.querySelector('.pi-name').textContent = p.name;
-      b.querySelector('.chip').textContent = p.category;
-      b.addEventListener('click', function(){ select(i, true); });
-      list.appendChild(b);
-      p._el = b;
+      p._i = i;
+      if(!(p.category in byCat)){ byCat[p.category] = []; groups.push(p.category); }
+      byCat[p.category].push(p);
+    });
+    groups.forEach(function(cat){
+      var g = document.createElement('div'); g.className = 'pl-group';
+      var h = document.createElement('div'); h.className = 'pl-cat';
+      h.innerHTML = '<span></span><span class="cnt"></span>';
+      h.children[0].textContent = cat;
+      h.children[1].textContent = byCat[cat].length;
+      g.appendChild(h);
+      byCat[cat].forEach(function(p){
+        var b = document.createElement('button');
+        b.className = 'pl-item'; b.type = 'button';
+        b.innerHTML = '<span class="num">'+String(p._i+1).padStart(2,'0')+'</span>'+
+          '<span class="pi-name"></span>'+
+          '<span class="pi-eq"><i></i><i></i><i></i><i></i></span>';
+        b.querySelector('.pi-name').textContent = p.name;
+        b.addEventListener('click', function(){ select(p._i, true); });
+        g.appendChild(b);
+        p._el = b;
+      });
+      list.appendChild(g);
     });
 
     function setIcons(playing){
