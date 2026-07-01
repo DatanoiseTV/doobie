@@ -1,0 +1,13 @@
+{
+  "name": "doobie-ui-library",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Standalone/design-tool build of the doobie WebView UI (ui/src) with a stub JUCE bridge.",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
+}
