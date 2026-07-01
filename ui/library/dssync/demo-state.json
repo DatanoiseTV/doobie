@@ -1,0 +1,253 @@
+{
+  "p": {
+    "inTrim": 0.55,
+    "inLowCut": 0.12,
+    "inHighCut": 0.86,
+    "inBass": 0.55,
+    "inTreble": 0.48,
+    "inFilterOn": true,
+    "inFilterType": "LP",
+    "inFilterCutoff": 0.6,
+    "inFilterRes": 0.3,
+    "phaserOn": false,
+    "phaserRoute": "post",
+    "phaserRate": 0.35,
+    "phaserDepth": 0.5,
+    "phaserFb": 0.4,
+    "phaserMix": 0.3,
+    "time": 0.42,
+    "feedback": 0.46,
+    "sync": false,
+    "division": "1/8",
+    "character": "Tape",
+    "pingpong": true,
+    "freeze": false,
+    "bypass": false,
+    "killFb": false,
+    "wow": 0.28,
+    "flutter": 0.22,
+    "sat": 0.4,
+    "age": 0.18,
+    "fbLowCut": 0.14,
+    "fbHighCut": 0.82,
+    "fbBass": 0.52,
+    "fbTreble": 0.5,
+    "revType": "Spring > Plate",
+    "route": "post",
+    "revMix": 0.32,
+    "revSpring": 0.5,
+    "revStone": 0.5,
+    "revDamp": 0.45,
+    "revMod": 0.3,
+    "revPlate": 0.55,
+    "revSize": 0.6,
+    "revPre": 0.2,
+    "revWidth": 0.62,
+    "gateThr": 0.4,
+    "gateHold": 0.35,
+    "gateRel": 0.4,
+    "shimmerSemis": 0.5,
+    "pitchSemis": 0.5,
+    "pitchOn": false,
+    "pitchSpread": 0.3,
+    "pitchAlgo": "FFT",
+    "pitchRoute": "Feedback",
+    "midiPitchMode": false,
+    "midiPortaOn": false,
+    "midiPortaMs": 0.3,
+    "autoGain": true,
+    "irGain": 0.5,
+    "irSpeed": 0.5,
+    "mix": 0.36,
+    "width": 0.62,
+    "duck": 0.3,
+    "output": 0.5,
+    "lfo1Rate": 0.35,
+    "lfo1Depth": 0.5,
+    "lfo1Wave": "Sine",
+    "lfo1Sync": false,
+    "lfo1Div": "1/8",
+    "lfo1Smooth": 0.2,
+    "lfo1Offset": 0.5,
+    "lfo2Rate": 0.5,
+    "lfo2Depth": 0.35,
+    "lfo2Wave": "Triangle",
+    "lfo2Sync": false,
+    "lfo2Div": "1/8",
+    "lfo2Smooth": 0.2,
+    "lfo2Offset": 0.5,
+    "lfo3Rate": 0.28,
+    "lfo3Depth": 0.4,
+    "lfo3Wave": "Square",
+    "lfo3Sync": false,
+    "lfo3Div": "1/8",
+    "lfo3Smooth": 0.2,
+    "lfo3Offset": 0.5,
+    "lfo4Rate": 0.6,
+    "lfo4Depth": 0.3,
+    "lfo4Wave": "Saw Up",
+    "lfo4Sync": false,
+    "lfo4Div": "1/8",
+    "lfo4Smooth": 0.2,
+    "lfo4Offset": 0.5,
+    "envAtk": 0.3,
+    "envRel": 0.45,
+    "envSens": 0.55,
+    "envFiltOn": false,
+    "envFiltType": "LP",
+    "envFiltCut": 0.6,
+    "envFiltRes": 0.3,
+    "hpRes": 0.25,
+    "lpRes": 0.25,
+    "revHpFreq": 0.1,
+    "revLpFreq": 0.85,
+    "duckCrossLow": 0.3,
+    "duckCrossHigh": 0.7,
+    "duckMultiband": false
+  },
+  "heads": [
+    {
+      "id": "A",
+      "on": true,
+      "level": 0.8,
+      "pan": 0.35,
+      "time": 0.25,
+      "offset": 0.5
+    },
+    {
+      "id": "B",
+      "on": true,
+      "level": 0.6,
+      "pan": 0.65,
+      "time": 0.5,
+      "offset": 0.5
+    },
+    {
+      "id": "C",
+      "on": true,
+      "level": 0.45,
+      "pan": 0.45,
+      "time": 0.62,
+      "offset": 0.5
+    },
+    {
+      "id": "D",
+      "on": false,
+      "level": 0.3,
+      "pan": 0.6,
+      "time": 0.78,
+      "offset": 0.5
+    }
+  ],
+  "matrix": [
+    {
+      "src": "LFO 1",
+      "dst": "Delay Time",
+      "amt": 0.43999999999999995,
+      "mode": "Bipolar"
+    },
+    {
+      "src": "LFO 2",
+      "dst": "Feedback",
+      "amt": 0.19999999999999996,
+      "mode": "Bipolar"
+    },
+    {
+      "src": "Off",
+      "dst": "Off",
+      "amt": 0,
+      "mode": "Bipolar"
+    },
+    {
+      "src": "Off",
+      "dst": "Off",
+      "amt": 0,
+      "mode": "Bipolar"
+    },
+    {
+      "src": "Off",
+      "dst": "Off",
+      "amt": 0,
+      "mode": "Bipolar"
+    },
+    {
+      "src": "Off",
+      "dst": "Off",
+      "amt": 0,
+      "mode": "Bipolar"
+    },
+    {
+      "src": "Off",
+      "dst": "Off",
+      "amt": 0,
+      "mode": "Bipolar"
+    },
+    {
+      "src": "Off",
+      "dst": "Off",
+      "amt": 0,
+      "mode": "Bipolar"
+    }
+  ],
+  "levels": {
+    "in": -14,
+    "delay": -18,
+    "reverb": -22,
+    "out": -12,
+    "midiNote": -1,
+    "grDb": 0,
+    "env": 0.35,
+    "lfo1v": 0.4,
+    "lfo2v": -0.2,
+    "lfo3v": 0.1,
+    "lfo4v": 0.3,
+    "headMag": [
+      0.72,
+      0.5,
+      0.34,
+      0
+    ],
+    "peak": {
+      "in": -8,
+      "delay": -12,
+      "reverb": -16,
+      "out": -6,
+      "l": -7,
+      "r": -9
+    }
+  },
+  "stages": [
+    {
+      "label": "IN",
+      "base": 0.7,
+      "peakDb": -8
+    },
+    {
+      "label": "DELAY",
+      "base": 0.55,
+      "peakDb": -12
+    },
+    {
+      "label": "REVERB",
+      "base": 0.42,
+      "peakDb": -16
+    },
+    {
+      "label": "OUT",
+      "base": 0.62,
+      "peakDb": -6
+    }
+  ],
+  "presetInfo": {
+    "name": "Dub Chamber",
+    "cat": "DUB",
+    "dirty": false
+  },
+  "irInfo": {
+    "hasIR": true,
+    "factoryIndex": 0,
+    "isFactory": true,
+    "isFile": false,
+    "name": "Concert Hall"
+  }
+}

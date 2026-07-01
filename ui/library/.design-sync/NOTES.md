@@ -10,6 +10,9 @@ UI has no TypeScript / `.d.ts` tree, so components can't be discovered by
    classic runtime) + concatenates in `index.html` order, substituting
    `src/stub-juce.js` (fake JUCE bridge) and appending `src/demo-props.js`.
    Produces `dist/doobie-bundle.js` exposing everything on `window.Doobie`.
+1b. `node dssync/capture-demo.mjs` — runs the bundle once in headless Chrome and
+   writes `dssync/demo-state.json` (the built demo `p`/heads/matrix/levels/…).
+   Re-run when the stub defaults or PARAM_MAP change. See the CRITICAL note below.
 2. `node dssync/gen.mjs` — emits `ds-bundle/` (the design-sync upload layout) from
    that bundle + per-component metadata in `dssync/meta/<Name>.mjs`. Card previews
    are authored HTML that mount `window.Doobie.<Name>` with `window.Doobie.__demo`
@@ -45,6 +48,21 @@ the validate contact sheets (2 sheets, `ds-bundle/_screenshots/`).
   `⚠` error (validate flags it `bad`).
 - `ui/src/*.jsx` is transpiled as-is; a syntax feature esbuild's classic-JSX
   transform can't handle would break the bundle (none currently).
+
+## CRITICAL: preview cards must be self-contained (no non-standard bundle globals)
+
+claude.ai/design reconstructs `window.Doobie` in the card-render environment from
+the **declared components in the `@ds-bundle` header only**. Any extra property the
+bundle sets (e.g. the original `window.Doobie.__demo` helper) is **NOT preserved**,
+and the intra-bundle helper globals (`bindParams`/`makeP`) may be absent too. Cards
+that read `demo = window.Doobie.__demo` therefore threw `demo is undefined` in the
+app (they passed the LOCAL render check because the local bundle DOES set `__demo`).
+
+Fix (current design): `gen.mjs` inlines `dssync/demo-state.json` into every card as
+a literal `var demo = {...}` with no-op setters, so cards depend ONLY on the real
+`window.Doobie.<Name>` exports — the app's actual contract. The local render check
+can't catch this class of bug (it always has the full bundle), so after any card
+change, sanity-check in the actual claude.ai/design pane, not just validate.
 
 ## Upload gotcha
 

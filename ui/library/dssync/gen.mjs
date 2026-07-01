@@ -32,6 +32,15 @@ const OUT = resolve(LIB, 'ds-bundle');
 const NAMESPACE = 'Doobie';
 const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
 
+// Demo state captured from the running bundle (dssync/capture-demo). Inlined
+// into every card so previews depend ONLY on the real window.Doobie.<Name>
+// exports — claude.ai/design reconstructs the namespace from the declared
+// components and drops any non-standard helper (a `window.Doobie.__demo` is
+// NOT preserved there), so the cards must carry their own fixtures.
+let DEMO_STATE = '{}';
+try { DEMO_STATE = readFileSync(resolve(META, '..', 'demo-state.json'), 'utf8').trim(); }
+catch { console.error('! dssync/demo-state.json missing — run the capture step (see NOTES.md) first'); }
+
 // ---- load metadata modules ----
 const metaFiles = readdirSync(META).filter((f) => f.endsWith('.mjs')).sort();
 const components = [];
@@ -107,7 +116,13 @@ function card(m) {
 <script src="../../../_ds_bundle.js"></script>
 <script>
 (function(){
-  var D = window.Doobie, demo = D.__demo, h = React.createElement;
+  var D = window.Doobie, h = React.createElement;
+  var noop = function(){};
+  // Self-contained demo fixtures (baked from the running bundle) + no-op
+  // setters. No dependency on any non-standard bundle global.
+  var demo = ${DEMO_STATE};
+  demo.setP = noop; demo.setHead = noop; demo.setMx = noop; demo.noop = noop;
+  demo.mods = { live: {} };
   var cells = [
 ${cellsJs}
   ];
