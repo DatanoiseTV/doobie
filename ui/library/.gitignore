@@ -1,2 +1,5 @@
 node_modules/
 dist/
+ds-bundle/
+.ds-sync/
+.design-sync/.*

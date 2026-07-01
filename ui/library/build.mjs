@@ -87,6 +87,7 @@ async function build() {
 
   const tape = read(resolve(SRC, 'tape.js'));
   const stub = read(resolve(__dir, 'src', 'stub-juce.js'));
+  const demo = read(resolve(__dir, 'src', 'demo-props.js'));
 
   // Order mirrors index.html: bridge stub, tape, juce-bridge, then components.
   const bundle = [
@@ -95,6 +96,7 @@ async function build() {
     `\n/* ==== tape.js ==== */\n${tape}`,
     bridge, knob, viz, mounts, panels, app,
     collector,
+    `\n/* ==== demo-props.js ==== */\n${demo}`,
   ].join('\n');
 
   writeFileSync(resolve(OUT, 'doobie-bundle.js'), bundle);

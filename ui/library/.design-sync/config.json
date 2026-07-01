@@ -1,0 +1,9 @@
+{
+  "shape": "off-script",
+  "globalName": "Doobie",
+  "projectId": "40aeec42-3c2f-49bb-bf5c-9b980607e914",
+  "buildCmd": "node build.mjs && node dssync/gen.mjs",
+  "outDir": "ds-bundle",
+  "readmeHeader": ".design-sync/conventions.md",
+  "note": "Off-script sync — the converter is bypassed (no .d.ts tree). See NOTES.md. Validate: DS_CHROMIUM_PATH=<system Chrome> node .ds-sync/package-validate.mjs ./ds-bundle"
+}
