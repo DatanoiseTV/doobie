@@ -334,6 +334,7 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
   100%{ box-shadow:0 0 0 18px transparent, 0 0 0 1px oklch(0.82 0.14 65 / .5) inset; }
 }
 .pl-play svg{ margin-left:1px; }
+.pl-play svg[hidden]{ display:none; }  /* [hidden] has no UA style on SVG elements */
 .pl-meta{ flex:1; min-width:0; }
 .pl-line{ display:flex; align-items:center; gap:10px; }
 .pl-name{ font-size:1.1rem; font-weight:600; letter-spacing:-0.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -342,8 +343,29 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
   padding:3px 8px; border-radius:5px; color:var(--amber); border:1px solid var(--amber-dim); background:oklch(0.24 0.03 62 / .4);
 }
 .pl-tag{ margin-top:3px; font-size:0.88rem; color:var(--txt-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.pl-bar{ margin-top:12px; height:5px; border-radius:100px; background:var(--inset); overflow:hidden; cursor:pointer; }
-.pl-fill{ height:100%; width:0; border-radius:100px; background:linear-gradient(90deg, var(--amber-2), var(--amber)); transition:width .08s linear; }
+.pl-transport{ display:flex; align-items:center; gap:10px; flex:0 0 auto; }
+.pl-skip{
+  width:38px; height:38px; border-radius:50%; cursor:pointer;
+  border:1px solid var(--line); background:oklch(0.238 0.007 60 / .6); color:var(--txt-2);
+  display:grid; place-items:center; transition:color .15s, border-color .15s, transform .12s;
+}
+.pl-skip:hover{ color:var(--amber); border-color:var(--amber-dim); }
+.pl-skip:active{ transform:scale(.94); }
+.now-eq{ display:flex; align-items:flex-end; gap:2px; height:15px; opacity:0; transition:opacity .25s; }
+.player.playing .now-eq{ opacity:1; }
+.now-eq i{ width:3px; height:30%; background:var(--amber); border-radius:2px; animation:eq .9s ease-in-out infinite; }
+.now-eq i:nth-child(2){ animation-delay:.15s; } .now-eq i:nth-child(3){ animation-delay:.3s; } .now-eq i:nth-child(4){ animation-delay:.45s; }
+.pl-barrow{ display:flex; align-items:center; gap:12px; margin-top:12px; }
+.pl-bar{ flex:1; height:6px; border-radius:100px; background:var(--inset); cursor:pointer; position:relative; touch-action:none; }
+.pl-fill{ height:100%; width:0; border-radius:100px; background:linear-gradient(90deg, var(--amber-2), var(--amber)); transition:width .08s linear; pointer-events:none; }
+.pl-knob{
+  position:absolute; top:50%; left:0; width:13px; height:13px; border-radius:50%;
+  background:var(--amber); box-shadow:0 0 10px var(--amber-glow), 0 0 0 3px oklch(0.24 0.03 62 / .6);
+  transform:translate(-50%,-50%) scale(.5); opacity:0; pointer-events:none;
+  transition:opacity .15s, transform .15s;
+}
+.pl-bar:hover .pl-knob, .pl-bar.drag .pl-knob{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+.pl-time{ flex:0 0 auto; font-family:var(--mono); font-size:11px; color:var(--txt-3); min-width:82px; text-align:right; font-variant-numeric:tabular-nums; }
 .pl-dry{
   flex:0 0 auto; font-family:var(--mono); font-size:12px; font-weight:600; letter-spacing:0.06em;
   padding:9px 14px; border-radius:8px; cursor:pointer; color:var(--txt-2);
@@ -519,9 +541,9 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
     <span class="eyebrow"><span class="dot"></span> Free &amp; open-source · VST3 · AU · Standalone</span>
     <h1>A <em>tape echo</em> you can <span class="grad" data-echo="rewire">rewire</span>.</h1>
     <p class="sub">
-      A four-head tape delay, eight reverbs and a six-stage phaser in one unit —
-      with a feedback loop you can build effects into. Free, open-source, and
-      light enough to put on every send.
+      A four-head tape delay, eight reverbs and a six-stage phaser — and a
+      feedback loop you can build effects into. Free, open-source, light enough
+      to live on every send.
     </p>
     <div class="hero-cta">
       <a class="btn btn-amber" href="#download">
@@ -649,22 +671,36 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="sec-tag">Listen</span>
-      <h2>One Rhodes loop, <em>every</em> preset.</h2>
-      <p>The same dry electric-piano phrase run through all <span id="pl-count">79</span> non-MIDI factory presets, grouped by character. Hit any preset to hear it; tap <b>Dry</b> to A/B against the untreated source.</p>
+      <h2>Hear it <em>before</em> you install it.</h2>
+      <p>One dry Rhodes phrase, played through all <span id="pl-count">79</span> factory presets — dub springs, tape wobble, shimmer choirs, gated snares. Pick anything below; tap <b>Dry</b> to hear what went in.</p>
     </div>
 
     <div class="player reveal">
       <div class="player-now">
-        <button id="pl-toggle" class="pl-play" aria-label="Play or pause">
-          <svg class="i-play" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-          <svg class="i-pause" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" hidden><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
-        </button>
-        <div class="pl-meta">
-          <div class="pl-line"><span id="pl-name" class="pl-name">Dub Chamber</span><span id="pl-chip" class="chip">Dub</span></div>
-          <div id="pl-tag" class="pl-tag">Pick a preset below to start.</div>
-          <div class="pl-bar"><div id="pl-fill" class="pl-fill"></div></div>
+        <div class="pl-transport">
+          <button id="pl-prev" class="pl-skip" aria-label="Previous preset">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zM19 6l-9 6 9 6z"/></svg>
+          </button>
+          <button id="pl-toggle" class="pl-play" aria-label="Play or pause">
+            <svg class="i-play" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            <svg class="i-pause" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" hidden><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+          </button>
+          <button id="pl-next" class="pl-skip" aria-label="Next preset">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6h2v12h-2zM5 6l9 6-9 6z"/></svg>
+          </button>
         </div>
-        <button id="pl-dry" class="pl-dry" aria-pressed="false">Dry</button>
+        <div class="pl-meta">
+          <div class="pl-line">
+            <span id="pl-name" class="pl-name">&mdash;</span><span id="pl-chip" class="chip" hidden></span>
+            <span class="now-eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+          </div>
+          <div id="pl-tag" class="pl-tag">Pick a preset below, or just press play.</div>
+          <div class="pl-barrow">
+            <div class="pl-bar"><div id="pl-fill" class="pl-fill"></div><i id="pl-knob" class="pl-knob"></i></div>
+            <span id="pl-time" class="pl-time">0:00 / 0:00</span>
+          </div>
+        </div>
+        <button id="pl-dry" class="pl-dry" aria-pressed="false" title="A/B against the untreated source">Dry</button>
       </div>
       <div id="pl-list" class="pl-list"></div>
     </div>
@@ -679,7 +715,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
     <div class="sec-head reveal">
       <span class="sec-tag">What's inside</span>
       <h2>A full dub console, not a <em>one-trick</em> echo.</h2>
-      <p>Every part is a proper effect with its own knobs — tape, tone, movement and space, all on one screen.</p>
+      <p>Any one of these would be a pedal on its own. Doobie puts them all in one box — and lets them feed each other.</p>
     </div>
     <div class="grid">
 
@@ -757,7 +793,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="sec-tag">By the numbers</span>
-      <h2>Deep, but it all fits on <em>one screen</em>.</h2>
+      <h2>The whole machine, in <em>six numbers</em>.</h2>
     </div>
     <div class="specs reveal">
       <div class="spec"><div class="n">4</div><div class="l">Tape heads</div></div>
@@ -909,15 +945,21 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
     var base = 'assets/demos/';
     var audio = new Audio();
     audio.preload = 'none';
+    var playerEl = sec.querySelector('.player');
     var list = document.getElementById('pl-list');
     var toggle = document.getElementById('pl-toggle');
+    var prevBtn = document.getElementById('pl-prev');
+    var nextBtn = document.getElementById('pl-next');
     var iPlay = toggle.querySelector('.i-play'), iPause = toggle.querySelector('.i-pause');
     var nameEl = document.getElementById('pl-name');
     var chipEl = document.getElementById('pl-chip');
     var tagEl = document.getElementById('pl-tag');
     var fill = document.getElementById('pl-fill');
+    var knob = document.getElementById('pl-knob');
+    var timeEl = document.getElementById('pl-time');
     var bar = fill.parentElement;
     var dryBtn = document.getElementById('pl-dry');
+    var pre = new Audio(); pre.preload = 'auto';   // warms the next clip in the walk
     var cur = -1, dry = false;
 
     var countEl = document.getElementById('pl-count');
@@ -951,55 +993,107 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
       list.appendChild(g);
     });
 
+    function fmt(s){ s = Math.max(0, s || 0); return Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(2,'0'); }
+    function updateBar(){
+      var d = audio.duration || 0, t = audio.currentTime || 0;
+      var pct = d ? (t/d*100) : 0;
+      fill.style.width = pct + '%';
+      knob.style.left = pct + '%';
+      timeEl.textContent = fmt(t) + ' / ' + fmt(d);
+    }
     function setIcons(playing){
       iPlay.hidden = playing; iPause.hidden = !playing;
       toggle.classList.toggle('playing', playing);
+      playerEl.classList.toggle('playing', playing);
       if(cur >= 0) m.presets[cur]._el.classList.toggle('playing', playing);
     }
-    function select(i, playNow){
-      if(i === cur){ if(playNow) toggleplay(); return; }
-      if(cur >= 0) m.presets[cur]._el.classList.remove('active','playing');
-      cur = i; dry = false; dryBtn.setAttribute('aria-pressed','false');
-      var p = m.presets[i];
-      p._el.classList.add('active');
+    function warmNext(i){ pre.src = base + m.presets[(i+1) % m.presets.length].file; }
+    function showPreset(p){
       nameEl.textContent = p.name; chipEl.textContent = p.category; chipEl.hidden = false;
       tagEl.textContent = p.tagline;
+    }
+    function select(i, playNow){
+      if(i === cur && !dry){ if(playNow) toggleplay(); return; }
+      if(cur >= 0) m.presets[cur]._el.classList.remove('active','playing');
+      dry = false; dryBtn.setAttribute('aria-pressed','false');
+      cur = i;
+      var p = m.presets[i];
+      p._el.classList.add('active');
+      p._el.scrollIntoView({ block:'nearest' });
+      showPreset(p);
       audio.src = base + p.file;
+      warmNext(i);
+      updateBar();
       if(playNow) audio.play();
     }
+    function step(dir){ select(((cur < 0 ? 0 : cur) + dir + m.presets.length) % m.presets.length, true); }
     function toggleplay(){
       if(cur < 0 && !dry){ select(0, true); return; }
       if(audio.paused) audio.play(); else audio.pause();
     }
     toggle.addEventListener('click', toggleplay);
+    prevBtn.addEventListener('click', function(){ step(-1); });
+    nextBtn.addEventListener('click', function(){ step(1); });
 
+    /* Dry A/B keeps the playhead where it was, so you compare the same beat */
+    function swapTo(src){
+      var t = audio.currentTime, wasPlaying = !audio.paused;
+      audio.src = src;
+      audio.addEventListener('loadedmetadata', function once(){
+        audio.removeEventListener('loadedmetadata', once);
+        if(t && audio.duration) audio.currentTime = Math.min(t, Math.max(0, audio.duration - 0.05));
+        if(wasPlaying) audio.play();
+        updateBar();
+      });
+    }
     dryBtn.addEventListener('click', function(){
+      if(cur < 0 && !dry){ select(0, false); }
       dry = !dry;
       dryBtn.setAttribute('aria-pressed', dry ? 'true':'false');
       if(dry){
-        if(cur >= 0) m.presets[cur]._el.classList.remove('active','playing');
+        if(cur >= 0) m.presets[cur]._el.classList.remove('playing');
         nameEl.textContent = 'Dry loop'; chipEl.hidden = true;
         tagEl.textContent = 'The untreated source — no delay, no reverb.';
-        audio.src = base + (m.dry || 'dry.wav'); audio.play();
+        swapTo(base + (m.dry || 'dry.mp3'));
       } else if(cur >= 0){
-        var p = m.presets[cur]; p._el.classList.add('active');
-        nameEl.textContent = p.name; chipEl.textContent = p.category; chipEl.hidden = false;
-        tagEl.textContent = p.tagline; audio.src = base + p.file; audio.play();
+        showPreset(m.presets[cur]);
+        swapTo(base + m.presets[cur].file);
       }
     });
 
-    bar.addEventListener('click', function(e){
+    /* click or drag to scrub */
+    function seekTo(clientX){
       if(!audio.duration) return;
       var r = bar.getBoundingClientRect();
-      audio.currentTime = ((e.clientX - r.left)/r.width) * audio.duration;
+      var f = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
+      audio.currentTime = f * audio.duration;
+      updateBar();
+    }
+    bar.addEventListener('pointerdown', function(e){
+      bar.classList.add('drag'); bar.setPointerCapture(e.pointerId); seekTo(e.clientX);
+    });
+    bar.addEventListener('pointermove', function(e){ if(bar.classList.contains('drag')) seekTo(e.clientX); });
+    bar.addEventListener('pointerup', function(e){ bar.classList.remove('drag'); bar.releasePointerCapture(e.pointerId); });
+    bar.addEventListener('pointercancel', function(){ bar.classList.remove('drag'); });
+
+    /* arrow keys walk the bank while you're in the player */
+    document.addEventListener('keydown', function(e){
+      if(!sec.contains(document.activeElement)) return;
+      if(e.key === 'ArrowRight' || e.key === 'ArrowDown'){ e.preventDefault(); step(1); }
+      if(e.key === 'ArrowLeft'  || e.key === 'ArrowUp'){  e.preventDefault(); step(-1); }
     });
 
-    audio.addEventListener('play', function(){ setIcons(true); });
+    audio.addEventListener('play',  function(){ setIcons(true); });
     audio.addEventListener('pause', function(){ setIcons(false); });
-    audio.addEventListener('ended', function(){ setIcons(false); fill.style.width='0%'; });
-    audio.addEventListener('timeupdate', function(){
-      if(audio.duration) fill.style.width = (audio.currentTime/audio.duration*100)+'%';
+    audio.addEventListener('loadedmetadata', updateBar);
+    audio.addEventListener('timeupdate', updateBar);
+    audio.addEventListener('ended', function(){
+      setIcons(false);
+      if(!dry) step(1);            // auto-advance: press play once, hear the whole bank
+      else updateBar();
     });
+
+    select(0, false);              // cue the first preset so the deck isn't empty
   }
 })();
 </script>
