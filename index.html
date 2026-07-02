@@ -11,7 +11,7 @@
 <meta property="og:image" content="assets/doobie-ui-og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:      oklch(0.148 0.006 60);
@@ -33,6 +33,7 @@
   --red:     oklch(0.63 0.205 28);
   --font: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, monospace;
+  --serif: 'Instrument Serif', Georgia, serif;
   --maxw: 1120px;
 }
 *{ box-sizing:border-box; }
@@ -57,6 +58,8 @@ body::after{
 }
 a{ color:inherit; text-decoration:none; }
 img{ max-width:100%; display:block; }
+::selection{ background:var(--amber); color:oklch(0.16 0.02 60); }
+:focus-visible{ outline:2px solid var(--amber); outline-offset:3px; border-radius:4px; }
 .wrap{ width:100%; max-width:var(--maxw); margin:0 auto; padding:0 24px; }
 .mono{ font-family:var(--mono); }
 .amber{ color:var(--amber); }
@@ -73,8 +76,13 @@ nav .wrap{ display:flex; align-items:center; gap:20px; height:60px; }
 .brand b{ font-size:19px; font-weight:700; letter-spacing:0.24em; }
 .brand span{ font-size:10.5px; letter-spacing:0.28em; color:var(--txt-3); text-transform:uppercase; }
 nav .links{ margin-left:auto; display:flex; align-items:center; gap:26px; }
-nav .links a:not(.btn){ font-size:13.5px; color:var(--txt-2); transition:color .15s; }
+nav .links a:not(.btn){ font-size:13.5px; color:var(--txt-2); transition:color .15s; position:relative; }
+nav .links a:not(.btn)::after{
+  content:""; position:absolute; left:0; right:100%; bottom:-5px; height:1px;
+  background:var(--amber); transition:right .22s ease;
+}
 nav .links a:not(.btn):hover{ color:var(--txt); }
+nav .links a:not(.btn):hover::after{ right:0; }
 .btn{
   display:inline-flex; align-items:center; gap:9px; font-family:var(--font);
   font-size:14px; font-weight:600; letter-spacing:0.01em;
@@ -85,15 +93,41 @@ nav .links a:not(.btn):hover{ color:var(--txt); }
 .btn-amber{
   color:oklch(0.16 0.02 60); background:linear-gradient(180deg, var(--amber), var(--amber-2));
   box-shadow:0 0 0 1px oklch(0.82 0.14 65 / .5) inset, 0 8px 24px -8px var(--amber-glow);
+  position:relative; overflow:hidden;
+}
+.btn-amber::after{
+  content:""; position:absolute; top:0; bottom:0; left:-45%; width:32%;
+  background:linear-gradient(100deg, transparent, oklch(1 0 0 / .38), transparent);
+  transform:skewX(-18deg); transition:left .5s ease; pointer-events:none;
 }
 .btn-amber:hover{ box-shadow:0 0 0 1px oklch(0.86 0.14 65 / .6) inset, 0 10px 34px -8px var(--amber-glow); }
+.btn-amber:hover::after{ left:118%; }
 .btn-ghost{ color:var(--txt); border-color:var(--line); background:oklch(0.238 0.007 60 / .5); }
 .btn-ghost:hover{ border-color:var(--amber-dim); color:var(--amber); }
 nav .btn{ padding:8px 15px; font-size:13px; }
 @media(max-width:720px){ nav .links a:not(.btn){ display:none; } }
 
 /* ---------- hero ---------- */
-header.hero{ padding:78px 0 34px; text-align:center; position:relative; }
+header.hero{ padding:92px 0 34px; text-align:center; position:relative; }
+/* faint tape-reel ring ornaments */
+header.hero::before, header.hero::after{
+  content:""; position:absolute; border-radius:50%; pointer-events:none; z-index:-1;
+  background:repeating-radial-gradient(circle, transparent 0 30px, oklch(0.55 0.06 62 / .055) 30px 31px);
+}
+header.hero::before{ width:560px; height:560px; top:-160px; right:-170px; }
+header.hero::after{ width:420px; height:420px; top:440px; left:-190px; opacity:.7; }
+@media(max-width:760px){ header.hero::before, header.hero::after{ display:none; } }
+
+/* load choreography (above the fold only; the rest uses scroll reveal) */
+@keyframes rise{ from{ opacity:0; transform:translateY(20px); } }
+.hero .wrap > *:nth-child(-n+6){ animation:rise .7s cubic-bezier(.22,.7,.3,1) both; }
+.hero .wrap > *:nth-child(1){ animation-delay:.04s; }
+.hero .wrap > *:nth-child(2){ animation-delay:.12s; }
+.hero .wrap > *:nth-child(3){ animation-delay:.2s; }
+.hero .wrap > *:nth-child(4){ animation-delay:.28s; }
+.hero .wrap > *:nth-child(5){ animation-delay:.36s; }
+.hero .wrap > *:nth-child(6){ animation-delay:.46s; }
+
 .eyebrow{
   display:inline-flex; align-items:center; gap:8px; margin-bottom:26px; max-width:100%;
   font-family:var(--mono); font-size:12px; letter-spacing:0.04em; color:var(--txt-2);
@@ -101,15 +135,33 @@ header.hero{ padding:78px 0 34px; text-align:center; position:relative; }
   background:oklch(0.205 0.006 60 / .6); text-align:center;
 }
 @media(max-width:420px){ .eyebrow{ letter-spacing:0; font-size:11px; } }
-.eyebrow .dot{ width:6px; height:6px; border-radius:50%; background:var(--amber); box-shadow:0 0 10px 1px var(--amber-glow); }
-h1{
-  font-size:clamp(2.5rem, 6.2vw, 4.6rem); line-height:1.02; margin:0 auto 22px;
-  font-weight:700; letter-spacing:-0.02em; max-width:14ch;
+.eyebrow .dot{
+  width:6px; height:6px; border-radius:50%; background:var(--amber);
+  box-shadow:0 0 10px 1px var(--amber-glow); animation:blink 2.6s ease-in-out infinite;
 }
+@keyframes blink{ 0%,100%{ opacity:1; } 50%{ opacity:.4; } }
+h1{
+  font-size:clamp(2.5rem, 6.2vw, 4.8rem); line-height:1.04; margin:0 auto 24px;
+  font-weight:700; letter-spacing:-0.02em; max-width:15ch;
+}
+h1 em, h2 em, .sound em{
+  font-family:var(--serif); font-style:italic; font-weight:400; letter-spacing:0;
+}
+h1 em{ font-size:1.04em; }
+h2 em{ color:var(--amber); font-size:1.05em; }
 h1 .grad{
   background:linear-gradient(100deg, var(--amber) 10%, oklch(0.85 0.10 78) 55%, var(--teal) 130%);
   -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  position:relative; z-index:0; display:inline-block;
 }
+/* the word echoes — like delay taps */
+h1 .grad::before, h1 .grad::after{
+  content:attr(data-echo); position:absolute; left:0; top:0; z-index:-1;
+  background:none; -webkit-text-fill-color:var(--amber-dim); color:var(--amber-dim);
+}
+h1 .grad::before{ transform:translate(.05em, .05em);  opacity:.38; filter:blur(.5px); animation:echoIn .7s .5s ease both; }
+h1 .grad::after { transform:translate(.115em, .105em); opacity:.15; filter:blur(1.2px); animation:echoIn .7s .68s ease both; }
+@keyframes echoIn{ from{ opacity:0; transform:translate(0,0); } }
 .sub{ font-size:clamp(1.05rem, 2.1vw, 1.28rem); color:var(--txt-2); max-width:60ch; margin:0 auto 34px; }
 .hero-cta{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
 .hero-meta{
@@ -117,6 +169,39 @@ h1 .grad{
   font-family:var(--mono); font-size:12.5px; color:var(--txt-3);
 }
 .hero-meta b{ color:var(--txt-2); font-weight:500; }
+
+/* ---------- tape-loop divider ---------- */
+.tapeline{ display:flex; align-items:center; max-width:520px; margin:48px auto 0; opacity:.85; }
+.tapeline .reel{
+  flex:0 0 auto; width:32px; height:32px; border:1.5px solid var(--amber-dim);
+  border-radius:50%; position:relative; animation:spin 7s linear infinite;
+}
+.tapeline .reel::before{
+  content:""; position:absolute; top:50%; left:50%; width:6px; height:6px; border-radius:50%;
+  background:var(--amber); transform:translate(-50%,-50%); box-shadow:0 0 8px var(--amber-glow);
+}
+.tapeline .reel i{
+  position:absolute; top:2px; left:50%; width:2px; height:6px; border-radius:2px;
+  background:var(--amber-dim); transform:translateX(-50%);
+}
+.tapeline .reel.r2{ animation-duration:4.6s; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+.tapeline .tl-track{
+  flex:1; height:2px; margin:0 -1px; position:relative;
+  background:repeating-linear-gradient(90deg, var(--amber-dim) 0 9px, transparent 9px 17px);
+  opacity:.75; animation:tapemove 1.1s linear infinite;
+}
+@keyframes tapemove{ to{ background-position:17px 0; } }
+.tapeline .tl-dot{
+  position:absolute; top:50%; left:0; width:7px; height:7px; margin-top:-3.5px; border-radius:50%;
+  background:var(--amber); box-shadow:0 0 10px 2px var(--amber-glow);
+  animation:tapedot 3.6s cubic-bezier(.45,.05,.55,.95) infinite;
+}
+@keyframes tapedot{
+  0%{ left:0; opacity:0; } 10%{ opacity:1; }
+  90%{ opacity:1; } 100%{ left:calc(100% - 7px); opacity:0; }
+}
+.tapeline.foot{ max-width:300px; margin:0 auto 42px; opacity:.5; }
 
 /* ---------- screenshot frame ---------- */
 .shot{
@@ -146,9 +231,24 @@ section{ padding:92px 0; position:relative; }
   font-family:var(--mono); font-size:12px; letter-spacing:0.22em; text-transform:uppercase;
   color:var(--amber-dim); display:block; margin-bottom:16px;
 }
+.sec-head .sec-tag{ display:flex; align-items:center; justify-content:center; gap:14px; }
+.sec-head .sec-tag::before, .sec-head .sec-tag::after{
+  content:""; height:1px; width:42px; flex:0 0 auto;
+  background:linear-gradient(90deg, transparent, var(--amber-dim));
+}
+.sec-head .sec-tag::after{ background:linear-gradient(90deg, var(--amber-dim), transparent); }
+.routing .sec-tag::before{
+  content:""; display:inline-block; width:26px; height:1px; background:var(--amber-dim);
+  margin-right:12px; vertical-align:middle;
+}
 h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.02em; margin:0 0 16px; line-height:1.08; }
 .sec-head p{ font-size:1.08rem; color:var(--txt-2); margin:0; }
-.divider{ height:1px; background:linear-gradient(90deg, transparent, var(--line), transparent); border:0; margin:0; }
+.divider{ height:1px; background:linear-gradient(90deg, transparent, var(--line), transparent); border:0; margin:0; position:relative; overflow:visible; }
+.divider::after{
+  content:""; position:absolute; left:50%; top:50%; width:5px; height:5px;
+  transform:translate(-50%,-50%) rotate(45deg);
+  background:var(--bg); border:1px solid var(--amber-dim);
+}
 
 /* ---------- routing showcase ---------- */
 .routing{ display:grid; grid-template-columns:1.05fr 0.95fr; gap:52px; align-items:center; }
@@ -191,7 +291,16 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
   font-family:var(--mono); font-size:10px; letter-spacing:0.16em; text-transform:uppercase;
   color:var(--teal); background:var(--panel); padding:0 10px;
 }
-.fb-box{ border:1px dashed oklch(0.55 0.07 190 / .6); border-radius:12px; padding:16px 14px; }
+.fb-box{ border:1px dashed oklch(0.55 0.07 190 / .6); border-radius:12px; padding:16px 14px; position:relative; }
+/* a signal dot orbiting the feedback loop */
+@supports (offset-path: border-box){
+  .fb-box::after{
+    content:""; position:absolute; width:7px; height:7px; border-radius:50%;
+    background:var(--amber); box-shadow:0 0 10px 2px var(--amber-glow);
+    offset-path:border-box; offset-distance:0%; animation:orbit 5.5s linear infinite;
+  }
+  @keyframes orbit{ to{ offset-distance:100%; } }
+}
 .slot{
   display:flex; align-items:center; justify-content:center; gap:8px; padding:11px;
   border:1px dashed var(--amber-dim); border-radius:9px; color:var(--amber);
@@ -219,6 +328,11 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
 }
 .pl-play:hover{ box-shadow:0 0 0 1px oklch(0.86 0.14 65 / .6) inset, 0 10px 30px -8px var(--amber-glow); }
 .pl-play:active{ transform:scale(.96); }
+.pl-play.playing{ animation:pulse 1.7s ease-out infinite; }
+@keyframes pulse{
+  0%{ box-shadow:0 0 0 0 var(--amber-glow), 0 0 0 1px oklch(0.82 0.14 65 / .5) inset; }
+  100%{ box-shadow:0 0 0 18px transparent, 0 0 0 1px oklch(0.82 0.14 65 / .5) inset; }
+}
 .pl-play svg{ margin-left:1px; }
 .pl-meta{ flex:1; min-width:0; }
 .pl-line{ display:flex; align-items:center; gap:10px; }
@@ -274,11 +388,20 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
   border:1px solid var(--line-2); border-radius:14px; padding:24px;
   background:linear-gradient(180deg, oklch(0.215 0.006 60 / .8), oklch(0.19 0.006 60 / .8));
   transition:border-color .2s, transform .2s, box-shadow .2s;
+  position:relative; overflow:hidden;
+}
+.card::before{
+  content:""; position:absolute; top:0; left:12%; right:12%; height:1px;
+  background:linear-gradient(90deg, transparent, var(--amber-glow), transparent);
+  opacity:0; transition:opacity .3s;
 }
 .card:hover{ border-color:var(--amber-dim); transform:translateY(-3px); box-shadow:0 24px 50px -30px rgba(0,0,0,.9), 0 0 40px -24px var(--amber-glow); }
+.card:hover::before{ opacity:1; }
+.card:hover .ico{ border-color:var(--amber-dim); box-shadow:0 0 18px -6px var(--amber-glow); transform:scale(1.07) rotate(-4deg); }
 .card .ico{
   width:38px; height:38px; border-radius:9px; display:grid; place-items:center; margin-bottom:16px;
   border:1px solid var(--line); background:var(--inset); color:var(--amber);
+  transition:border-color .25s, box-shadow .25s, transform .25s;
 }
 .card .ico svg{ width:20px; height:20px; }
 .card h3{ font-size:1.06rem; margin:0 0 8px; font-weight:600; letter-spacing:-0.01em; }
@@ -304,6 +427,21 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
 .cpu-num em{ font-family:var(--mono); font-style:normal; font-size:13px; letter-spacing:0.34em; color:var(--txt-3); margin-top:8px; }
 .cpu-txt h2{ margin:0 0 12px; font-size:clamp(1.5rem, 3vw, 2.1rem); }
 .cpu-txt p{ margin:0; color:var(--txt-2); font-size:1.02rem; max-width:56ch; }
+/* the whole meter, honestly */
+.cpu-meter{ margin-top:22px; display:flex; align-items:center; gap:14px; max-width:56ch; }
+.cpu-meter i{
+  display:block; flex:1; height:10px; border-radius:100px;
+  background:var(--inset); border:1px solid var(--line-2);
+  position:relative; overflow:hidden;
+}
+.cpu-meter i::before{
+  content:""; position:absolute; left:2px; top:2px; bottom:2px; width:3%;
+  border-radius:100px; background:linear-gradient(90deg, var(--amber-2), var(--amber));
+  box-shadow:0 0 12px var(--amber-glow); animation:cpuflick 2.4s ease-in-out infinite;
+}
+@keyframes cpuflick{ 0%,100%{ width:2.2%; } 50%{ width:3.2%; } }
+.cpu-meter span{ font-family:var(--mono); font-size:11.5px; color:var(--txt-3); white-space:nowrap; }
+@media(max-width:720px){ .cpu-meter{ margin-left:auto; margin-right:auto; } }
 
 /* ---------- spec strip ---------- */
 .specs{
@@ -339,7 +477,7 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
 .note a{ color:var(--amber-2); border-bottom:1px solid var(--amber-dim); }
 
 /* ---------- footer ---------- */
-footer{ border-top:1px solid var(--line-2); padding:44px 0 60px; }
+footer{ border-top:1px solid var(--line-2); padding:52px 0 60px; }
 footer .wrap{ display:flex; flex-wrap:wrap; gap:20px; align-items:center; justify-content:space-between; }
 footer .brand b{ font-size:16px; }
 footer .f-links{ display:flex; gap:24px; font-size:13.5px; color:var(--txt-2); }
@@ -350,7 +488,13 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
 /* reveal on scroll */
 .reveal{ opacity:0; transform:translateY(18px); transition:opacity .6s ease, transform .6s ease; }
 .reveal.in{ opacity:1; transform:none; }
-@media(prefers-reduced-motion:reduce){ .reveal{ opacity:1; transform:none; transition:none; } html{ scroll-behavior:auto; } }
+@media(prefers-reduced-motion:reduce){
+  .reveal{ opacity:1; transform:none; transition:none; }
+  html{ scroll-behavior:auto; }
+  .hero .wrap > *, h1 .grad::before, h1 .grad::after,
+  .tapeline .reel, .tapeline .tl-track, .tapeline .tl-dot,
+  .eyebrow .dot, .fb-box::after, .cpu-meter i::before, .pl-play.playing{ animation:none; }
+}
 </style>
 </head>
 <body>
@@ -373,7 +517,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
 <header class="hero">
   <div class="wrap">
     <span class="eyebrow"><span class="dot"></span> Free &amp; open-source · VST3 · AU · Standalone</span>
-    <h1>A tape echo you can <span class="grad">rewire</span>.</h1>
+    <h1>A <em>tape echo</em> you can <span class="grad" data-echo="rewire">rewire</span>.</h1>
     <p class="sub">
       A four-head tape delay, eight reverbs and a six-stage phaser in one unit —
       with a feedback loop you can build effects into. Free, open-source, and
@@ -397,10 +541,16 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
       <span><b>80</b> factory presets</span>
     </div>
 
+    <div class="tapeline" aria-hidden="true">
+      <span class="reel"><i></i></span>
+      <span class="tl-track"><i class="tl-dot"></i></span>
+      <span class="reel r2"><i></i></span>
+    </div>
+
     <div class="shot reveal">
       <img src="assets/doobie-ui.png" alt="The Doobie plugin interface: delay, playback heads, tape character, pitch shifter, phaser and reverb panels, each with pre / post / feedback routing." width="3040" height="1920">
     </div>
-    <p class="shot-cap">The full interface — one window, no menu-diving. Route selectors sit right on the phaser, reverb and pitch panels.</p>
+    <p class="shot-cap reveal">The full interface — one window, no menu-diving. Route selectors sit right on the phaser, reverb and pitch panels.</p>
 
     <p class="sound reveal">
       It sounds the way it looks — <em>warm, analog, alive</em>. Feedback stays
@@ -420,13 +570,14 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
     <div class="cpu-band reveal">
       <div class="cpu-num"><span>2–3<small>%</small></span><em>CPU</em></div>
       <div class="cpu-txt">
-        <h2>All of it, for almost nothing.</h2>
+        <h2>All of it, for almost <em>nothing</em>.</h2>
         <p>
           Four tape heads, the phaser, a convolution reverb and the full mod matrix —
           everything switched on — and Doobie still sits around <b>2–3% CPU</b>. Stack it
           across every send and bus in your session without watching the meter. Efficient
           DSP, not a stripped-down feature set.
         </p>
+        <div class="cpu-meter" aria-hidden="true"><i></i><span>the other ~97% is yours</span></div>
       </div>
     </div>
   </div>
@@ -439,7 +590,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
   <div class="wrap routing">
     <div class="reveal">
       <span class="sec-tag">The idea</span>
-      <h2>Move the effect, not just the mix knob.</h2>
+      <h2>Move the <em>effect</em>, not just the mix knob.</h2>
       <p class="lead">
         On hardware you'd re-patch cables to try this. Doobie puts a route switch
         right on the phaser, the reverb and the pitch shifter — pre, post, or
@@ -498,7 +649,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="sec-tag">Listen</span>
-      <h2>One Rhodes loop, every preset.</h2>
+      <h2>One Rhodes loop, <em>every</em> preset.</h2>
       <p>The same dry electric-piano phrase run through all <span id="pl-count">79</span> non-MIDI factory presets, grouped by character. Hit any preset to hear it; tap <b>Dry</b> to A/B against the untreated source.</p>
     </div>
 
@@ -527,7 +678,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="sec-tag">What's inside</span>
-      <h2>A full dub console, not a one-trick echo.</h2>
+      <h2>A full dub console, not a <em>one-trick</em> echo.</h2>
       <p>Every part is a proper effect with its own knobs — tape, tone, movement and space, all on one screen.</p>
     </div>
     <div class="grid">
@@ -606,7 +757,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="sec-tag">By the numbers</span>
-      <h2>Deep, but it all fits on one screen.</h2>
+      <h2>Deep, but it all fits on <em>one screen</em>.</h2>
     </div>
     <div class="specs reveal">
       <div class="spec"><div class="n">4</div><div class="l">Tape heads</div></div>
@@ -626,7 +777,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
   <div class="wrap dl">
     <div class="sec-head reveal">
       <span class="sec-tag">Get it</span>
-      <h2>Free. Open-source. No account.</h2>
+      <h2>Free. Open-source. <em>No account.</em></h2>
       <p>Download a build, or clone and compile it yourself. Doobie is GPLv3 — use it, study it, change it, share it.</p>
     </div>
 
@@ -671,6 +822,11 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
 </section>
 
 <footer>
+  <div class="tapeline foot" aria-hidden="true">
+    <span class="reel"><i></i></span>
+    <span class="tl-track"><i class="tl-dot"></i></span>
+    <span class="reel r2"><i></i></span>
+  </div>
   <div class="wrap">
     <a class="brand" href="#top"><b>DOOBIE</b><span>analog dub delay</span></a>
     <div class="f-links">
@@ -694,6 +850,30 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
     entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
   }, { rootMargin:'0px 0px -8% 0px', threshold:0.08 });
   els.forEach(function(e){ io.observe(e); });
+})();
+
+/* count the spec numbers up when they scroll into view */
+(function(){
+  var strip = document.querySelector('.specs');
+  if(!strip || !('IntersectionObserver' in window)) return;
+  if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(en){
+      if(!en.isIntersecting) return;
+      io.disconnect();
+      strip.querySelectorAll('.n').forEach(function(el){
+        var target = parseInt(el.textContent, 10);
+        if(isNaN(target)) return;
+        var t0 = performance.now(), dur = 900;
+        (function tick(now){
+          var p = Math.min(1, (now - t0) / dur);
+          el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
+          if(p < 1) requestAnimationFrame(tick);
+        })(t0);
+      });
+    });
+  }, { threshold:0.4 });
+  io.observe(strip);
 })();
 
 /* point the download buttons at the actual latest release assets */
@@ -773,6 +953,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
 
     function setIcons(playing){
       iPlay.hidden = playing; iPause.hidden = !playing;
+      toggle.classList.toggle('playing', playing);
       if(cur >= 0) m.presets[cur]._el.classList.toggle('playing', playing);
     }
     function select(i, playNow){
