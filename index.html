@@ -459,6 +459,10 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
 }
 .pl-dry:hover{ color:var(--txt); border-color:var(--amber-dim); }
 .pl-dry[aria-pressed="true"]{ color:oklch(0.16 0.02 60); background:linear-gradient(180deg, var(--amber), var(--amber-2)); border-color:transparent; }
+.pl-spec{
+  display:block; width:100%; height:44px;
+  background:var(--inset); border-bottom:1px solid var(--line-2);
+}
 .pl-sources{
   display:flex; align-items:center; gap:8px; flex-wrap:wrap;
   padding:12px 22px; border-bottom:1px solid var(--line-2); background:oklch(0.19 0.006 60 / .6);
@@ -550,6 +554,11 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
 .pal-tile svg{ display:block; width:100%; height:auto; margin-bottom:10px; }
 .pal-tile h4{ margin:0 0 3px; font-size:0.94rem; font-weight:600; letter-spacing:-0.01em; }
 .pal-tile p{ margin:0; font-size:0.78rem; color:var(--txt-3); line-height:1.4; }
+.pal-tail{
+  display:block; margin-top:3px; font-family:var(--mono); font-size:9.5px;
+  letter-spacing:0.08em; text-transform:uppercase; color:var(--amber-dim);
+}
+.pal-tail i{ font-style:normal; color:var(--teal); }
 
 /* echo-tap bars: grow from the baseline when the tile scrolls in */
 .eb{ fill:var(--amber-2); transform:scaleY(0); transform-box:fill-box; transform-origin:50% 100%; transition:transform .5s cubic-bezier(.2,.7,.3,1.15); }
@@ -973,6 +982,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
         </div>
         <button id="pl-dry" class="pl-dry" aria-pressed="false" title="A/B against the untreated source">Dry</button>
       </div>
+      <canvas id="pl-spec" class="pl-spec" height="44" aria-hidden="true"></canvas>
       <div id="pl-sources" class="pl-sources" hidden>
         <span class="pl-src-lab">Source</span>
       </div>
@@ -1153,74 +1163,72 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
       </div>
     </div>
 
-    <div class="pal-sub reveal" style="margin-top:36px">Reverb algorithms</div>
+    <div class="pal-sub reveal" style="margin-top:36px">Reverb algorithms — decay envelopes measured from the engine (click &#8594; 100% wet)</div>
     <div class="pal-grid pal-4">
 
       <div class="pal-tile reveal">
         <svg viewBox="0 0 120 56" aria-hidden="true">
-          <path class="rv-line" pathLength="100" d="M8 48 C10 18 13 10 17 10 C24 10 21 44 27 44 C33 44 31 18 37 18 C43 18 41 42 47 42 C53 42 51 24 57 24 C63 24 61 40 67 40 C75 40 73 30 80 30 C88 30 86 38 94 38 C102 38 104 45 112 46"/>
+          <path class="rv-line" pathLength="100" d="M8.0 12.0 L11.2 15.9 L14.3 16.6 L17.5 18.7 L20.6 19.6 L23.8 15.5 L26.9 17.5 L30.1 17.9 L33.2 24.0 L36.4 26.9 L39.5 26.8 L42.7 27.4 L45.8 24.7 L49.0 28.0 L52.1 29.9 L55.3 33.4 L58.4 31.9 L61.6 33.9 L64.7 33.6 L67.9 35.3 L71.0 36.4 L74.2 42.0 L77.3 42.8 L80.5 44.9 L83.6 43.2 L86.8 42.8 L89.9 47.4 L93.1 47.1 L96.2 48.0 L112.0 48.0"/>
         </svg>
-        <h4>Spring</h4><p>Dispersive dub tank</p>
+        <h4>Spring</h4><p>Dispersive dub tank <span class="pal-tail">tail &#8776;1.2 s</span></p>
       </div>
 
       <div class="pal-tile reveal">
         <svg viewBox="0 0 120 56" aria-hidden="true">
-          <path class="rv-fill" d="M8 48 C12 12 20 10 30 14 C52 24 84 41 112 46 L112 48 Z"/>
-          <path class="rv-line" pathLength="100" d="M8 48 C12 12 20 10 30 14 C52 24 84 41 112 46"/>
+          <path class="rv-fill" d="M8.0 13.3 L11.2 25.8 L14.3 16.3 L17.5 10.3 L20.6 11.7 L23.8 15.5 L26.9 15.8 L30.1 17.4 L33.2 19.7 L36.4 19.7 L39.5 22.2 L42.7 24.6 L45.8 24.3 L49.0 26.4 L52.1 28.6 L55.3 29.4 L58.4 31.3 L61.6 31.4 L64.7 35.1 L67.9 34.9 L71.0 37.2 L74.2 37.6 L77.3 38.8 L80.5 41.8 L83.6 41.8 L86.8 42.4 L89.9 46.1 L93.1 47.8 L96.2 47.5 L112.0 48.0 L8.0 48.0 Z"/>
+          <path class="rv-line" pathLength="100" d="M8.0 13.3 L11.2 25.8 L14.3 16.3 L17.5 10.3 L20.6 11.7 L23.8 15.5 L26.9 15.8 L30.1 17.4 L33.2 19.7 L36.4 19.7 L39.5 22.2 L42.7 24.6 L45.8 24.3 L49.0 26.4 L52.1 28.6 L55.3 29.4 L58.4 31.3 L61.6 31.4 L64.7 35.1 L67.9 34.9 L71.0 37.2 L74.2 37.6 L77.3 38.8 L80.5 41.8 L83.6 41.8 L86.8 42.4 L89.9 46.1 L93.1 47.8 L96.2 47.5 L112.0 48.0"/>
         </svg>
-        <h4>Plate</h4><p>Dense, modulated sheet</p>
+        <h4>Plate</h4><p>Dense, modulated sheet <span class="pal-tail">tail &#8776;1.1 s</span></p>
       </div>
 
       <div class="pal-tile reveal">
         <svg viewBox="0 0 120 56" aria-hidden="true">
-          <path class="rv-fill" d="M8 46 C18 45 21 16 36 12 C66 12 92 34 112 44 L112 48 L8 48 Z"/>
-          <path class="rv-line" pathLength="100" d="M8 46 C18 45 21 16 36 12 C66 12 92 34 112 44"/>
+          <path class="rv-fill" d="M8.0 10.6 L11.2 20.4 L14.3 11.4 L17.5 14.6 L20.6 13.9 L23.8 15.0 L26.9 18.5 L30.1 18.0 L33.2 21.0 L36.4 19.9 L39.5 23.8 L42.7 26.3 L45.8 26.6 L49.0 29.4 L52.1 28.7 L55.3 30.2 L58.4 32.4 L61.6 33.4 L64.7 35.2 L67.9 37.4 L71.0 35.9 L74.2 39.1 L77.3 42.1 L80.5 40.7 L83.6 44.3 L86.8 43.7 L89.9 45.7 L93.1 46.7 L96.2 48.0 L8.0 48.0 Z"/>
+          <path class="rv-line" pathLength="100" d="M8.0 10.6 L11.2 20.4 L14.3 11.4 L17.5 14.6 L20.6 13.9 L23.8 15.0 L26.9 18.5 L30.1 18.0 L33.2 21.0 L36.4 19.9 L39.5 23.8 L42.7 26.3 L45.8 26.6 L49.0 29.4 L52.1 28.7 L55.3 30.2 L58.4 32.4 L61.6 33.4 L64.7 35.2 L67.9 37.4 L71.0 35.9 L74.2 39.1 L77.3 42.1 L80.5 40.7 L83.6 44.3 L86.8 43.7 L89.9 45.7 L93.1 46.7 L96.2 48.0 L112.0 48.0"/>
         </svg>
-        <h4>Hall</h4><p>16-line cathedral bloom</p>
+        <h4>Hall</h4><p>16-line cathedral bloom <span class="pal-tail">tail &#8776;2.9 s</span></p>
       </div>
 
       <div class="pal-tile reveal">
         <svg viewBox="0 0 120 56" aria-hidden="true">
-          <path class="rv-line" pathLength="100" d="M8 48 C12 14 20 12 30 16 C52 26 84 41 112 46"/>
-          <circle class="pal-spark" cx="76" cy="28" r="1.9"/>
-          <circle class="pal-spark" cx="86" cy="22" r="1.7" style="animation-delay:.35s"/>
-          <circle class="pal-spark" cx="96" cy="15" r="1.5" style="animation-delay:.7s"/>
-          <circle class="pal-spark" cx="105" cy="9" r="1.3" style="animation-delay:1.05s"/>
+          <path class="rv-line" pathLength="100" d="M8.0 10.0 L11.2 19.7 L14.3 11.8 L17.5 12.2 L20.6 12.1 L23.8 14.5 L26.9 15.4 L30.1 17.2 L33.2 20.4 L36.4 21.0 L39.5 23.0 L42.7 25.4 L45.8 24.7 L49.0 25.8 L52.1 28.1 L55.3 28.9 L58.4 31.9 L61.6 33.0 L64.7 33.0 L67.9 34.1 L71.0 35.2 L74.2 37.1 L77.3 38.5 L80.5 38.6 L83.6 41.4 L86.8 42.8 L89.9 44.0 L93.1 45.2 L96.2 48.0 L112.0 48.0"/>
+          <circle class="pal-spark" cx="66" cy="26" r="1.9"/>
+          <circle class="pal-spark" cx="78" cy="20" r="1.7" style="animation-delay:.35s"/>
+          <circle class="pal-spark" cx="90" cy="14" r="1.5" style="animation-delay:.7s"/>
+          <circle class="pal-spark" cx="101" cy="9" r="1.3" style="animation-delay:1.05s"/>
         </svg>
-        <h4>Shimmer</h4><p>The tail climbs an interval</p>
+        <h4>Shimmer</h4><p>The tail climbs an interval <span class="pal-tail">tail &#8776;2.8 s</span></p>
       </div>
 
       <div class="pal-tile reveal">
         <svg viewBox="0 0 120 56" aria-hidden="true">
-          <path class="rv-line" pathLength="100" d="M8 48 C9 24 12 18 15 18 C20 18 18 42 23 42 C28 42 27 26 32 26 C37 26 36 44 41 46"/>
-          <path class="pal-arrow" d="M48 30 H60 M56 25 L61 30 L56 35"/>
-          <path class="rv-line t2" pathLength="100" d="M66 46 C70 16 77 14 84 18 C96 26 105 40 112 45"/>
+          <path class="rv-line" pathLength="100" d="M8.0 10.9 L11.2 38.8 L14.3 19.5 L17.5 11.0 L20.6 10.7 L23.8 10.3 L26.9 10.1 L30.1 13.7 L33.2 13.9 L36.4 14.8 L39.5 16.9 L42.7 18.7 L45.8 19.6 L49.0 23.3 L52.1 23.2 L55.3 25.2 L58.4 27.1 L61.6 27.3 L64.7 29.8 L67.9 31.9 L71.0 31.6 L74.2 34.7 L77.3 36.8 L80.5 37.9 L83.6 39.5 L86.8 40.4 L89.9 43.6 L93.1 44.7 L96.2 47.2 L99.4 48.0 L112.0 48.0"/>
         </svg>
-        <h4>Spring &#8594; Plate</h4><p>Tank into sheet, in series</p>
+        <h4>Spring &#8594; Plate</h4><p>The tank blooms into the sheet <span class="pal-tail">tail &#8776;1.4 s</span></p>
       </div>
 
       <div class="pal-tile reveal">
         <svg viewBox="0 0 120 56" aria-hidden="true">
-          <path class="rv-line" pathLength="100" d="M8 48 C10 20 14 12 19 12 C26 12 23 42 30 42 C37 42 35 22 42 22 C49 22 48 40 56 42 C72 45 94 46 112 47"/>
-          <path class="rv-line teal" pathLength="100" d="M8 48 C13 14 22 12 33 16 C58 26 88 42 112 46"/>
+          <path class="rv-line" pathLength="100" d="M8.0 12.0 L11.2 15.9 L14.3 16.6 L17.5 18.7 L20.6 19.6 L23.8 15.5 L26.9 17.5 L30.1 17.9 L33.2 24.0 L36.4 26.9 L39.5 26.8 L42.7 27.4 L45.8 24.7 L49.0 28.0 L52.1 29.9 L55.3 33.4 L58.4 31.9 L61.6 33.9 L64.7 33.6 L67.9 35.3 L71.0 36.4 L74.2 42.0 L77.3 42.8 L80.5 44.9 L83.6 43.2 L86.8 42.8 L89.9 47.4 L93.1 47.1 L96.2 48.0 L112.0 48.0"/>
+          <path class="rv-line teal" pathLength="100" d="M8.0 13.3 L11.2 25.8 L14.3 16.3 L17.5 10.9 L20.6 11.7 L23.8 15.5 L26.9 16.9 L30.1 17.4 L33.2 19.7 L36.4 20.3 L39.5 22.2 L42.7 25.1 L45.8 24.1 L49.0 27.5 L52.1 29.2 L55.3 30.7 L58.4 31.3 L61.6 32.5 L64.7 35.6 L67.9 35.7 L71.0 37.1 L74.2 38.0 L77.3 40.2 L80.5 41.9 L83.6 42.2 L86.8 44.8 L89.9 47.9 L93.1 47.5 L96.2 48.0 L112.0 48.0"/>
         </svg>
-        <h4>Spring + Plate</h4><p>Both at once, in parallel</p>
+        <h4>Spring + Plate</h4><p>Both at once, in parallel <span class="pal-tail">spring &#183; <i>plate</i></span></p>
       </div>
 
       <div class="pal-tile reveal">
         <svg viewBox="0 0 120 56" aria-hidden="true">
           <path class="pal-ir" d="M10 48 V28 M14 48 V10 M18 48 V36 M22 48 V18 M26 48 V32 M30 48 V24 M34 48 V38 M39 48 V30 M45 48 V36 M52 48 V40 M60 48 V42 M70 48 V44 M82 48 V45.5 M96 48 V46.5 M108 48 V47"/>
         </svg>
-        <h4>Convolution</h4><p>38 real spaces, or load your own</p>
+        <h4>Convolution</h4><p>38 real spaces, or load your own <span class="pal-tail">tail = the IR&#8217;s</span></p>
       </div>
 
       <div class="pal-tile reveal">
         <svg viewBox="0 0 120 56" aria-hidden="true">
-          <path class="rv-fill" d="M8 48 L10 14 C22 10 44 11 62 13 L72 14 L72 48 Z"/>
-          <path class="rv-line" pathLength="100" d="M8 48 L10 14 C22 10 44 11 62 13 L72 14 L72 48"/>
-          <path class="pal-gate" d="M72 6 V50"/>
+          <path class="rv-fill" d="M8.0 13.3 L11.2 22.5 L14.3 28.2 L17.5 25.8 L20.6 20.1 L23.8 17.9 L26.9 16.3 L30.1 14.4 L33.2 12.6 L36.4 10.3 L39.5 10.9 L42.7 10.0 L45.8 12.3 L49.0 11.7 L52.1 14.3 L55.3 14.0 L58.4 15.5 L61.6 14.5 L64.7 15.5 L67.9 15.8 L71.0 16.9 L74.2 17.2 L77.3 17.4 L80.5 17.8 L83.6 22.2 L86.8 26.1 L89.9 31.6 L93.1 35.4 L96.2 39.4 L99.4 43.2 L102.5 46.9 L105.7 48.0 L8.0 48.0 Z"/>
+          <path class="rv-line" pathLength="100" d="M8.0 13.3 L11.2 22.5 L14.3 28.2 L17.5 25.8 L20.6 20.1 L23.8 17.9 L26.9 16.3 L30.1 14.4 L33.2 12.6 L36.4 10.3 L39.5 10.9 L42.7 10.0 L45.8 12.3 L49.0 11.7 L52.1 14.3 L55.3 14.0 L58.4 15.5 L61.6 14.5 L64.7 15.5 L67.9 15.8 L71.0 16.9 L74.2 17.2 L77.3 17.4 L80.5 17.8 L83.6 22.2 L86.8 26.1 L89.9 31.6 L93.1 35.4 L96.2 39.4 L99.4 43.2 L102.5 46.9 L105.7 48.0"/>
+          <path class="pal-gate" d="M82 6 V50"/>
         </svg>
-        <h4>Gated</h4><p>Bloom, then the &#8217;80s snap</p>
+        <h4>Gated</h4><p>Bloom, hold, then the &#8217;80s snap <span class="pal-tail">tail &#8776;0.4 s</span></p>
       </div>
     </div>
   </div>
@@ -1341,8 +1349,8 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
   if(btn) btn.addEventListener('click', function(){
     v.muted = !v.muted;
     btn.setAttribute('aria-pressed', v.muted ? 'false' : 'true');
-    btn.querySelector('.s-off').hidden = !v.muted;
-    btn.querySelector('.s-on').hidden = v.muted;
+    btn.querySelector('.s-off').toggleAttribute('hidden', !v.muted);
+    btn.querySelector('.s-on').toggleAttribute('hidden', v.muted);
     if(!v.muted){ v.currentTime = 0; }          // restart so the take makes sense with sound
     var pp = v.play(); if(pp && pp.catch) pp.catch(function(){});
   });
@@ -1474,7 +1482,9 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
       timeEl.textContent = fmt(t) + ' / ' + fmt(d);
     }
     function setIcons(playing){
-      iPlay.hidden = playing; iPause.hidden = !playing;
+      // SVG elements have no .hidden property — toggle the attribute
+      iPlay.toggleAttribute('hidden', playing);
+      iPause.toggleAttribute('hidden', !playing);
       toggle.classList.toggle('playing', playing);
       playerEl.classList.toggle('playing', playing);
       if(cur >= 0) m.presets[cur]._el.classList.toggle('playing', playing);
@@ -1621,6 +1631,57 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
       if(!dry) step(1);            // auto-advance: press play once, hear the whole bank
       else updateBar();
     });
+
+    /* ---- live spectrum: a real analyser on the demo audio ---- */
+    (function(){
+      var cv = document.getElementById('pl-spec');
+      if(!cv || !(window.AudioContext || window.webkitAudioContext)) return;
+      if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches){ cv.style.display = 'none'; return; }
+      var actx = null, analyser = null, data = null, raf = 0;
+      function ensure(){
+        if(actx) return true;
+        try{
+          var AC = window.AudioContext || window.webkitAudioContext;
+          actx = new AC();
+          var node = actx.createMediaElementSource(audio);
+          analyser = actx.createAnalyser();
+          analyser.fftSize = 1024;
+          analyser.smoothingTimeConstant = 0.82;
+          node.connect(analyser); analyser.connect(actx.destination);
+          data = new Uint8Array(analyser.frequencyBinCount);
+          return true;
+        }catch(e){ cv.style.display = 'none'; return false; }
+      }
+      function draw(){
+        raf = requestAnimationFrame(draw);
+        var dpr = window.devicePixelRatio || 1;
+        var W = cv.clientWidth, H = 44;
+        if(cv.width !== (W * dpr | 0)){ cv.width = W * dpr | 0; cv.height = H * dpr | 0; }
+        var g = cv.getContext('2d');
+        g.setTransform(dpr, 0, 0, dpr, 0, 0);
+        g.clearRect(0, 0, W, H);
+        analyser.getByteFrequencyData(data);
+        var bars = Math.max(24, Math.min(72, Math.floor(W / 10)));
+        var bw = W / bars;
+        for(var i = 0; i < bars; i++){
+          // log-ish frequency spread over the musically useful bins
+          var f0 = Math.pow(i / bars, 1.8), f1 = Math.pow((i + 1) / bars, 1.8);
+          var a = Math.floor(f0 * data.length * 0.72);
+          var b2 = Math.max(a + 1, Math.floor(f1 * data.length * 0.72));
+          var v = 0; for(var j = a; j < b2; j++) v = Math.max(v, data[j]);
+          var h = (v / 255) * (H - 6);
+          if(h < 1) continue;
+          g.fillStyle = v > 216 ? 'rgba(216,73,46,.9)' : 'rgba(240,166,62,.8)';
+          g.fillRect(i * bw + 1.5, H - 3 - h, bw - 3, h);
+        }
+      }
+      audio.addEventListener('play', function(){
+        if(!ensure()) return;
+        if(actx.state === 'suspended') actx.resume();
+        cancelAnimationFrame(raf); draw();
+      });
+      audio.addEventListener('pause', function(){ cancelAnimationFrame(raf); });
+    })();
 
     /* ---- source material switcher (same preset, different input) ---- */
     if(sources && sources.length > 1){
