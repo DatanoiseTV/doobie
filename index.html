@@ -513,21 +513,10 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
 .card{
   border:1px solid var(--line-2); border-radius:14px; padding:24px;
   background:linear-gradient(180deg, oklch(0.215 0.006 60 / .8), oklch(0.19 0.006 60 / .8));
-  transition:border-color .2s, transform .2s, box-shadow .2s;
-  position:relative; overflow:hidden;
 }
-.card::before{
-  content:""; position:absolute; top:0; left:12%; right:12%; height:1px;
-  background:linear-gradient(90deg, transparent, var(--amber-glow), transparent);
-  opacity:0; transition:opacity .3s;
-}
-.card:hover{ border-color:var(--amber-dim); transform:translateY(-3px); box-shadow:0 24px 50px -30px rgba(0,0,0,.9), 0 0 40px -24px var(--amber-glow); }
-.card:hover::before{ opacity:1; }
-.card:hover .ico{ border-color:var(--amber-dim); box-shadow:0 0 18px -6px var(--amber-glow); transform:scale(1.07) rotate(-4deg); }
 .card .ico{
   width:38px; height:38px; border-radius:9px; display:grid; place-items:center; margin-bottom:16px;
   border:1px solid var(--line); background:var(--inset); color:var(--amber);
-  transition:border-color .25s, box-shadow .25s, transform .25s;
 }
 .card .ico svg{ width:20px; height:20px; }
 .card h3{ font-size:1.06rem; margin:0 0 8px; font-weight:600; letter-spacing:-0.01em; }
@@ -548,9 +537,7 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
 .pal-tile{
   border:1px solid var(--line-2); border-radius:12px; padding:14px 14px 12px;
   background:linear-gradient(180deg, oklch(0.21 0.006 60 / .8), oklch(0.185 0.006 60 / .8));
-  transition:border-color .2s, transform .2s, box-shadow .2s;
 }
-.pal-tile:hover{ border-color:var(--amber-dim); transform:translateY(-2px); box-shadow:0 18px 40px -26px rgba(0,0,0,.9), 0 0 30px -20px var(--amber-glow); }
 .pal-tile svg{ display:block; width:100%; height:auto; margin-bottom:10px; }
 .pal-tile h4{ margin:0 0 3px; font-size:0.94rem; font-weight:600; letter-spacing:-0.01em; }
 .pal-tile p{ margin:0; font-size:0.78rem; color:var(--txt-3); line-height:1.4; }
