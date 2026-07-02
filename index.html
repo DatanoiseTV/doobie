@@ -1230,16 +1230,18 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
     prevBtn.addEventListener('click', function(){ step(-1); });
     nextBtn.addEventListener('click', function(){ step(1); });
 
-    /* Dry A/B keeps the playhead where it was, so you compare the same beat */
+    /* A/B swap (dry toggle, source switch): keep the playhead position and
+       always start playing — switching is an audition, not a cue-up. */
     function swapTo(src){
-      var t = audio.currentTime, wasPlaying = !audio.paused;
+      var t = audio.currentTime;
       audio.src = src;
       audio.addEventListener('loadedmetadata', function once(){
         audio.removeEventListener('loadedmetadata', once);
         if(t && audio.duration) audio.currentTime = Math.min(t, Math.max(0, audio.duration - 0.05));
-        if(wasPlaying) audio.play();
+        var pp = audio.play(); if(pp && pp.catch) pp.catch(function(){});
         updateBar();
       });
+      audio.load();   // preload=none: without this, loadedmetadata never fires
     }
     dryBtn.addEventListener('click', function(){
       if(cur < 0 && !dry){ select(0, false); }
