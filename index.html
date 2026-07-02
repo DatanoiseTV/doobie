@@ -530,6 +530,52 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
 .card p{ margin:0; font-size:0.93rem; color:var(--txt-2); line-height:1.55; }
 .card .tag{ display:block; margin-top:12px; font-family:var(--mono); font-size:11px; color:var(--txt-3); letter-spacing:0.02em; }
 
+/* ---------- palette (delay characters + reverbs) ---------- */
+.pal-sub{
+  font-family:var(--mono); font-size:11px; letter-spacing:0.2em; text-transform:uppercase;
+  color:var(--txt-3); margin:0 0 14px; display:flex; align-items:center; gap:12px;
+}
+.pal-sub::after{ content:""; flex:1; height:1px; background:linear-gradient(90deg, var(--line-2), transparent); }
+.pal-grid{ display:grid; gap:14px; }
+.pal-5{ grid-template-columns:repeat(5,1fr); }
+.pal-4{ grid-template-columns:repeat(4,1fr); }
+@media(max-width:940px){ .pal-5{ grid-template-columns:repeat(3,1fr); } .pal-4{ grid-template-columns:repeat(2,1fr); } }
+@media(max-width:520px){ .pal-5, .pal-4{ grid-template-columns:repeat(2,1fr); } }
+.pal-tile{
+  border:1px solid var(--line-2); border-radius:12px; padding:14px 14px 12px;
+  background:linear-gradient(180deg, oklch(0.21 0.006 60 / .8), oklch(0.185 0.006 60 / .8));
+  transition:border-color .2s, transform .2s, box-shadow .2s;
+}
+.pal-tile:hover{ border-color:var(--amber-dim); transform:translateY(-2px); box-shadow:0 18px 40px -26px rgba(0,0,0,.9), 0 0 30px -20px var(--amber-glow); }
+.pal-tile svg{ display:block; width:100%; height:auto; margin-bottom:10px; }
+.pal-tile h4{ margin:0 0 3px; font-size:0.94rem; font-weight:600; letter-spacing:-0.01em; }
+.pal-tile p{ margin:0; font-size:0.78rem; color:var(--txt-3); line-height:1.4; }
+
+/* echo-tap bars: grow from the baseline when the tile scrolls in */
+.eb{ fill:var(--amber-2); transform:scaleY(0); transform-box:fill-box; transform-origin:50% 100%; transition:transform .5s cubic-bezier(.2,.7,.3,1.15); }
+.eb.soft{ filter:blur(1.3px); }
+.eb.dimfill{ fill:var(--amber-dim); }
+.reveal.in .eb{ transform:scaleY(1); }
+.reveal.in .eb:nth-of-type(2){ transition-delay:.1s; }
+.reveal.in .eb:nth-of-type(3){ transition-delay:.2s; }
+.reveal.in .eb:nth-of-type(4){ transition-delay:.3s; }
+.reveal.in .eb:nth-of-type(5){ transition-delay:.4s; }
+.pal-wob{ fill:none; stroke:var(--amber-dim); stroke-width:1; opacity:.6; }
+.pal-noise{ fill:var(--txt-3); opacity:.7; }
+.pal-arrow{ fill:none; stroke:var(--amber); stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; opacity:.85; }
+.pal-ir{ stroke:var(--amber-2); stroke-width:2.1; stroke-linecap:round; fill:none; }
+.pal-gate{ stroke:var(--red); stroke-width:1.2; stroke-dasharray:3 3; opacity:.8; }
+.pal-spark{ fill:var(--teal); animation:spark 2.2s ease-in-out infinite; }
+@keyframes spark{ 0%,100%{ opacity:.25; } 50%{ opacity:1; } }
+
+/* reverb envelopes: draw in on scroll */
+.rv-line{ fill:none; stroke:var(--amber-2); stroke-width:1.6; stroke-linecap:round; stroke-dasharray:100; stroke-dashoffset:100; transition:stroke-dashoffset 1.1s ease .15s; }
+.rv-line.t2{ transition-delay:.55s; }
+.rv-line.teal{ stroke:var(--teal); opacity:.8; transition-delay:.4s; }
+.reveal.in .rv-line{ stroke-dashoffset:0; }
+.rv-fill{ fill:oklch(0.70 0.14 60 / .10); opacity:0; transition:opacity .8s ease .5s; }
+.reveal.in .rv-fill{ opacity:1; }
+
 /* ---------- cpu band ---------- */
 .cpu-band{
   display:grid; grid-template-columns:auto 1fr; gap:44px; align-items:center;
@@ -616,8 +662,11 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
   .hero .wrap > *, h1 .grad::before, h1 .grad::after,
   .tapeline .reel, .tapeline .tl-track, .tapeline .tl-dot,
   .eyebrow .dot, .cpu-meter i::before, .pl-play.playing,
-  .sf-loopwire, .sf-chip.dock{ animation:none; }
+  .sf-loopwire, .sf-chip.dock, .pal-spark{ animation:none; }
   .sf-dot, .sf-dot-dry, .sf-loopdot{ display:none; }  /* SMIL dots: hide instead */
+  .eb{ transform:none; transition:none; }
+  .rv-line{ stroke-dashoffset:0; transition:none; }
+  .rv-fill{ opacity:1; transition:none; }
 }
 </style>
 </head>
@@ -1027,6 +1076,152 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
         <span class="tag">Ping-pong · freeze · kill · duck</span>
       </div>
 
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- PALETTE: delay characters + reverb algorithms -->
+<section id="palette">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="sec-tag">The palette</span>
+      <h2>Five tapes, eight <em>rooms</em>.</h2>
+      <p>Every delay character and reverb algorithm, side by side — and each one routes pre, post, or into the feedback loop.</p>
+    </div>
+
+    <div class="pal-sub reveal">Delay characters</div>
+    <div class="pal-grid pal-5">
+
+      <div class="pal-tile reveal">
+        <svg viewBox="0 0 120 56" aria-hidden="true">
+          <rect class="eb" x="10" y="12" width="10" height="36" rx="1.5"/>
+          <rect class="eb" x="32" y="21" width="10" height="27" rx="1.5" opacity=".75"/>
+          <rect class="eb" x="54" y="28" width="10" height="20" rx="1.5" opacity=".55"/>
+          <rect class="eb" x="76" y="33" width="10" height="15" rx="1.5" opacity=".4"/>
+          <rect class="eb" x="98" y="37" width="10" height="11" rx="1.5" opacity=".28"/>
+        </svg>
+        <h4>Digital</h4><p>Clean, exact repeats</p>
+      </div>
+
+      <div class="pal-tile reveal">
+        <svg viewBox="0 0 120 56" aria-hidden="true">
+          <rect class="eb" x="10" y="12" width="10" height="36" rx="4"/>
+          <rect class="eb" x="33" y="22" width="10" height="26" rx="4" opacity=".72"/>
+          <rect class="eb" x="53" y="29" width="10" height="19" rx="4" opacity=".52"/>
+          <rect class="eb" x="77" y="34" width="10" height="14" rx="4" opacity=".38"/>
+          <rect class="eb" x="97" y="38" width="10" height="10" rx="4" opacity=".26"/>
+          <path class="pal-wob" d="M8 53 q7 2.6 14 0 t14 0 t14 0 t14 0 t14 0 t14 0 t14 0"/>
+        </svg>
+        <h4>Tape</h4><p>Wow, flutter, saturation</p>
+      </div>
+
+      <div class="pal-tile reveal">
+        <svg viewBox="0 0 120 56" aria-hidden="true">
+          <rect class="eb" x="10" y="14" width="10" height="34" rx="4"/>
+          <rect class="eb dimfill" x="32" y="26" width="10" height="22" rx="5" opacity=".6"/>
+          <rect class="eb dimfill" x="54" y="34" width="10" height="14" rx="6" opacity=".42"/>
+          <rect class="eb dimfill" x="76" y="40" width="10" height="8" rx="4" opacity=".28"/>
+          <rect class="eb dimfill" x="98" y="44" width="10" height="4" rx="2" opacity=".18"/>
+          <circle class="pal-noise" cx="47" cy="20" r="1"/>
+          <circle class="pal-noise" cx="70" cy="28" r="1"/>
+          <circle class="pal-noise" cx="90" cy="24" r="1"/>
+        </svg>
+        <h4>BBD</h4><p>Dark bucket-brigade murk</p>
+      </div>
+
+      <div class="pal-tile reveal">
+        <svg viewBox="0 0 120 56" aria-hidden="true">
+          <rect class="eb" x="10" y="12" width="10" height="36" rx="1.5"/>
+          <ellipse class="eb soft" cx="39" cy="38" rx="8" ry="12" opacity=".5"/>
+          <ellipse class="eb soft" cx="64" cy="41" rx="11" ry="9" opacity=".34"/>
+          <ellipse class="eb soft" cx="90" cy="43" rx="15" ry="7" opacity=".2"/>
+        </svg>
+        <h4>Diffuse</h4><p>Repeats smear into wash</p>
+      </div>
+
+      <div class="pal-tile reveal">
+        <svg viewBox="0 0 120 56" aria-hidden="true">
+          <rect class="eb" x="10" y="34" width="10" height="14" rx="1.5"/>
+          <rect class="eb" x="32" y="26" width="10" height="14" rx="1.5" opacity=".78"/>
+          <rect class="eb" x="54" y="18" width="10" height="14" rx="1.5" opacity=".58"/>
+          <rect class="eb" x="76" y="10" width="10" height="14" rx="1.5" opacity=".42"/>
+          <path class="pal-arrow" d="M98 26 V8 M93 13 L98 8 L103 13"/>
+        </svg>
+        <h4>Pitch</h4><p>Every repeat shifts, ±24 st</p>
+      </div>
+    </div>
+
+    <div class="pal-sub reveal" style="margin-top:36px">Reverb algorithms</div>
+    <div class="pal-grid pal-4">
+
+      <div class="pal-tile reveal">
+        <svg viewBox="0 0 120 56" aria-hidden="true">
+          <path class="rv-line" pathLength="100" d="M8 48 C10 18 13 10 17 10 C24 10 21 44 27 44 C33 44 31 18 37 18 C43 18 41 42 47 42 C53 42 51 24 57 24 C63 24 61 40 67 40 C75 40 73 30 80 30 C88 30 86 38 94 38 C102 38 104 45 112 46"/>
+        </svg>
+        <h4>Spring</h4><p>Dispersive dub tank</p>
+      </div>
+
+      <div class="pal-tile reveal">
+        <svg viewBox="0 0 120 56" aria-hidden="true">
+          <path class="rv-fill" d="M8 48 C12 12 20 10 30 14 C52 24 84 41 112 46 L112 48 Z"/>
+          <path class="rv-line" pathLength="100" d="M8 48 C12 12 20 10 30 14 C52 24 84 41 112 46"/>
+        </svg>
+        <h4>Plate</h4><p>Dense, modulated sheet</p>
+      </div>
+
+      <div class="pal-tile reveal">
+        <svg viewBox="0 0 120 56" aria-hidden="true">
+          <path class="rv-fill" d="M8 46 C18 45 21 16 36 12 C66 12 92 34 112 44 L112 48 L8 48 Z"/>
+          <path class="rv-line" pathLength="100" d="M8 46 C18 45 21 16 36 12 C66 12 92 34 112 44"/>
+        </svg>
+        <h4>Hall</h4><p>16-line cathedral bloom</p>
+      </div>
+
+      <div class="pal-tile reveal">
+        <svg viewBox="0 0 120 56" aria-hidden="true">
+          <path class="rv-line" pathLength="100" d="M8 48 C12 14 20 12 30 16 C52 26 84 41 112 46"/>
+          <circle class="pal-spark" cx="76" cy="28" r="1.9"/>
+          <circle class="pal-spark" cx="86" cy="22" r="1.7" style="animation-delay:.35s"/>
+          <circle class="pal-spark" cx="96" cy="15" r="1.5" style="animation-delay:.7s"/>
+          <circle class="pal-spark" cx="105" cy="9" r="1.3" style="animation-delay:1.05s"/>
+        </svg>
+        <h4>Shimmer</h4><p>The tail climbs an interval</p>
+      </div>
+
+      <div class="pal-tile reveal">
+        <svg viewBox="0 0 120 56" aria-hidden="true">
+          <path class="rv-line" pathLength="100" d="M8 48 C9 24 12 18 15 18 C20 18 18 42 23 42 C28 42 27 26 32 26 C37 26 36 44 41 46"/>
+          <path class="pal-arrow" d="M48 30 H60 M56 25 L61 30 L56 35"/>
+          <path class="rv-line t2" pathLength="100" d="M66 46 C70 16 77 14 84 18 C96 26 105 40 112 45"/>
+        </svg>
+        <h4>Spring &#8594; Plate</h4><p>Tank into sheet, in series</p>
+      </div>
+
+      <div class="pal-tile reveal">
+        <svg viewBox="0 0 120 56" aria-hidden="true">
+          <path class="rv-line" pathLength="100" d="M8 48 C10 20 14 12 19 12 C26 12 23 42 30 42 C37 42 35 22 42 22 C49 22 48 40 56 42 C72 45 94 46 112 47"/>
+          <path class="rv-line teal" pathLength="100" d="M8 48 C13 14 22 12 33 16 C58 26 88 42 112 46"/>
+        </svg>
+        <h4>Spring + Plate</h4><p>Both at once, in parallel</p>
+      </div>
+
+      <div class="pal-tile reveal">
+        <svg viewBox="0 0 120 56" aria-hidden="true">
+          <path class="pal-ir" d="M10 48 V28 M14 48 V10 M18 48 V36 M22 48 V18 M26 48 V32 M30 48 V24 M34 48 V38 M39 48 V30 M45 48 V36 M52 48 V40 M60 48 V42 M70 48 V44 M82 48 V45.5 M96 48 V46.5 M108 48 V47"/>
+        </svg>
+        <h4>Convolution</h4><p>38 real spaces, or load your own</p>
+      </div>
+
+      <div class="pal-tile reveal">
+        <svg viewBox="0 0 120 56" aria-hidden="true">
+          <path class="rv-fill" d="M8 48 L10 14 C22 10 44 11 62 13 L72 14 L72 48 Z"/>
+          <path class="rv-line" pathLength="100" d="M8 48 L10 14 C22 10 44 11 62 13 L72 14 L72 48"/>
+          <path class="pal-gate" d="M72 6 V50"/>
+        </svg>
+        <h4>Gated</h4><p>Bloom, then the &#8217;80s snap</p>
+      </div>
     </div>
   </div>
 </section>
