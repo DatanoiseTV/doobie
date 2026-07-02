@@ -398,6 +398,20 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
 }
 .pl-dry:hover{ color:var(--txt); border-color:var(--amber-dim); }
 .pl-dry[aria-pressed="true"]{ color:oklch(0.16 0.02 60); background:linear-gradient(180deg, var(--amber), var(--amber-2)); border-color:transparent; }
+.pl-sources{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:12px 22px; border-bottom:1px solid var(--line-2); background:oklch(0.19 0.006 60 / .6);
+}
+.pl-src-lab{ font-family:var(--mono); font-size:10px; letter-spacing:0.18em; text-transform:uppercase; color:var(--txt-3); margin-right:6px; }
+.pl-src{
+  font-family:var(--mono); font-size:11.5px; font-weight:600; letter-spacing:0.04em; cursor:pointer;
+  padding:6px 12px; border-radius:100px; color:var(--txt-2);
+  border:1px solid var(--line); background:oklch(0.238 0.007 60 / .5); transition:all .15s;
+}
+.pl-src:hover{ color:var(--amber); border-color:var(--amber-dim); }
+.pl-src[aria-pressed="true"]{
+  color:oklch(0.16 0.02 60); background:linear-gradient(180deg, var(--amber), var(--amber-2)); border-color:transparent;
+}
 .pl-list{ max-height:min(60vh, 560px); overflow-y:auto; overscroll-behavior:contain; }
 .pl-list::-webkit-scrollbar{ width:10px; }
 .pl-list::-webkit-scrollbar-thumb{ background:var(--raise); border-radius:10px; border:3px solid var(--panel); }
@@ -818,7 +832,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
     <div class="sec-head reveal">
       <span class="sec-tag">Listen</span>
       <h2>Hear it <em>before</em> you install it.</h2>
-      <p>One dry Rhodes phrase, played through all <span id="pl-count">79</span> factory presets — dub springs, tape wobble, shimmer choirs, gated snares. Pick anything below; tap <b>Dry</b> to hear what went in.</p>
+      <p>Pick your material — Rhodes keys, a vocal, an acid bassline — and hear it through all <span id="pl-count">79</span> factory presets: dub springs, tape wobble, shimmer choirs, gated snares. Tap <b>Dry</b> to hear what went in.</p>
     </div>
 
     <div class="player reveal">
@@ -847,6 +861,9 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
           </div>
         </div>
         <button id="pl-dry" class="pl-dry" aria-pressed="false" title="A/B against the untreated source">Dry</button>
+      </div>
+      <div id="pl-sources" class="pl-sources" hidden>
+        <span class="pl-src-lab">Source</span>
       </div>
       <div id="pl-list" class="pl-list"></div>
     </div>
@@ -1096,19 +1113,31 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
     .catch(function(){ /* keep the /releases/latest fallback hrefs */ });
 })();
 
-/* preset demo player — only shows if assets/demos/manifest.json exists */
+/* preset demo player — only shows if demo manifests exist */
 (function(){
-  fetch('assets/demos/manifest.json', { cache:'no-cache' })
-    .then(function(r){ if(!r.ok) throw 0; return r.json(); })
-    .then(function(m){ if(!m || !m.presets || !m.presets.length) throw 0; init(m); })
-    .catch(function(){ /* no demos rendered yet — leave section hidden */ });
+  function getJSON(url){
+    return fetch(url, { cache:'no-cache' }).then(function(r){ if(!r.ok) throw 0; return r.json(); });
+  }
+  getJSON('assets/demos/sources.json')
+    .then(function(s){
+      if(!s || !s.sources || !s.sources.length) throw 0;
+      var def = s.sources.filter(function(x){ return x.default; })[0] || s.sources[0];
+      return getJSON('assets/demos/' + def.key + '/manifest.json')
+        .then(function(m){ init(m, s.sources, def.key); });
+    })
+    .catch(function(){
+      // fall back to the old flat layout
+      getJSON('assets/demos/manifest.json')
+        .then(function(m){ if(m && m.presets && m.presets.length) init(m, null, null); })
+        .catch(function(){ /* no demos rendered yet — leave section hidden */ });
+    });
 
-  function init(m){
+  function init(m, sources, srcKey){
     var sec = document.getElementById('demos');
     var div = document.getElementById('demos-div');
     sec.hidden = false; if(div) div.hidden = false;
 
-    var base = 'assets/demos/';
+    var base = srcKey ? ('assets/demos/' + srcKey + '/') : 'assets/demos/';
     var audio = new Audio();
     audio.preload = 'none';
     var playerEl = sec.querySelector('.player');
@@ -1258,6 +1287,35 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
       if(!dry) step(1);            // auto-advance: press play once, hear the whole bank
       else updateBar();
     });
+
+    /* ---- source material switcher (same preset, different input) ---- */
+    if(sources && sources.length > 1){
+      var srcRow = document.getElementById('pl-sources');
+      srcRow.hidden = false;
+      var srcBtns = {};
+      sources.forEach(function(s){
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'pl-src';
+        b.textContent = s.label;
+        b.setAttribute('aria-pressed', s.key === srcKey ? 'true' : 'false');
+        b.addEventListener('click', function(){ switchSource(s.key); });
+        srcRow.appendChild(b);
+        srcBtns[s.key] = b;
+      });
+      function switchSource(key){
+        if(key === srcKey) return;
+        getJSON('assets/demos/' + key + '/manifest.json').then(function(nm){
+          srcKey = key;
+          base = 'assets/demos/' + key + '/';
+          m.dry = nm.dry;
+          // same factory bank, same order — swap the audio files in place
+          nm.presets.forEach(function(np, i){ if(m.presets[i]) m.presets[i].file = np.file; });
+          for(var k in srcBtns) srcBtns[k].setAttribute('aria-pressed', k === key ? 'true' : 'false');
+          if(dry) swapTo(base + m.dry);                       // keep A/B position
+          else if(cur >= 0){ warmNext(cur); swapTo(base + m.presets[cur].file); }
+        }).catch(function(){});
+      }
+    }
 
     select(0, false, true);        // cue the first preset silently, no page scroll
   }
