@@ -337,12 +337,73 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
 .flow-legend .lg-dock{ border-top-style:dashed; border-top-color:var(--amber-dim); }
 
 /* ---------- player ---------- */
+.player-grid{
+  max-width:1120px; margin:0 auto; display:grid;
+  grid-template-columns:minmax(0,1fr) 268px; gap:18px; align-items:start;
+}
+@media(max-width:920px){ .player-grid{ grid-template-columns:1fr; } }
 .player{
-  max-width:840px; margin:0 auto; border:1px solid var(--line);
+  min-width:0; border:1px solid var(--line);
   border-radius:16px; overflow:hidden;
   background:linear-gradient(180deg, var(--panel-2), var(--panel));
   box-shadow:0 40px 90px -40px rgba(0,0,0,.8);
 }
+.pl-info{
+  position:sticky; top:78px;
+  border:1px solid var(--line); border-radius:16px; padding:20px;
+  background:linear-gradient(180deg, var(--panel-2), var(--panel));
+  box-shadow:0 40px 90px -40px rgba(0,0,0,.8);
+}
+.pl-info-h{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:0.2em; text-transform:uppercase;
+  color:var(--amber-dim); margin-bottom:14px;
+}
+.pi-topo{
+  font-family:var(--mono); font-size:11px; line-height:1.7; color:var(--txt-2);
+  padding:10px 12px; border-radius:9px; background:var(--inset); border:1px solid var(--line-2);
+  margin-bottom:14px; word-spacing:0.05em;
+}
+.pi-topo b{ color:var(--amber); font-weight:600; }
+.pi-topo .t{ color:var(--teal); }
+.pi-rows{ display:flex; flex-direction:column; }
+.pir{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:7.5px 0; border-bottom:1px solid var(--line-2); font-size:13px;
+}
+.pir[hidden]{ display:none; }
+.pir:last-child{ border-bottom:0; }
+.pir > span:first-child{
+  font-family:var(--mono); font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--txt-3);
+}
+.pir b{ font-weight:600; color:var(--txt); text-align:right; }
+.pir b em{ font-style:normal; color:var(--amber-2); font-family:var(--mono); font-size:11px; }
+.pi-fbwrap{ display:flex; align-items:center; gap:9px; flex:1; justify-content:flex-end; max-width:150px; }
+.pi-fbbar{
+  display:block; flex:1; height:6px; border-radius:100px; background:var(--inset);
+  border:1px solid var(--line-2); position:relative; overflow:hidden;
+}
+.pi-fbbar i{
+  position:absolute; left:0; top:0; bottom:0; width:0; border-radius:100px;
+  background:linear-gradient(90deg, var(--amber-2), var(--amber));
+  transition:width .35s ease, background .35s;
+}
+.pi-fbbar i.hot{ background:linear-gradient(90deg, var(--amber), var(--red)); box-shadow:0 0 8px oklch(0.63 0.205 28 / .5); }
+.pi-fbwrap b{ font-family:var(--mono); font-size:12px; min-width:38px; }
+.pi-heads{ display:flex; gap:5px; }
+.pi-heads i{
+  width:20px; height:20px; border-radius:5px; display:grid; place-items:center;
+  font-family:var(--mono); font-style:normal; font-size:10px; font-weight:600;
+  color:var(--txt-3); border:1px solid var(--line-2); background:var(--inset);
+}
+.pi-heads i.on{ color:oklch(0.16 0.02 60); background:linear-gradient(180deg, var(--amber), var(--amber-2)); border-color:transparent; }
+.pi-extras{ margin-top:12px; display:flex; flex-wrap:wrap; gap:6px; }
+.pi-extras span{
+  font-family:var(--mono); font-size:10px; letter-spacing:0.08em; text-transform:uppercase;
+  padding:4px 9px; border-radius:100px; color:var(--txt-2);
+  border:1px solid var(--line-2); background:oklch(0.238 0.007 60 / .5);
+}
+.pi-drynote{ margin-top:12px; font-size:12.5px; color:var(--txt-3); font-family:var(--mono); }
+.pl-info.isdry .pi-rows, .pl-info.isdry .pi-topo, .pl-info.isdry .pi-extras{ opacity:.3; }
 .player-now{ display:flex; align-items:center; gap:18px; padding:22px 22px; border-bottom:1px solid var(--line-2); }
 .pl-play{
   flex:0 0 auto; width:56px; height:56px; border-radius:50%; cursor:pointer; border:1px solid transparent;
@@ -835,7 +896,8 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
       <p>Pick your material — Rhodes keys, a vocal, an acid bassline — and hear it through all <span id="pl-count">79</span> factory presets: dub springs, tape wobble, shimmer choirs, gated snares. Tap <b>Dry</b> to hear what went in.</p>
     </div>
 
-    <div class="player reveal">
+    <div class="player-grid reveal">
+    <div class="player">
       <div class="player-now">
         <div class="pl-transport">
           <button id="pl-prev" class="pl-skip" aria-label="Previous preset">
@@ -866,6 +928,26 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
         <span class="pl-src-lab">Source</span>
       </div>
       <div id="pl-list" class="pl-list"></div>
+    </div>
+
+    <aside id="pl-info" class="pl-info" hidden aria-label="Current preset details">
+      <div class="pl-info-h">On the tape</div>
+      <div id="pi-topo" class="pi-topo"></div>
+      <div class="pi-rows">
+        <div class="pir"><span>Character</span><b id="pi-char"></b></div>
+        <div class="pir"><span>Time</span><b id="pi-time"></b></div>
+        <div class="pir"><span>Feedback</span>
+          <span class="pi-fbwrap"><i class="pi-fbbar"><i id="pi-fbfill"></i></i><b id="pi-fb"></b></span>
+        </div>
+        <div class="pir"><span>Heads</span><span id="pi-heads" class="pi-heads"></span></div>
+        <div class="pir"><span>Reverb</span><b id="pi-rev"></b></div>
+        <div class="pir" id="pi-phrow" hidden><span>Phaser</span><b id="pi-ph"></b></div>
+        <div class="pir" id="pi-pitchrow" hidden><span>Pitch</span><b id="pi-pitch"></b></div>
+        <div class="pir"><span>Mix</span><b id="pi-mix"></b></div>
+      </div>
+      <div id="pi-extras" class="pi-extras"></div>
+      <div class="pi-drynote" hidden>Dry source — nothing on the tape.</div>
+    </aside>
     </div>
   </div>
 </section>
@@ -1203,9 +1285,63 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
       if(cur >= 0) m.presets[cur]._el.classList.toggle('playing', playing);
     }
     function warmNext(i){ pre.src = base + m.presets[(i+1) % m.presets.length].file; }
+    var infoCard = document.getElementById('pl-info');
+    var dryNote = infoCard ? infoCard.querySelector('.pi-drynote') : null;
+    function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    function topo(inf){
+      var pre=[], loop=[], post=[];
+      var rev = (inf.reverb && inf.reverb !== 'Off') ? esc(inf.reverb.toLowerCase()) : null;
+      if(rev){ ({'Pre':pre,'In Feedback':loop,'Post':post}[inf.revRoute] || post).push(rev); }
+      if(inf.phaser){ ({'Pre':pre,'In Feedback':loop,'Post':post}[inf.phaser] || post).push('phaser'); }
+      if(inf.pitch && /feedback/i.test(inf.pitch)) loop.push('pitch');
+      else if(inf.pitch) pre.push('pitch');
+      var s = 'in &rarr; ';
+      if(pre.length) s += pre.join(' &rarr; ') + ' &rarr; ';
+      s += '<b>tape</b>';
+      if(loop.length) s += ' <span class="t">&#8635; ' + loop.join(' · ') + '</span>';
+      if(post.length) s += ' &rarr; ' + post.join(' &rarr; ');
+      return s + ' &rarr; out';
+    }
+    function showCard(inf){
+      if(!inf || !infoCard) return;
+      infoCard.hidden = false;
+      infoCard.classList.remove('isdry');
+      if(dryNote) dryNote.hidden = true;
+      document.getElementById('pi-topo').innerHTML = topo(inf);
+      document.getElementById('pi-char').textContent = inf.character || '—';
+      document.getElementById('pi-time').textContent = inf.time + (inf.sync ? ' · synced' : ' · free');
+      document.getElementById('pi-fb').textContent = Math.round(inf.feedback * 100) + '%';
+      var fill = document.getElementById('pi-fbfill');
+      fill.style.width = Math.min(100, inf.feedback / 1.2 * 100) + '%';
+      fill.classList.toggle('hot', inf.feedback >= 0.95);
+      var hh = document.getElementById('pi-heads'); hh.innerHTML = '';
+      'ABCD'.split('').forEach(function(L){
+        var i = document.createElement('i'); i.textContent = L;
+        if((inf.heads || '').indexOf(L) >= 0) i.className = 'on';
+        hh.appendChild(i);
+      });
+      var rev = document.getElementById('pi-rev');
+      if(inf.reverb && inf.reverb !== 'Off'){
+        rev.textContent = inf.reverb + ' ';
+        var em = document.createElement('em');
+        em.textContent = inf.revRoute.toLowerCase() + ' · ' + Math.round(inf.revMix * 100) + '%';
+        rev.appendChild(em);
+      } else rev.textContent = '—';
+      var phrow = document.getElementById('pi-phrow');
+      phrow.hidden = !inf.phaser;
+      if(inf.phaser) document.getElementById('pi-ph').textContent = 'on · ' + inf.phaser.toLowerCase();
+      var prow = document.getElementById('pi-pitchrow');
+      prow.hidden = !inf.pitch;
+      if(inf.pitch) document.getElementById('pi-pitch').textContent = inf.pitch;
+      document.getElementById('pi-mix').textContent = Math.round(inf.mix * 100) + '% wet';
+      var ex = document.getElementById('pi-extras'); ex.innerHTML = '';
+      (inf.extras || '').split('·').map(function(s){ return s.trim(); }).filter(Boolean)
+        .forEach(function(t){ var sp = document.createElement('span'); sp.textContent = t; ex.appendChild(sp); });
+    }
     function showPreset(p){
       nameEl.textContent = p.name; chipEl.textContent = p.category; chipEl.hidden = false;
       tagEl.textContent = p.tagline;
+      showCard(p.info);
     }
     function select(i, playNow, noScroll){
       if(i === cur && !dry){ if(playNow) toggleplay(); return; }
@@ -1251,6 +1387,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
         if(cur >= 0) m.presets[cur]._el.classList.remove('playing');
         nameEl.textContent = 'Dry loop'; chipEl.hidden = true;
         tagEl.textContent = 'The untreated source — no delay, no reverb.';
+        if(infoCard && !infoCard.hidden){ infoCard.classList.add('isdry'); if(dryNote) dryNote.hidden = false; }
         swapTo(base + (m.dry || 'dry.mp3'));
       } else if(cur >= 0){
         showPreset(m.presets[cur]);
