@@ -105,6 +105,14 @@ nav .links a:not(.btn):hover::after{ right:0; }
 .btn-ghost{ color:var(--txt); border-color:var(--line); background:oklch(0.238 0.007 60 / .5); }
 .btn-ghost:hover{ border-color:var(--amber-dim); color:var(--amber); }
 nav .btn{ padding:8px 15px; font-size:13px; }
+.tapecount{
+  display:inline-flex; align-items:center; gap:7px;
+  font-family:var(--mono); font-size:11.5px; letter-spacing:0.14em;
+  color:var(--txt-3); user-select:none;
+}
+.tapecount b{ font-weight:500; font-variant-numeric:tabular-nums; min-width:3ch; }
+.tapecount svg{ display:block; }
+@media(max-width:860px){ .tapecount{ display:none; } }
 @media(max-width:720px){ nav .links a:not(.btn){ display:none; } }
 
 /* ---------- hero ---------- */
@@ -335,6 +343,23 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
 .flow-legend .lg{ display:inline-block; width:22px; height:0; vertical-align:middle; margin-right:5px; border-top:2px solid oklch(0.45 0.02 62); border-radius:2px; }
 .flow-legend .lg-dash{ border-top-style:dashed; border-top-color:oklch(0.42 0.008 60); }
 .flow-legend .lg-dock{ border-top-style:dashed; border-top-color:var(--amber-dim); }
+/* clickable route docks + the hear-it row */
+.sf .sfdock{ cursor:pointer; outline:none; }
+.sf .sfdock:hover .sf-chip.dock, .sf .sfdock:focus-visible .sf-chip.dock{ stroke:var(--amber); stroke-opacity:1; animation:none; }
+.sf .sfdock.active .sf-chip.dock{
+  stroke:var(--amber); stroke-dasharray:none; stroke-opacity:1; animation:none;
+  fill:oklch(0.27 0.045 62 / .55);
+  filter:drop-shadow(0 0 8px oklch(0.775 0.150 65 / .35));
+}
+.route-try{
+  margin-top:16px; padding-top:14px; border-top:1px solid var(--line-2);
+  display:flex; flex-direction:column; gap:10px;
+}
+.rt-lab{ font-family:var(--mono); font-size:10.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--txt-3); }
+.rt-btns{ display:flex; gap:8px; flex-wrap:wrap; }
+.rt-btn.playing{
+  color:oklch(0.16 0.02 60); background:linear-gradient(180deg, var(--amber), var(--amber-2)); border-color:transparent;
+}
 
 /* ---------- player ---------- */
 .player-grid{
@@ -709,6 +734,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
       <a href="#features">Features</a>
       <a href="#specs">Specs</a>
       <a href="https://github.com/DatanoiseTV/doobie" target="_blank" rel="noopener">Source</a>
+      <span id="tapecount" class="tapecount" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.6" fill="none" stroke="currentColor" stroke-width="1.2"/><line x1="7" y1="1.4" x2="7" y2="4.4" stroke="currentColor" stroke-width="1.2"/></svg><b>000</b></span>
       <a class="btn btn-amber" href="#download">Download</a>
     </div>
   </div>
@@ -875,7 +901,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
           <rect x="94" y="94" width="132" height="24" rx="7" class="sf-chip opt"/>
           <text x="160" y="110" class="sf-lab dim">Resonant filter</text>
         </g>
-        <g class="sf-node">
+        <g class="sf-node sfdock" data-route="pre" tabindex="0" role="button" aria-label="Hear the reverb routed pre">
           <rect x="62" y="130" width="196" height="24" rx="7" class="sf-chip dock"/>
           <text x="140" y="146" class="sf-lab amber sm">Pitch · Phaser · Reverb</text>
           <text x="250" y="146" class="sf-badge" style="text-anchor:end">PRE</text>
@@ -885,7 +911,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
           <text x="160" y="202" class="sf-lab amber" style="font-weight:600">Tape delay</text>
           <text x="160" y="221" class="sf-lab sm dim">4 heads · A&#8211;D</text>
         </g>
-        <g class="sf-node">
+        <g class="sf-node sfdock" data-route="post" tabindex="0" role="button" aria-label="Hear the reverb routed post">
           <rect x="62" y="266" width="196" height="24" rx="7" class="sf-chip dock"/>
           <text x="140" y="282" class="sf-lab amber sm">Phaser · Reverb</text>
           <text x="250" y="282" class="sf-badge" style="text-anchor:end">POST</text>
@@ -933,11 +959,11 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
           <rect x="296" y="184" width="112" height="20" rx="6" class="sf-chip opt"/>
           <text x="352" y="198" class="sf-lab sm dim">Age</text>
         </g>
-        <g class="sf-node">
+        <g class="sf-node sfdock" data-route="feedback" tabindex="0" role="button" aria-label="Hear the reverb routed inside the feedback loop">
           <rect x="296" y="210" width="112" height="20" rx="6" class="sf-chip dock"/>
           <text x="352" y="224" class="sf-lab sm amber">Phaser</text>
         </g>
-        <g class="sf-node">
+        <g class="sf-node sfdock" data-route="feedback" tabindex="0" role="button" aria-label="Hear the reverb routed inside the feedback loop">
           <rect x="296" y="236" width="112" height="20" rx="6" class="sf-chip dock"/>
           <text x="352" y="250" class="sf-lab sm amber">Reverb · Pitch</text>
         </g>
@@ -958,6 +984,14 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
         <span class="lg lg-dash"></span> optional &nbsp;
         <span class="lg lg-dock"></span> route dock — each effect picks <b>pre</b>, <b>post</b> or <b>in&nbsp;feedback</b>
       </p>
+      <div class="route-try" id="route-try">
+        <span class="rt-lab">Hear it &#8212; same phrase, spring reverb moved:</span>
+        <div class="rt-btns">
+          <button type="button" class="pl-src rt-btn" data-route="post" aria-pressed="false">Post</button>
+          <button type="button" class="pl-src rt-btn" data-route="pre" aria-pressed="false">Pre</button>
+          <button type="button" class="pl-src rt-btn" data-route="feedback" aria-pressed="false">In feedback</button>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -1428,6 +1462,68 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
   });
 })();
 
+/* route A/B: same phrase, spring reverb moved pre / post / into the loop */
+(function(){
+  var row = document.getElementById('route-try');
+  if(!row) return;
+  var audio = new Audio(); audio.preload = 'none';
+  var btns = [].slice.call(row.querySelectorAll('.rt-btn'));
+  var docks = [].slice.call(document.querySelectorAll('.sf .sfdock'));
+  var cur = null;
+  function mark(route, playing){
+    btns.forEach(function(b){
+      var on = b.dataset.route === route;
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      b.classList.toggle('playing', on && playing);
+    });
+    docks.forEach(function(d){ d.classList.toggle('active', d.dataset.route === route); });
+  }
+  function go(route){
+    if(route === cur){
+      if(audio.paused) audio.play(); else audio.pause();
+      mark(route, !audio.paused);
+      return;
+    }
+    var t = cur ? audio.currentTime : 0;   // position-preserving A/B
+    cur = route;
+    audio.src = 'assets/routes/' + route + '.mp3';
+    audio.addEventListener('loadedmetadata', function once(){
+      audio.removeEventListener('loadedmetadata', once);
+      if(t && audio.duration) audio.currentTime = Math.min(t, Math.max(0, audio.duration - 0.05));
+      var pp = audio.play(); if(pp && pp.catch) pp.catch(function(){});
+    });
+    audio.load();
+    mark(route, true);
+  }
+  btns.forEach(function(b){ b.addEventListener('click', function(){ go(b.dataset.route); }); });
+  docks.forEach(function(d){
+    d.addEventListener('click', function(){ go(d.dataset.route); });
+    d.addEventListener('keydown', function(e){
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); go(d.dataset.route); }
+    });
+  });
+  audio.addEventListener('pause', function(){ mark(cur, false); });
+  audio.addEventListener('play',  function(){ mark(cur, true); });
+  audio.addEventListener('ended', function(){ mark(cur, false); });
+})();
+
+/* nav tape counter: scroll position as an odometer */
+(function(){
+  var el = document.getElementById('tapecount');
+  if(!el) return;
+  var num = el.querySelector('b'), reel = el.querySelector('svg');
+  var raf = 0;
+  function update(){
+    raf = 0;
+    var max = document.documentElement.scrollHeight - innerHeight;
+    var pct = max > 0 ? Math.round(scrollY / max * 100) : 0;
+    num.textContent = String(pct).padStart(3, '0');
+    reel.style.transform = 'rotate(' + (scrollY / 4) + 'deg)';
+  }
+  addEventListener('scroll', function(){ if(!raf) raf = requestAnimationFrame(update); }, { passive:true });
+  update();
+})();
+
 /* count the spec numbers up when they scroll into view */
 (function(){
   var strip = document.querySelector('.specs');
@@ -1632,7 +1728,10 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
       audio.src = base + p.file;
       warmNext(i);
       updateBar();
-      if(playNow) audio.play();
+      if(playNow){
+        history.replaceState(null, '', '#p=' + p.slug);   // shareable link to this preset
+        audio.play();
+      }
     }
     function step(dir){ select(((cur < 0 ? 0 : cur) + dir + m.presets.length) % m.presets.length, true); }
     function toggleplay(){
@@ -1784,7 +1883,14 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
       }
     }
 
-    select(0, false, true);        // cue the first preset silently, no page scroll
+    /* deep link: #p=<slug> cues that preset and jumps to the player */
+    var linked = -1;
+    if(location.hash.indexOf('#p=') === 0){
+      var slug = decodeURIComponent(location.hash.slice(3));
+      m.presets.forEach(function(p, i){ if(p.slug === slug) linked = i; });
+    }
+    select(linked >= 0 ? linked : 0, false, linked < 0);
+    if(linked >= 0) sec.scrollIntoView();
   }
 })();
 </script>
