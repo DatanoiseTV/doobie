@@ -638,8 +638,39 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
   background:var(--inset); border:1px solid var(--line-2); border-radius:7px; padding:10px 12px;
   display:block; overflow-x:auto; white-space:nowrap;
 }
-.note{ margin-top:30px; font-size:0.9rem; color:var(--txt-3); }
+.note{ margin-top:26px; font-size:0.9rem; color:var(--txt-3); }
 .note a{ color:var(--amber-2); border-bottom:1px solid var(--amber-dim); }
+.unsig{ color:var(--amber-2); font-weight:600; }
+.gk{
+  max-width:760px; margin:34px auto 0; text-align:left;
+  border:1px solid var(--line-2); border-radius:12px;
+  background:oklch(0.205 0.006 60 / .6);
+}
+.gk summary{
+  cursor:pointer; padding:14px 18px; font-size:0.95rem; font-weight:600; color:var(--txt);
+  list-style:none; display:flex; align-items:center; gap:10px;
+}
+.gk summary::before{
+  content:""; width:7px; height:7px; flex:0 0 auto;
+  border-right:1.5px solid var(--amber); border-bottom:1.5px solid var(--amber);
+  transform:rotate(-45deg); transition:transform .2s; margin-left:2px;
+}
+.gk[open] summary::before{ transform:rotate(45deg); }
+.gk summary::-webkit-details-marker{ display:none; }
+.gk summary:hover{ color:var(--amber); }
+.gk-body{ padding:2px 20px 18px; font-size:0.9rem; color:var(--txt-2); border-top:1px solid var(--line-2); }
+.gk-body p{ margin:12px 0; }
+.gk-body a{ color:var(--amber-2); border-bottom:1px solid var(--amber-dim); }
+.gk-body ol{ margin:12px 0; padding-left:20px; display:flex; flex-direction:column; gap:10px; }
+.gk-body li::marker{ color:var(--amber-dim); font-family:var(--mono); }
+.gk-body code{
+  display:block; margin:8px 0 6px; padding:10px 12px; border-radius:7px;
+  font-family:var(--mono); font-size:11.5px; color:var(--txt-2);
+  background:var(--inset); border:1px solid var(--line-2);
+  overflow-x:auto; white-space:pre; user-select:all;
+}
+.gk-body code.inline{ display:inline; padding:1px 6px; margin:0; white-space:nowrap; user-select:auto; }
+.gk-warn{ color:var(--txt-3); font-size:0.84rem; border-left:2px solid var(--red); padding-left:12px; }
 
 /* ---------- footer ---------- */
 footer{ border-top:1px solid var(--line-2); padding:52px 0 60px; }
@@ -1274,8 +1305,8 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c.1 1.2-.4 2.3-1.1 3.1-.8.8-1.9 1.4-3 1.3-.1-1.1.4-2.3 1.1-3C14.2 3.6 15.4 3 16.5 3zM19 17.5c-.5 1.2-.8 1.7-1.5 2.7-.9 1.4-2.2 3.1-3.8 3.1-1.4 0-1.8-.9-3.7-.9-1.9 0-2.3.9-3.7.9-1.6 0-2.8-1.6-3.7-2.9C1.4 17.6.9 13.4 2.5 11c1-1.5 2.6-2.4 4.1-2.4 1.5 0 2.5 1 3.7 1 1.2 0 1.9-1 3.7-1 1.3 0 2.7.7 3.7 2-3.2 1.8-2.7 6.3-.4 6.9z"/></svg>
           macOS
         </h3>
-        <div class="os">Universal — Apple Silicon &amp; Intel</div>
-        <p>VST3, Audio Unit and Standalone. Drop the plug-ins in your Library folder and rescan.</p>
+        <div class="os">Universal — Apple Silicon &amp; Intel · <b class="unsig">currently unsigned</b></div>
+        <p>VST3, Audio Unit and Standalone. Drop the plug-ins in your Library folder and rescan. macOS will quarantine the download — see the safe steps below.</p>
         <a id="dl-macos" class="btn btn-amber" href="https://github.com/DatanoiseTV/doobie/releases/latest" target="_blank" rel="noopener">Latest release</a>
       </div>
 
@@ -1301,9 +1332,47 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
       </div>
     </div>
 
+    <details class="gk">
+      <summary>macOS says Doobie &#8220;can&#8217;t be opened&#8221; or is &#8220;damaged&#8221;? The safe way past that.</summary>
+      <div class="gk-body">
+        <p>
+          The macOS builds aren&#8217;t code-signed with an Apple developer certificate yet, so
+          <b>Gatekeeper quarantines them after download</b>. That&#8217;s macOS being cautious about
+          software it can&#8217;t verify — not a malware detection. Only bypass it for software you
+          got from a source you trust; for Doobie, that means the official
+          <a href="https://github.com/DatanoiseTV/doobie/releases" target="_blank" rel="noopener">releases page</a>
+          and nowhere else.
+        </p>
+        <ol>
+          <li>
+            <b>Standalone app, macOS&nbsp;15 (Sequoia) or newer:</b> double-click Doobie once — macOS blocks
+            it. Then open <b>System&nbsp;Settings &rarr; Privacy&nbsp;&amp;&nbsp;Security</b>, scroll down to
+            <i>&#8220;Doobie&#8221; was blocked&#8230;</i>, click <b>Open&nbsp;Anyway</b>, and confirm.
+            (The old right-click&nbsp;&rarr;&nbsp;Open trick no longer works on Sequoia.)
+          </li>
+          <li>
+            <b>Standalone app, macOS&nbsp;14 or older:</b> right-click (or Ctrl-click) Doobie.app,
+            choose <b>Open</b>, then <b>Open</b> again in the dialog.
+          </li>
+          <li>
+            <b>Plug-ins (VST3 / AU):</b> your DAW may silently skip quarantined plug-ins. After copying
+            them into place, open Terminal (&#8984;-Space, type &#8220;Terminal&#8221;) and paste:
+            <code>xattr -dr com.apple.quarantine ~/Library/Audio/Plug-Ins/VST3/Doobie.vst3 ~/Library/Audio/Plug-Ins/Components/Doobie.component</code>
+            This removes the quarantine flag from <b>those two bundles only</b> — nothing else on your
+            system — then rescan plug-ins in your DAW.
+          </li>
+        </ol>
+        <p class="gk-warn">
+          Never disable Gatekeeper system-wide (e.g. <code class="inline">spctl --master-disable</code>,
+          a favourite of random forum posts). It protects you from everything else you&#8217;ll ever download —
+          take one known file out of quarantine instead.
+        </p>
+      </div>
+    </details>
+
     <p class="note">
-      macOS builds may need a first-launch right-click &rarr; Open. Full instructions, changelog and every past
-      version are on the <a href="https://github.com/DatanoiseTV/doobie/releases" target="_blank" rel="noopener">releases page</a>.
+      Full instructions, changelog and every past version are on the
+      <a href="https://github.com/DatanoiseTV/doobie/releases" target="_blank" rel="noopener">releases page</a>.
     </p>
   </div>
 </section>
