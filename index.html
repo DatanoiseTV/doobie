@@ -564,6 +564,7 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
 .eb{ fill:var(--amber-2); transform:scaleY(0); transform-box:fill-box; transform-origin:50% 100%; transition:transform .5s cubic-bezier(.2,.7,.3,1.15); }
 .eb.soft{ filter:blur(1.3px); }
 .eb.dimfill{ fill:var(--amber-dim); }
+.eb.src{ fill:var(--txt-3); opacity:.55; }
 .reveal.in .eb{ transform:scaleY(1); }
 .reveal.in .eb:nth-of-type(2){ transition-delay:.1s; }
 .reveal.in .eb:nth-of-type(3){ transition-delay:.2s; }
@@ -1101,65 +1102,80 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
       <p>Every delay character and reverb algorithm, side by side — and each one routes pre, post, or into the feedback loop.</p>
     </div>
 
-    <div class="pal-sub reveal">Delay characters</div>
+    <div class="pal-sub reveal">Delay characters — tap trains measured from the engine (click &#8594; 100% wet, fb 60%)</div>
     <div class="pal-grid pal-5">
 
       <div class="pal-tile reveal">
         <svg viewBox="0 0 120 56" aria-hidden="true">
-          <rect class="eb" x="10" y="12" width="10" height="36" rx="1.5"/>
-          <rect class="eb" x="32" y="21" width="10" height="27" rx="1.5" opacity=".75"/>
-          <rect class="eb" x="54" y="28" width="10" height="20" rx="1.5" opacity=".55"/>
-          <rect class="eb" x="76" y="33" width="10" height="15" rx="1.5" opacity=".4"/>
-          <rect class="eb" x="98" y="37" width="10" height="11" rx="1.5" opacity=".28"/>
+          <rect class="eb src" x="8" y="30" width="2.5" height="18" rx="1"/>
+          <rect class="eb" x="21.5" y="14.5" width="7" height="33.5" rx="1.5"/>
+          <rect class="eb" x="38" y="18" width="7" height="30" rx="1.5" opacity=".82"/>
+          <rect class="eb" x="54.5" y="23.3" width="7" height="24.7" rx="1.5" opacity=".64"/>
+          <rect class="eb" x="70.5" y="28.8" width="7" height="19.2" rx="1.5" opacity=".48"/>
+          <rect class="eb" x="86.5" y="33" width="7" height="15" rx="1.5" opacity=".36"/>
+          <rect class="eb" x="103" y="37.4" width="7" height="10.6" rx="1.5" opacity=".26"/>
         </svg>
-        <h4>Digital</h4><p>Clean, exact repeats</p>
+        <h4>Digital</h4><p>Clean, exact repeats <span class="pal-tail">&#8776;6 dB / repeat, no colour</span></p>
       </div>
 
       <div class="pal-tile reveal">
         <svg viewBox="0 0 120 56" aria-hidden="true">
-          <rect class="eb" x="10" y="12" width="10" height="36" rx="4"/>
-          <rect class="eb" x="33" y="22" width="10" height="26" rx="4" opacity=".72"/>
-          <rect class="eb" x="53" y="29" width="10" height="19" rx="4" opacity=".52"/>
-          <rect class="eb" x="77" y="34" width="10" height="14" rx="4" opacity=".38"/>
-          <rect class="eb" x="97" y="38" width="10" height="10" rx="4" opacity=".26"/>
+          <rect class="eb src" x="8" y="30" width="2.5" height="18" rx="1"/>
+          <rect class="eb" x="21.5" y="13" width="7" height="35" rx="3.5"/>
+          <rect class="eb" x="38" y="18.5" width="7" height="29.5" rx="3.5" opacity=".8"/>
+          <rect class="eb" x="54.5" y="21.6" width="7.5" height="26.4" rx="3.5" opacity=".62"/>
+          <rect class="eb" x="70.5" y="26.5" width="7.5" height="21.5" rx="3.5" opacity=".48"/>
+          <rect class="eb" x="87" y="29.3" width="8" height="18.7" rx="4" opacity=".36"/>
+          <rect class="eb" x="103" y="31.9" width="8" height="16.1" rx="4" opacity=".27"/>
           <path class="pal-wob" d="M8 53 q7 2.6 14 0 t14 0 t14 0 t14 0 t14 0 t14 0 t14 0"/>
         </svg>
-        <h4>Tape</h4><p>Wow, flutter, saturation</p>
+        <h4>Tape</h4><p>Wow, flutter, saturation <span class="pal-tail">highs fade with every pass</span></p>
       </div>
 
       <div class="pal-tile reveal">
         <svg viewBox="0 0 120 56" aria-hidden="true">
-          <rect class="eb" x="10" y="14" width="10" height="34" rx="4"/>
-          <rect class="eb dimfill" x="32" y="26" width="10" height="22" rx="5" opacity=".6"/>
-          <rect class="eb dimfill" x="54" y="34" width="10" height="14" rx="6" opacity=".42"/>
-          <rect class="eb dimfill" x="76" y="40" width="10" height="8" rx="4" opacity=".28"/>
-          <rect class="eb dimfill" x="98" y="44" width="10" height="4" rx="2" opacity=".18"/>
-          <circle class="pal-noise" cx="47" cy="20" r="1"/>
-          <circle class="pal-noise" cx="70" cy="28" r="1"/>
-          <circle class="pal-noise" cx="90" cy="24" r="1"/>
+          <rect class="eb src" x="8" y="30" width="2.5" height="18" rx="1"/>
+          <rect class="eb" x="21.5" y="13" width="7" height="35" rx="3.5"/>
+          <rect class="eb dimfill" x="38" y="19.1" width="7" height="28.9" rx="4" opacity=".72"/>
+          <rect class="eb dimfill" x="54.5" y="22.7" width="7.5" height="25.3" rx="4.5" opacity=".55"/>
+          <rect class="eb dimfill" x="70.5" y="27.5" width="7.5" height="20.5" rx="5" opacity=".4"/>
+          <rect class="eb dimfill" x="87" y="30.8" width="7.5" height="17.2" rx="5" opacity=".3"/>
+          <rect class="eb dimfill" x="103" y="34.1" width="7.5" height="13.9" rx="5" opacity=".22"/>
+          <circle class="pal-noise" cx="60" cy="16" r=".9"/>
+          <circle class="pal-noise" cx="76" cy="19" r="1"/>
+          <circle class="pal-noise" cx="83" cy="14" r=".8"/>
+          <circle class="pal-noise" cx="93" cy="17" r="1.1"/>
+          <circle class="pal-noise" cx="100" cy="12" r=".9"/>
+          <circle class="pal-noise" cx="108" cy="15" r="1.1"/>
         </svg>
-        <h4>BBD</h4><p>Dark bucket-brigade murk</p>
+        <h4>BBD</h4><p>Dark bucket-brigade murk <span class="pal-tail">clock noise rises as it dies</span></p>
       </div>
 
       <div class="pal-tile reveal">
         <svg viewBox="0 0 120 56" aria-hidden="true">
-          <rect class="eb" x="10" y="12" width="10" height="36" rx="1.5"/>
-          <ellipse class="eb soft" cx="39" cy="38" rx="8" ry="12" opacity=".5"/>
-          <ellipse class="eb soft" cx="64" cy="41" rx="11" ry="9" opacity=".34"/>
-          <ellipse class="eb soft" cx="90" cy="43" rx="15" ry="7" opacity=".2"/>
+          <rect class="eb src" x="8" y="30" width="2.5" height="18" rx="1"/>
+          <rect class="eb" x="21.5" y="13" width="7" height="35" rx="1.5"/>
+          <ellipse class="eb soft" cx="55" cy="42.5" rx="18" ry="6.5" opacity=".42"/>
+          <ellipse class="eb soft" cx="86" cy="44.5" rx="26" ry="4.5" opacity=".24"/>
         </svg>
-        <h4>Diffuse</h4><p>Repeats smear into wash</p>
+        <h4>Diffuse</h4><p>One repeat, then a wash <span class="pal-tail">&#8776;2.2 s smear measured</span></p>
       </div>
 
       <div class="pal-tile reveal">
         <svg viewBox="0 0 120 56" aria-hidden="true">
-          <rect class="eb" x="10" y="34" width="10" height="14" rx="1.5"/>
-          <rect class="eb" x="32" y="26" width="10" height="14" rx="1.5" opacity=".78"/>
-          <rect class="eb" x="54" y="18" width="10" height="14" rx="1.5" opacity=".58"/>
-          <rect class="eb" x="76" y="10" width="10" height="14" rx="1.5" opacity=".42"/>
-          <path class="pal-arrow" d="M98 26 V8 M93 13 L98 8 L103 13"/>
+          <rect class="eb src" x="8" y="32" width="2.5" height="16" rx="1"/>
+          <rect class="eb" x="21" y="10" width="7" height="38" rx="1.5"/>
+          <rect class="eb" x="38.5" y="22" width="7" height="26" rx="1.5" opacity=".72"/>
+          <rect class="eb" x="56" y="28.3" width="7" height="19.7" rx="1.5" opacity=".52"/>
+          <rect class="eb" x="73" y="34.7" width="7" height="13.3" rx="1.5" opacity=".38"/>
+          <rect class="eb" x="90.5" y="41.6" width="7" height="6.4" rx="1.5" opacity=".26"/>
+          <circle class="pal-spark" cx="24.5" cy="30"   r="1.6"/>
+          <circle class="pal-spark" cx="42"   cy="18.8" r="1.6" style="animation-delay:.3s"/>
+          <circle class="pal-spark" cx="59.5" cy="13"   r="1.5" style="animation-delay:.6s"/>
+          <circle class="pal-spark" cx="76.5" cy="7.2"  r="1.4" style="animation-delay:.9s"/>
+          <path class="pal-arrow" d="M100 22 V6 M95.5 10.5 L100 6 L104.5 10.5"/>
         </svg>
-        <h4>Pitch</h4><p>Every repeat shifts, ±24 st</p>
+        <h4>Pitch</h4><p>Every repeat shifts, &#177;24 st <span class="pal-tail">an octave up, each pass — measured</span></p>
       </div>
     </div>
 
