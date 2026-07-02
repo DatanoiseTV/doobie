@@ -149,8 +149,8 @@ header.hero::after{ width:420px; height:420px; top:440px; left:-190px; opacity:.
 }
 @keyframes blink{ 0%,100%{ opacity:1; } 50%{ opacity:.4; } }
 h1{
-  font-size:clamp(2.5rem, 6.2vw, 4.8rem); line-height:1.04; margin:0 auto 24px;
-  font-weight:700; letter-spacing:-0.02em; max-width:15ch;
+  font-size:clamp(2.6rem, 6.6vw, 5.3rem); line-height:1.02; margin:0 auto 26px;
+  font-weight:700; letter-spacing:-0.025em; max-width:15ch;
 }
 h1 em, h2 em, .sound em{
   font-family:var(--serif); font-style:italic; font-weight:400; letter-spacing:0;
@@ -219,6 +219,19 @@ h1 .grad::after { transform:translate(.115em, .105em); opacity:.15; filter:blur(
   border:1px solid var(--line);
   box-shadow:0 1px 0 oklch(0.42 0.006 60) inset, 0 60px 130px -40px rgba(0,0,0,0.85), 0 0 90px -30px var(--amber-glow);
 }
+/* breathing amber aura behind the unit */
+.shot::before{
+  content:""; position:absolute; inset:-60px -80px; z-index:-1; pointer-events:none;
+  background:radial-gradient(58% 55% at 50% 42%, var(--amber-glow), transparent 72%);
+  animation:breathe 7s ease-in-out infinite alternate;
+}
+@keyframes breathe{ from{ opacity:.30; transform:scale(.97); } to{ opacity:.62; transform:scale(1.03); } }
+/* ground reflection (WebKit/Blink; others just skip it) */
+@media(min-width:760px){
+  .shot video, .shot > img{
+    -webkit-box-reflect: below 12px linear-gradient(transparent 76%, rgba(0,0,0,.20));
+  }
+}
 .shot img, .shot video{ border-radius:9px; width:100%; height:auto; aspect-ratio:3040 / 1920; display:block; }
 .shot-sound{
   position:absolute; right:22px; bottom:22px; z-index:2;
@@ -248,6 +261,45 @@ h1 .grad::after { transform:translate(.115em, .105em); opacity:.15; filter:blur(
 
 /* ---------- sections ---------- */
 section{ padding:92px 0; position:relative; }
+/* each section carries its own ambient light — scrolling moves through rooms */
+#cpu::before, #routing::before, #demos::before, #palette::before, #specs::before, #download::before{
+  content:""; position:absolute; inset:0; z-index:-1; pointer-events:none;
+}
+#cpu::before{      background:radial-gradient(48% 70% at 18% 40%, oklch(0.38 0.06 62 / .10), transparent 70%); }
+#routing::before{  background:radial-gradient(52% 62% at 86% 30%, oklch(0.32 0.05 190 / .11), transparent 70%); }
+#demos::before{    background:radial-gradient(56% 55% at 10% 22%, oklch(0.40 0.07 62 / .12), transparent 72%); }
+#palette::before{  background:radial-gradient(64% 46% at 50% 6%,  oklch(0.38 0.06 62 / .10), transparent 75%); }
+#specs::before{    background:radial-gradient(40% 60% at 88% 60%, oklch(0.32 0.05 190 / .08), transparent 70%); }
+#download::before{ background:radial-gradient(46% 42% at 50% 2%,  oklch(0.42 0.07 62 / .13), transparent 70%); }
+
+/* giant echo poster behind the Listen head — the delay, at editorial scale */
+.echo-bg{
+  position:absolute; top:96px; left:50%; transform:translateX(-50%);
+  display:flex; gap:.35em; white-space:nowrap; z-index:-1; pointer-events:none;
+  font-weight:700; letter-spacing:-0.02em; line-height:1;
+  font-size:clamp(80px, 12.5vw, 165px); text-transform:uppercase;
+}
+.echo-bg span{ color:transparent; -webkit-text-stroke:1px oklch(0.42 0.03 62 / .5); }
+.echo-bg span:nth-child(1){ opacity:.34; }
+.echo-bg span:nth-child(2){ opacity:.18; transform:translateY(.035em); }
+.echo-bg span:nth-child(3){ opacity:.09;  transform:translateY(.07em); }
+.echo-bg span:nth-child(4){ opacity:.045; transform:translateY(.105em); }
+
+/* ---------- tape ticker ---------- */
+.ticker{
+  overflow:hidden; border-top:1px solid var(--line-2); border-bottom:1px solid var(--line-2);
+  padding:13px 0; background:oklch(0.165 0.006 60 / .7);
+  -webkit-mask-image:linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  mask-image:linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+}
+.ticker-track{ display:flex; gap:0; width:max-content; animation:tick 48s linear infinite; }
+.ticker span{
+  font-family:var(--mono); font-size:11.5px; letter-spacing:0.16em; text-transform:uppercase;
+  color:var(--txt-3); white-space:nowrap; flex:0 0 auto;
+}
+.ticker b{ color:var(--amber-dim); font-weight:500; }
+.ticker b::before{ content:"\00B7"; margin:0 22px; }
+@keyframes tick{ to{ transform:translateX(-50%); } }
 .sec-head{ max-width:64ch; margin:0 auto 54px; text-align:center; }
 .sec-tag{
   font-family:var(--mono); font-size:12px; letter-spacing:0.22em; text-transform:uppercase;
@@ -486,7 +538,12 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
 .pl-dry[aria-pressed="true"]{ color:oklch(0.16 0.02 60); background:linear-gradient(180deg, var(--amber), var(--amber-2)); border-color:transparent; }
 .pl-spec{
   display:block; width:100%; height:44px;
-  background:var(--inset); border-bottom:1px solid var(--line-2);
+  border-bottom:1px solid var(--line-2);
+  /* idle state reads as a meter bridge, not a dead strip */
+  background:
+    repeating-linear-gradient(90deg, oklch(0.55 0.04 62 / .10) 0 2px, transparent 2px 9px)
+      50% calc(100% - 3px) / 100% 5px no-repeat,
+    var(--inset);
 }
 .pl-sources{
   display:flex; align-items:center; gap:8px; flex-wrap:wrap;
@@ -715,7 +772,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
   .hero .wrap > *, h1 .grad::before, h1 .grad::after,
   .tapeline .reel, .tapeline .tl-track, .tapeline .tl-dot,
   .eyebrow .dot, .cpu-meter i::before, .pl-play.playing,
-  .sf-loopwire, .sf-chip.dock, .pal-spark{ animation:none; }
+  .sf-loopwire, .sf-chip.dock, .pal-spark, .shot::before, .ticker-track{ animation:none; }
   .sf-dot, .sf-dot-dry, .sf-loopdot{ display:none; }  /* SMIL dots: hide instead */
   .eb{ transform:none; transition:none; }
   .rv-line{ stroke-dashoffset:0; transition:none; }
@@ -799,7 +856,12 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
   </div>
 </header>
 
-<hr class="divider">
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track">
+    <span>4 tape heads<b></b>5 delay characters<b></b>8 reverbs<b></b>6-stage phaser<b></b>routes pre &#183; post &#183; in feedback<b></b>freeze<b></b>feedback kill<b></b>ping-pong<b></b>2&#8211;3% CPU<b></b>80 presets<b></b>MIDI note mode<b></b>VST3 &#183; AU &#183; standalone<b></b>free &amp; GPLv3<b></b></span>
+    <span>4 tape heads<b></b>5 delay characters<b></b>8 reverbs<b></b>6-stage phaser<b></b>routes pre &#183; post &#183; in feedback<b></b>freeze<b></b>feedback kill<b></b>ping-pong<b></b>2&#8211;3% CPU<b></b>80 presets<b></b>MIDI note mode<b></b>VST3 &#183; AU &#183; standalone<b></b>free &amp; GPLv3<b></b></span>
+  </div>
+</div>
 
 <!-- CPU -->
 <section id="cpu">
@@ -1000,6 +1062,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
 
 <!-- DEMOS / PLAYER -->
 <section id="demos" hidden>
+  <div class="echo-bg" aria-hidden="true"><span>Echo</span><span>Echo</span><span>Echo</span><span>Echo</span></div>
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="sec-tag">Listen</span>
