@@ -211,7 +211,21 @@ h1 .grad::after { transform:translate(.115em, .105em); opacity:.15; filter:blur(
   border:1px solid var(--line);
   box-shadow:0 1px 0 oklch(0.42 0.006 60) inset, 0 60px 130px -40px rgba(0,0,0,0.85), 0 0 90px -30px var(--amber-glow);
 }
-.shot img{ border-radius:9px; width:100%; height:auto; aspect-ratio:3040 / 1920; }
+.shot img, .shot video{ border-radius:9px; width:100%; height:auto; aspect-ratio:3040 / 1920; display:block; }
+.shot-sound{
+  position:absolute; right:22px; bottom:22px; z-index:2;
+  display:inline-flex; align-items:center; gap:8px; cursor:pointer;
+  font-family:var(--mono); font-size:12px; font-weight:600; letter-spacing:0.06em;
+  padding:9px 14px; border-radius:100px; color:var(--txt-2);
+  border:1px solid var(--line); background:oklch(0.148 0.006 60 / .78);
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  transition:color .15s, border-color .15s;
+}
+.shot-sound:hover{ color:var(--amber); border-color:var(--amber-dim); }
+.shot-sound[aria-pressed="true"]{
+  color:oklch(0.16 0.02 60); background:linear-gradient(180deg, var(--amber), var(--amber-2)); border-color:transparent;
+}
+.shot-sound svg[hidden]{ display:none; }
 .shot::after{
   content:""; position:absolute; inset:0; border-radius:16px; pointer-events:none;
   box-shadow:0 0 0 1px oklch(0.5 0.02 60 / .18) inset;
@@ -570,9 +584,19 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
     </div>
 
     <div class="shot reveal">
-      <img src="assets/doobie-ui.png" alt="The Doobie plugin interface: delay, playback heads, tape character, pitch shifter, phaser and reverb panels, each with pre / post / feedback routing." width="3040" height="1920">
+      <video id="hero-video" muted loop playsinline preload="metadata"
+             poster="assets/doobie-hero-poster.jpg" width="2280" height="1440"
+             aria-label="Doobie playing a dub performance: heads punching in, feedback riding up, the reverb route switching, and a buffer freeze — every knob move rendered through the real engine.">
+        <source src="assets/doobie-hero.mp4" type="video/mp4">
+        <img src="assets/doobie-ui.png" alt="The Doobie plugin interface: delay, playback heads, tape character, pitch shifter, phaser and reverb panels, each with pre / post / feedback routing." width="3040" height="1920">
+      </video>
+      <button id="hero-sound" class="shot-sound" aria-pressed="false" title="Play with sound">
+        <svg class="s-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>
+        <svg class="s-on" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+        <span>Sound</span>
+      </button>
     </div>
-    <p class="shot-cap reveal">The full interface — one window, no menu-diving. Route selectors sit right on the phaser, reverb and pitch panels.</p>
+    <p class="shot-cap reveal">A real take: heads punch in, the feedback rides up, the reverb flips route, the buffer freezes — audio rendered through the actual engine, knob for knob. Tap <b>Sound</b> to hear it.</p>
 
     <p class="sound reveal">
       It sounds the way it looks — <em>warm, analog, alive</em>. Feedback stays
@@ -888,6 +912,26 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
   els.forEach(function(e){ io.observe(e); });
 })();
 
+/* hero video: autoplay muted (unless reduced motion), sound toggle */
+(function(){
+  var v = document.getElementById('hero-video');
+  var btn = document.getElementById('hero-sound');
+  if(!v) return;
+  var reduced = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!reduced){
+    v.autoplay = true;
+    var p = v.play(); if(p && p.catch) p.catch(function(){});
+  }
+  if(btn) btn.addEventListener('click', function(){
+    v.muted = !v.muted;
+    btn.setAttribute('aria-pressed', v.muted ? 'false' : 'true');
+    btn.querySelector('.s-off').hidden = !v.muted;
+    btn.querySelector('.s-on').hidden = v.muted;
+    if(!v.muted){ v.currentTime = 0; }          // restart so the take makes sense with sound
+    var pp = v.play(); if(pp && pp.catch) pp.catch(function(){});
+  });
+})();
+
 /* count the spec numbers up when they scroll into view */
 (function(){
   var strip = document.querySelector('.specs');
@@ -1012,14 +1056,14 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
       nameEl.textContent = p.name; chipEl.textContent = p.category; chipEl.hidden = false;
       tagEl.textContent = p.tagline;
     }
-    function select(i, playNow){
+    function select(i, playNow, noScroll){
       if(i === cur && !dry){ if(playNow) toggleplay(); return; }
       if(cur >= 0) m.presets[cur]._el.classList.remove('active','playing');
       dry = false; dryBtn.setAttribute('aria-pressed','false');
       cur = i;
       var p = m.presets[i];
       p._el.classList.add('active');
-      p._el.scrollIntoView({ block:'nearest' });
+      if(!noScroll) p._el.scrollIntoView({ block:'nearest' });
       showPreset(p);
       audio.src = base + p.file;
       warmNext(i);
@@ -1093,7 +1137,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
       else updateBar();
     });
 
-    select(0, false);              // cue the first preset so the deck isn't empty
+    select(0, false, true);        // cue the first preset silently, no page scroll
   }
 })();
 </script>
