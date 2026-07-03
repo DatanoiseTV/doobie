@@ -6,6 +6,14 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.23.3] — 2026-07-04
+
+### Fixed
+- **Modulation-matrix Bi/Uni toggle rendering.** The two halves are now equal
+  width with centred labels (they were content-sized, so the active pill sat
+  off-centre), and the WebKit mouse-focus ring no longer draws an orange box
+  around the active toggle (keyboard focus rings are preserved for a11y).
+
 ## [0.23.2] — 2026-07-04
 
 ### Fixed
