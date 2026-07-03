@@ -39,9 +39,10 @@ WELCOME="$PKG_DIR/welcome.txt"
 
 AU_BUNDLE="$ARTEFACT_DIR/AU/Doobie.component"
 VST3_BUNDLE="$ARTEFACT_DIR/VST3/Doobie.vst3"
+CLAP_BUNDLE="$ARTEFACT_DIR/CLAP/Doobie.clap"
 APP_BUNDLE="$ARTEFACT_DIR/Standalone/Doobie.app"
 
-for b in "$AU_BUNDLE" "$VST3_BUNDLE" "$APP_BUNDLE"; do
+for b in "$AU_BUNDLE" "$VST3_BUNDLE" "$CLAP_BUNDLE" "$APP_BUNDLE"; do
     if [[ ! -d "$b" ]]; then
         echo "missing artefact: $b" >&2
         exit 1
@@ -70,6 +71,7 @@ sign_bundle() {
 
 sign_bundle "$AU_BUNDLE"
 sign_bundle "$VST3_BUNDLE"
+sign_bundle "$CLAP_BUNDLE"
 sign_bundle "$APP_BUNDLE"
 
 # ----------------------------------------------------------------------------
@@ -92,6 +94,7 @@ build_component() {
 
 build_component com.datanoisetv.doobie.au         "$AU_BUNDLE"   /Library/Audio/Plug-Ins/Components "$WORK/components/doobie-au.pkg"
 build_component com.datanoisetv.doobie.vst3       "$VST3_BUNDLE" /Library/Audio/Plug-Ins/VST3      "$WORK/components/doobie-vst3.pkg"
+build_component com.datanoisetv.doobie.clap       "$CLAP_BUNDLE" /Library/Audio/Plug-Ins/CLAP      "$WORK/components/doobie-clap.pkg"
 build_component com.datanoisetv.doobie.standalone "$APP_BUNDLE"  /Applications                      "$WORK/components/doobie-standalone.pkg"
 
 # ----------------------------------------------------------------------------

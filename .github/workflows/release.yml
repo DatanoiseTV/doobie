@@ -9,8 +9,8 @@
 #
 # Outputs per build:
 #   - macOS:  Doobie-<version>-macOS.pkg  (universal, signed, notarized,
-#             stapled; installs AU + VST3 + Standalone)
-#   - Linux:  Doobie-<version>-Linux-x86_64.tar.gz  (VST3 + Standalone)
+#             stapled; installs AU + VST3 + CLAP + Standalone)
+#   - Linux:  Doobie-<version>-Linux-x86_64.tar.gz  (VST3 + CLAP + Standalone)
 
 name: release
 
@@ -124,7 +124,7 @@ jobs:
           "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
 
       - name: build
-        run: cmake --build build --target Doobie_All doobie_tests doobie_state_tests -j
+        run: cmake --build build --target Doobie_All Doobie_CLAP doobie_tests doobie_state_tests -j
 
       - name: tests
         run: ctest --test-dir build --output-on-failure
@@ -162,7 +162,7 @@ jobs:
           retention-days: 14
 
   # --------------------------------------------------------------------------
-  # Linux: VST3 + Standalone, tar.gz. No signing concept on Linux.
+  # Linux: VST3 + CLAP + Standalone, tar.gz. No signing concept on Linux.
   # --------------------------------------------------------------------------
   linux:
     runs-on: ubuntu-22.04
@@ -207,7 +207,7 @@ jobs:
       - name: build
         # doobie_state_tests is Apple/Windows only — see tests/CMakeLists.txt
         # for why; macOS CI exercises it instead.
-        run: cmake --build build --target Doobie_All doobie_tests -j
+        run: cmake --build build --target Doobie_All Doobie_CLAP doobie_tests -j
 
       - name: tests
         run: ctest --test-dir build --output-on-failure
@@ -219,6 +219,7 @@ jobs:
           set -euo pipefail
           mkdir -p dist staging/Doobie-$VERSION
           cp -R build/Doobie_artefacts/Release/VST3/Doobie.vst3        staging/Doobie-$VERSION/
+          cp -R build/Doobie_artefacts/Release/CLAP/Doobie.clap        staging/Doobie-$VERSION/
           cp -R build/Doobie_artefacts/Release/Standalone/Doobie       staging/Doobie-$VERSION/
           cp    README.md CHANGELOG.md LICENSE 2>/dev/null              staging/Doobie-$VERSION/ || true
           tar -C staging -czf "dist/Doobie-${VERSION}-Linux-x86_64.tar.gz" "Doobie-$VERSION"

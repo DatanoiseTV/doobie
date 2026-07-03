@@ -67,9 +67,9 @@ jobs:
         # juceaide, which the test target doesn't get. Skip on any Linux.
         run: |
           if [[ "${{ matrix.os }}" == ubuntu-* ]]; then
-            cmake --build build --target Doobie_All doobie_tests -j
+            cmake --build build --target Doobie_All Doobie_CLAP doobie_tests -j
           else
-            cmake --build build --target Doobie_All doobie_tests doobie_state_tests -j
+            cmake --build build --target Doobie_All Doobie_CLAP doobie_tests doobie_state_tests -j
           fi
 
       - name: tests

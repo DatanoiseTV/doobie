@@ -47,6 +47,12 @@ endif()
 # -----------------------------------------------------------------------------
 add_subdirectory(external/JUCE)
 
+# clap-juce-extensions (vendored recursively under external/clap-juce-extensions;
+# bundles the CLAP SDK + helpers as its own nested submodules). Wraps the JUCE
+# plugin as a CLAP alongside the AU/VST3/Standalone builds. EXCLUDE_FROM_ALL so
+# only the CLAP target we attach below participates in the build.
+add_subdirectory(external/clap-juce-extensions EXCLUDE_FROM_ALL)
+
 # Local-install copy is on by default for developer iteration; CI builds set
 # -DDOOBIE_INSTALL_LOCAL=OFF so they don't try to write into
 # ~/Library/Audio/Plug-Ins (which doesn't exist on Linux runners and is the
@@ -81,6 +87,18 @@ juce_add_plugin(Doobie
 juce_generate_juce_header(Doobie)
 
 # -----------------------------------------------------------------------------
+# CLAP wrapper — builds Doobie.clap from the same shared plugin code. Creates a
+# `Doobie_CLAP` target (NOT part of Doobie_All, so build it explicitly). Honours
+# COPY_PLUGIN_AFTER_BUILD, so a local build installs it into the user's CLAP dir
+# alongside the AU/VST3. CLAP_FEATURES tags the plugin's category for hosts.
+# -----------------------------------------------------------------------------
+clap_juce_extensions_plugin(TARGET Doobie
+    CLAP_ID              "com.datanoisetv.doobie"
+    CLAP_FEATURES        audio-effect delay stereo
+    CLAP_MANUAL_URL      "https://github.com/DatanoiseTV/doobie"
+    CLAP_SUPPORT_URL     "https://github.com/DatanoiseTV/doobie/issues")
+
+# -----------------------------------------------------------------------------
 # Voxengo free impulse responses — bundled as JUCE BinaryData so the
 # Convolution reverb has 38 real-room IRs out of the box. Created by Aleksey
 # Vaneev (Voxengo) and distributed royalty-free under their own license; see
@@ -88,7 +106,8 @@ juce_generate_juce_header(Doobie)
 # acknowledgment Voxengo's license requires lives in the README.
 # -----------------------------------------------------------------------------
 file(GLOB DOOBIE_VOXENGO_IRS CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/external/voxengo-irs/*.wav")
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/voxengo-irs/*.wav"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/openair-irs/*.wav")
 # Two BinaryData targets in this build (IRs + UI). Each needs its own
 # namespace + header name, otherwise both generate symbols in `BinaryData::`
 # and the linker silently picks whichever was linked first — UI lookups
@@ -169,6 +188,31 @@ if(PROJECT_IS_TOP_LEVEL)
     add_executable(doobie_snapshot tools/Snapshot.cpp)
     target_include_directories(doobie_snapshot PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
     target_link_libraries(doobie_snapshot PRIVATE
+        Doobie
+        juce::juce_audio_utils
+        juce::juce_dsp
+        juce::juce_gui_extra
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags)
+
+    # Offline preset-demo renderer (bounces the factory presets through a dry
+    # source loop to WAVs + a manifest for the landing-page player, no DAW).
+    add_executable(doobie_render_demo tools/RenderDemo.cpp)
+    target_include_directories(doobie_render_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(doobie_render_demo PRIVATE
+        Doobie
+        juce::juce_audio_utils
+        juce::juce_dsp
+        juce::juce_gui_extra
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags)
+
+    # Hero-video audio renderer: plays a dry loop through the engine while
+    # automating parameters from tools/hero-timeline.json (paired with the
+    # UI recorder in tools/record-hero.mjs).
+    add_executable(doobie_render_hero tools/RenderHero.cpp)
+    target_include_directories(doobie_render_hero PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(doobie_render_hero PRIVATE
         Doobie
         juce::juce_audio_utils
         juce::juce_dsp

@@ -2,14 +2,14 @@
 
 # Doobie
 
-### Analog dub delay — VST3 · AU · Standalone
+### Analog dub delay — VST3 · AU · CLAP · Standalone
 
 A stereo multi-head tape echo with tape saturation, wow & flutter, in-loop tone
 shaping, and a chained spring + plate reverb. Built for classic dub, equally at
 home as a modulated delay and ambience for any genre.
 
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
-![Formats](https://img.shields.io/badge/formats-VST3%20%C2%B7%20AU%20%C2%B7%20Standalone-f4a024)
+![Formats](https://img.shields.io/badge/formats-VST3%20%C2%B7%20AU%20%C2%B7%20CLAP%20%C2%B7%20Standalone-f4a024)
 ![JUCE](https://img.shields.io/badge/JUCE-8.0-cccccc)
 ![C++](https://img.shields.io/badge/C%2B%2B-20-555)
 ![macOS](https://img.shields.io/badge/macOS-universal%20%C2%B7%20signed%20%2B%20notarized-lightgrey)
@@ -65,7 +65,9 @@ home as a modulated delay and ambience for any genre.
   16-line **hall**, a **shimmer** with **switchable pitch interval** (octave-up
   by default; pick fifths, fourths, octave-down or two-octaves for darker /
   brighter textures), plus spring→plate series and spring+plate parallel, a
-  **convolution** mode bundled with **38 free Voxengo impulse responses**
+  **convolution** mode bundled with **48 impulse responses** (38 free Voxengo
+  impulses plus 10 real spaces from the OpenAIR library — York Minster,
+  Hamilton Mausoleum, a nuclear reactor hall and more)
   (concert halls, churches, rooms, cabinets and effect spaces) that also
   loads any WAV/AIFF/FLAC impulse response of your own, **and an 80s-style
   gated reverb** (envelope-keyed sidechain gate over a bright plate — classic
@@ -114,10 +116,12 @@ versioned releases.
   notary service, so it installs without a Gatekeeper warning. Double-click
   the `.pkg`; the installer lets you pick any subset of AU
   (`/Library/Audio/Plug-Ins/Components`), VST3
-  (`/Library/Audio/Plug-Ins/VST3`) and the Standalone app (`/Applications`).
-- **Linux:** `Doobie-X.Y.Z-Linux-x86_64.tar.gz`. Contains the VST3 bundle and
-  the Standalone executable. Drop the `.vst3` into `~/.vst3/` (user) or
-  `/usr/local/lib/vst3/` (system); run the Standalone directly.
+  (`/Library/Audio/Plug-Ins/VST3`), CLAP
+  (`/Library/Audio/Plug-Ins/CLAP`) and the Standalone app (`/Applications`).
+- **Linux:** `Doobie-X.Y.Z-Linux-x86_64.tar.gz`. Contains the VST3 bundle, the
+  CLAP bundle, and the Standalone executable. Drop the `.vst3` into `~/.vst3/`
+  (user) or `/usr/local/lib/vst3/` (system), the `.clap` into `~/.clap/` (user)
+  or `/usr/local/lib/clap/` (system); run the Standalone directly.
 
   The WebView UI needs **either** WebKitGTK 4.0 (legacy, `libsoup-2.4`)
   **or** 4.1 (modern, `libsoup-3.0`) on your system; the Doobie binary
@@ -207,11 +211,20 @@ Star, etc.). Pick one from the IR combo in the reverb panel.
 **LOAD CUSTOM...** loads any WAV / AIFF / FLAC of your own; the session
 restores either the factory or the custom selection automatically.
 
-These impulse responses are © Aleksey Vaneev; they are bundled unaltered with
-Doobie under Voxengo's terms — they are **not** under Doobie's GPL-3.0. By
+The Voxengo impulse responses are © Aleksey Vaneev; they are bundled unaltered
+with Doobie under Voxengo's terms — they are **not** under Doobie's GPL-3.0. By
 using them you acknowledge that Aleksey Vaneev retains exclusive ownership of
 the impulse files including all intellectual property rights therein, at all
 times.
+
+Ten further factory IRs (York Minster, Maes Howe, Hamilton Mausoleum,
+R1 Nuclear Reactor Hall, St Patrick's Patrington, Troller's Gill, Koli
+National Park, Terry's Typing Room and Warehouse, Spokane Woman's Club) are
+from the **[OpenAIR library](https://www.openair.hosted.york.ac.uk/)** of the
+Audiolab, University of York, licensed
+**[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)** — converted to
+48 kHz, trimmed to their audible decay and peak-normalised for bundling (see
+[`external/openair-irs/README.md`](external/openair-irs/README.md)).
 
 A few other permissively-licensed external IR collections that work well as
 starting points for custom files:

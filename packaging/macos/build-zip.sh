@@ -28,9 +28,10 @@ set -euo pipefail
 
 AU_BUNDLE="$ARTEFACT_DIR/AU/Doobie.component"
 VST3_BUNDLE="$ARTEFACT_DIR/VST3/Doobie.vst3"
+CLAP_BUNDLE="$ARTEFACT_DIR/CLAP/Doobie.clap"
 APP_BUNDLE="$ARTEFACT_DIR/Standalone/Doobie.app"
 
-for b in "$AU_BUNDLE" "$VST3_BUNDLE" "$APP_BUNDLE"; do
+for b in "$AU_BUNDLE" "$VST3_BUNDLE" "$CLAP_BUNDLE" "$APP_BUNDLE"; do
     if [[ ! -d "$b" ]]; then
         echo "missing artefact: $b" >&2
         exit 1
@@ -45,6 +46,7 @@ mkdir -p "$STAGE"
 echo "==> copy bundles"
 cp -R "$AU_BUNDLE"   "$STAGE/"
 cp -R "$VST3_BUNDLE" "$STAGE/"
+cp -R "$CLAP_BUNDLE" "$STAGE/"
 cp -R "$APP_BUNDLE"  "$STAGE/"
 
 cat > "$STAGE/INSTALL.txt" <<'EOF'
@@ -58,6 +60,7 @@ attribute. One command after install does it:
 
   xattr -cr /Library/Audio/Plug-Ins/Components/Doobie.component
   xattr -cr /Library/Audio/Plug-Ins/VST3/Doobie.vst3
+  xattr -cr /Library/Audio/Plug-Ins/CLAP/Doobie.clap
   xattr -cr /Applications/Doobie.app
 
 Install steps:
@@ -66,8 +69,10 @@ Install steps:
                               or /Library/Audio/Plug-Ins/Components
   2. Drop  Doobie.vst3        →  ~/Library/Audio/Plug-Ins/VST3
                               or /Library/Audio/Plug-Ins/VST3
-  3. Drop  Doobie.app         →  /Applications  (or anywhere)
-  4. Run the three xattr -cr commands above (paths adjusted to where
+  3. Drop  Doobie.clap        →  ~/Library/Audio/Plug-Ins/CLAP
+                              or /Library/Audio/Plug-Ins/CLAP
+  4. Drop  Doobie.app         →  /Applications  (or anywhere)
+  5. Run the four xattr -cr commands above (paths adjusted to where
      you actually installed the bundles).
 
 If you'd rather not do this by hand, install via the Homebrew tap

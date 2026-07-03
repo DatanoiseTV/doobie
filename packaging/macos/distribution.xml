@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   productbuild distribution descriptor for the Doobie installer. Combines
-  the three component .pkg files (AU, VST3, Standalone) into a single
+  the four component .pkg files (AU, VST3, CLAP, Standalone) into a single
   signed distribution package that drops each format into its system
   location. Title / version are substituted in build-pkg.sh.
 -->
@@ -16,6 +16,7 @@
     <choices-outline>
         <line choice="com.datanoisetv.doobie.au"/>
         <line choice="com.datanoisetv.doobie.vst3"/>
+        <line choice="com.datanoisetv.doobie.clap"/>
         <line choice="com.datanoisetv.doobie.standalone"/>
     </choices-outline>
 
@@ -31,6 +32,12 @@
         <pkg-ref id="com.datanoisetv.doobie.vst3"/>
     </choice>
 
+    <choice id="com.datanoisetv.doobie.clap"
+            title="CLAP"
+            description="Installs the Doobie.clap plug-in to /Library/Audio/Plug-Ins/CLAP. Used by Bitwig Studio, Reaper, and other CLAP-capable hosts.">
+        <pkg-ref id="com.datanoisetv.doobie.clap"/>
+    </choice>
+
     <choice id="com.datanoisetv.doobie.standalone"
             title="Standalone application"
             description="Installs Doobie.app to /Applications. Runs without a DAW for jamming and quick auditioning.">
@@ -39,5 +46,6 @@
 
     <pkg-ref id="com.datanoisetv.doobie.au"         version="@DOOBIE_VERSION@">doobie-au.pkg</pkg-ref>
     <pkg-ref id="com.datanoisetv.doobie.vst3"       version="@DOOBIE_VERSION@">doobie-vst3.pkg</pkg-ref>
+    <pkg-ref id="com.datanoisetv.doobie.clap"       version="@DOOBIE_VERSION@">doobie-clap.pkg</pkg-ref>
     <pkg-ref id="com.datanoisetv.doobie.standalone" version="@DOOBIE_VERSION@">doobie-standalone.pkg</pkg-ref>
 </installer-gui-script>

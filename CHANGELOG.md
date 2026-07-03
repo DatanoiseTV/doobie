@@ -4,6 +4,16 @@ All notable changes to Doobie are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project
 uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **CLAP plug-in format.** Doobie now also builds as a CLAP alongside the
+  AU / VST3 / Standalone formats, via `clap-juce-extensions` (vendored under
+  `external/clap-juce-extensions` with the CLAP SDK as nested submodules).
+  Tagged `audio-effect delay stereo`; installs to
+  `/Library/Audio/Plug-Ins/CLAP` (macOS) or `~/.clap` / `/usr/local/lib/clap`
+  (Linux). Released binaries (macOS installer, Linux tarball) include it.
+
 ## [0.21.1] — 2026-06-24
 
 Bug-fix release on top of the unreleased 0.21.0 commit. Fixes two
