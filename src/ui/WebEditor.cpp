@@ -416,12 +416,25 @@ WebEditor::WebEditor (::DoobieAudioProcessor& proc)
 
     // 4) Now we have the WebView, set the editor size — resized() will lay
     // it out. (Doing this before the WebView existed left it bounds-less.)
-    // 1520x1048 = the native design canvas size (height fits the tallest
-    // reverb mode). Fresh installs open at 1:1, no UI scaling, no border. The
-    // aspect ratio is locked (see setResizeLimits above) so any resize the user
-    // makes stays proportional and the JS fit-to-window scaler in index.html
-    // fills it exactly.
-    setSize (1520, 1048);
+    // Open at the design size (1520x1048) when the display can hold it, else the
+    // largest 1520:1048 box that fits ~92% of the primary display's usable area
+    // — a 13" laptop can't show a 1048px-tall window, so a hard 1520x1048 opened
+    // off-screen. Resizing stays aspect-locked and the JS fit scaler fills
+    // whatever size we land on, so a smaller open size just means a smaller UI.
+    {
+        const double aspect = 1520.0 / 1048.0;
+        int w = 1520, h = 1048;
+        if (auto* disp = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay())
+        {
+            const auto area = disp->userArea;
+            const int maxW = juce::roundToInt ((double) area.getWidth()  * 0.92);
+            const int maxH = juce::roundToInt ((double) area.getHeight() * 0.92);
+            w = juce::jmin (1520, maxW);
+            h = juce::roundToInt ((double) w / aspect);
+            if (h > maxH) { h = maxH; w = juce::roundToInt ((double) h * aspect); }
+        }
+        setSize (w, h);
+    }
 
     // 5) Load the HTML shell.
     webView->goToURL (juce::WebBrowserComponent::getResourceProviderRoot() + "index.html");
