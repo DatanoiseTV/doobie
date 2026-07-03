@@ -170,12 +170,16 @@ WebEditor::WebEditor (::DoobieAudioProcessor& proc)
     // claiming it — gives Cmd+R a path through to keyPressed() when the
     // WebView has gone dead and stops handling input.
     setWantsKeyboardFocus (true);
-    // Limits cover ~50 % of design size up through ~2x. The WebView's
-    // JS fit-to-window scaler (see ui/src/index.html) keeps the 1520x960
-    // layout filling whatever bounds JUCE hands us, so the min just has
-    // to be small enough that the smallest screen size we care about
-    // (13" MacBook ~1440x900) renders sensibly.
-    setResizeLimits (608, 384, 3040, 1920);
+    // Lock resizing to the 1520x1048 design aspect ratio. The UI is a
+    // fixed-pixel design scaled to fit; if the window can take any aspect the
+    // fit "contains" the canvas and letterboxes it (black borders). Fixing the
+    // aspect means the window can only grow/shrink proportionally, so the
+    // scaled UI always fills it exactly — no borders, no distortion. Limits run
+    // ~0.5x .. 1.75x of the design size, kept on the same ratio so the 13"
+    // MacBook (~1440x900) still fits comfortably.
+    setResizeLimits (760, 524, 2660, 1834);
+    if (auto* c = getConstrainer())
+        c->setFixedAspectRatio (1520.0 / 1048.0);
 
    #if JUCE_LINUX
     // ---- WebKitGTK environment hardening --------------------------------
@@ -412,12 +416,12 @@ WebEditor::WebEditor (::DoobieAudioProcessor& proc)
 
     // 4) Now we have the WebView, set the editor size — resized() will lay
     // it out. (Doing this before the WebView existed left it bounds-less.)
-    // 1520x960 = the native design canvas size. Fresh installs open at
-    // 1:1, no UI scaling, no host-chrome border. On a 13" MBP (1440x900)
-    // the user drags the corner down and the JS fit-to-window scaler in
-    // index.html scales the 1520x960 design canvas to whatever new size
-    // the editor lands on.
-    setSize (1520, 960);
+    // 1520x1048 = the native design canvas size (height fits the tallest
+    // reverb mode). Fresh installs open at 1:1, no UI scaling, no border. The
+    // aspect ratio is locked (see setResizeLimits above) so any resize the user
+    // makes stays proportional and the JS fit-to-window scaler in index.html
+    // fills it exactly.
+    setSize (1520, 1048);
 
     // 5) Load the HTML shell.
     webView->goToURL (juce::WebBrowserComponent::getResourceProviderRoot() + "index.html");
