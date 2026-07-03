@@ -6,6 +6,20 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+- **Ten OpenAIR convolution rooms.** Real-space impulse responses (Hamilton
+  Mausoleum, Maes Howe Tomb, R1 Reactor Hall, York Minster, and more) join
+  the Voxengo set in the convolution reverb's IR bank.
+
+### Changed
+- **WebView UI resilience.** A JUCE-side health watchdog re-navigates the
+  WebView if the React app never signals ready, the mount now fails loud
+  (surfacing errors in the diag banner instead of a blank window), and both
+  the banner and the header gained a manual reload button.
+- **Reverb / output panels fit the right column.** The Reverb panel and
+  Output bar are scaled down slightly and the Verb LC/HC knobs folded into
+  existing rows so the Gated/Shimmer modes and decay graph fit.
+
 ## [0.22.0] — 2026-07-03
 
 ### Added
