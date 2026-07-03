@@ -116,7 +116,12 @@
         var designH = el.offsetHeight || 960;
         lastW = w; lastH = h; lastPH = designH;
         var s = Math.min(w / DESIGN_W, h / designH);
-        el.style.transform = 'scale(' + s + ')';
+        // translate(-50%,-50%) centres #plugin by its own centre (it is
+        // position:absolute at left/top 50%); scale() then fits it. Doing the
+        // centring here rather than via the #stage grid avoids WebKit pinning
+        // an overflowing box to the left edge when the window is narrower than
+        // the 1520px design width.
+        el.style.transform = 'translate(-50%, -50%) scale(' + s + ')';
       }
       window.addEventListener('resize', fit);
       window.addEventListener('load', fit);

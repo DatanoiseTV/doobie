@@ -54,7 +54,15 @@ body{ font-family:var(--font); color:var(--c-txt); -webkit-font-smoothing:antial
      used to clip those controls and let them overlap the output bar. The
      fit-to-window scaler (index.html + app.jsx) measures the actual rendered
      height so the whole UI always scales to fit whatever the current mode needs. */
-  width:1520px; height:auto; position:relative; transform-origin:center center;
+  /* Centre by our OWN geometry (absolute + translate(-50%,-50%)), NOT by the
+     #stage grid's place-items. When the window is narrower than the 1520px
+     design width the unscaled box is wider than the viewport, and WebKit (the
+     WKWebView used by the AU/VST on macOS) pins an overflowing centred grid
+     item to the start edge instead of centring it — which right-shifted the
+     scaled UI and left a black gutter on the left. Positioning from our own
+     centre is immune to that overflow-alignment quirk. The fit scalers
+     (index.html + app.jsx) set `translate(-50%,-50%) scale(s)`. */
+  width:1520px; height:auto; position:absolute; left:50%; top:50%; transform-origin:center center;
   background:
     radial-gradient(140% 100% at 50% -10%, oklch(0.205 0.006 60) 0%, var(--c-bg) 55%, oklch(0.14 0.005 60) 100%);
   border-radius:18px;

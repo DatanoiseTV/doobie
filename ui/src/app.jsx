@@ -322,7 +322,11 @@ function App() {
       // so this is stable.
       const designH = el.offsetHeight || 960;
       const s = Math.min(window.innerWidth / 1520, window.innerHeight / designH);
-      el.style.transform = `scale(${s})`;
+      // translate(-50%,-50%) centres #plugin by its own centre (position:absolute
+      // at left/top 50%); scale() fits it. Centring here rather than via the
+      // #stage grid avoids WebKit right-shifting an overflowing box when the
+      // window is narrower than the 1520px design width.
+      el.style.transform = `translate(-50%, -50%) scale(${s})`;
     };
     fit();
     window.addEventListener('resize', fit);
