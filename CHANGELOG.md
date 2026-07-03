@@ -6,6 +6,18 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.23.1] — 2026-07-04
+
+### Fixed
+- **UI no longer letterboxes with black borders.** The editor is now locked to
+  the 1520×1048 design aspect ratio, so the window can only resize
+  proportionally and the scaled UI fills it exactly — no borders, no
+  distortion.
+- **Switching reverb mode no longer rescales the whole UI.** The canvas height
+  is fixed (sized for the tallest mode) instead of content-driven, so changing
+  presets/modes (e.g. to Shimmer or Gated) keeps the interface at a constant
+  size.
+
 ## [0.23.0] — 2026-07-03
 
 ### Added
