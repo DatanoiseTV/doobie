@@ -6,6 +6,23 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.23.2] — 2026-07-04
+
+### Fixed
+- **Mod-matrix sources LFO 3 / LFO 4 / Env are now selectable.** The slot Source
+  list stopped at four entries, so LFO 3/4 and the envelope follower were
+  unreachable and choosing "Env" silently routed LFO 3. Four factory presets
+  that use the envelope follower (auto-wah / envelope-following pan / feedback)
+  now run it as designed instead of an LFO.
+- **Editor opens at a size that fits the display.** The aspect-locked window no
+  longer opens off-screen on laptops — it uses the design size when it fits, or
+  the largest proportional box within the screen otherwise.
+- **Bi/Uni toggle in the modulation matrix no longer squished.** The MODE column
+  was too narrow for the segmented control and clipped "UNI".
+- **WebView health watchdog no longer false-positives on a blank mount.** The
+  ready signal is now set only after a real first commit (plus a React error
+  boundary), instead of unconditionally on a timer.
+
 ## [0.23.1] — 2026-07-04
 
 ### Fixed
