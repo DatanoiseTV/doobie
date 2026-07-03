@@ -6,6 +6,8 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.22.0] — 2026-07-03
+
 ### Added
 - **CLAP plug-in format.** Doobie now also builds as a CLAP alongside the
   AU / VST3 / Standalone formats, via `clap-juce-extensions` (vendored under
@@ -13,6 +15,16 @@ uses [Semantic Versioning](https://semver.org/).
   Tagged `audio-effect delay stereo`; installs to
   `/Library/Audio/Plug-Ins/CLAP` (macOS) or `~/.clap` / `/usr/local/lib/clap`
   (Linux). Released binaries (macOS installer, Linux tarball) include it.
+
+### Fixed
+- **Reverb controls no longer clipped in the tall reverb modes.** The plugin
+  canvas had a fixed height with `overflow: hidden`, so the reverb column —
+  which grows to ~779 px in Gated and Shimmer (interval-chip row + decay
+  graph) — overlapped the output bar and clipped at the bottom, and on
+  startup the overflow made the centred content look shifted. The canvas is
+  now content-driven and both fit-to-window scalers measure the plugin's
+  natural height instead of a hard-coded value, re-fitting when the reverb
+  mode changes the column height.
 
 ## [0.21.1] — 2026-06-24
 
