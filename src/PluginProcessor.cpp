@@ -136,7 +136,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout DoobieAudioProcessor::create
     // repeat is shifted by this, so +12 climbs an octave per echo, -5
     // descends a fourth, etc.
     layout.add (std::make_unique<FloatParam> (pid (dID::pitchSemis),   "Pitch Interval",   Range (-24.0f, 24.0f, 1.0f), 12.0f));
-    layout.add (std::make_unique<BoolParam>  (pid (dID::pitchOn),       "Pitch Shifter",   true));
+    // Default OFF — the pitch shifter is a deliberate flavour, not
+    // something the user should pay CPU + latency for on every preset
+    // they load. The three factory presets that need it (Pitch-mode
+    // delay, falling 5ths, etc.) explicitly set `pitchOn = 1` in their
+    // overrides; all others now inherit the OFF default so loading a
+    // non-pitch preset doesn't impose unwanted pitch processing.
+    layout.add (std::make_unique<BoolParam>  (pid (dID::pitchOn),       "Pitch Shifter",   false));
     layout.add (std::make_unique<FloatParam> (pid (dID::pitchSpread),   "Pitch Spread",    Range (0.0f, 100.0f, 0.1f), 0.0f));
     layout.add (std::make_unique<ChoiceParam> (pid (dID::pitchAlgo),    "Pitch Algorithm", dID::pitchAlgoChoices, 0));
     layout.add (std::make_unique<ChoiceParam> (pid (dID::pitchRoute),   "Pitch Route",     dID::pitchRouteChoices, 0));

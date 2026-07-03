@@ -45,6 +45,7 @@ public:
 
     void paint   (juce::Graphics&) override;
     void resized() override;
+    bool keyPressed (const juce::KeyPress& k) override;
 
 private:
     void timerCallback() override;
@@ -78,6 +79,30 @@ private:
     // be folded into the WebBrowserComponent::Options; destructed first by
     // the rule above.
     std::unique_ptr<juce::WebBrowserComponent> webView;
+
+    // ---- WebView health watchdog ---------------------------------------
+    // Macros that can produce a blank/grey WebView even with no JUCE-side
+    // error: WKWebView content-process kill (sandbox / OOM), Babel parse
+    // error in a JSX file that aborts before app.jsx mounts React,
+    // resource provider returning empty for a referenced file. None of
+    // those throw on the C++ side — we only know about them by polling.
+    //
+    // Flow: every UI tick we count down `healthTicksRemaining`; while it's
+    // positive we ask the page for `window.__doobieReady`. The first
+    // truthy response sets `webViewHealthy = true` and stops polling. If
+    // the countdown hits zero with no ready signal, we show the
+    // `WebViewFallback` overlay on top of the WebView with diagnostic info
+    // and a Reload button.
+    class WebViewFallback;
+    std::unique_ptr<WebViewFallback> fallback;
+    bool webViewHealthy        = false;
+    int  healthTicksRemaining  = 0;     // counts down 30Hz ticks
+    int  healthPollEveryTicks  = 0;     // how often inside the countdown we actually call evaluateJavascript
+
+    void startHealthWatchdog();         // (re)arm the countdown after a load
+    void pollHealthOnce();              // evaluateJavascript("window.__doobieReady")
+    void onWebViewWedged (const juce::String& jsErrorIfAny);
+    void reloadWebView();               // called by the fallback's Reload button
 
     // Last-known preset name + category, pushed only when changed (so we're
     // not spamming the JS side with redundant events).

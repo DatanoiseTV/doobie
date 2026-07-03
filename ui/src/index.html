@@ -34,6 +34,18 @@
       white-space: pre-wrap; word-break: break-word; display: none;
     }
     #diag .err.on { display: block; }
+    /* Tiny "reload" button at the top-right of the diag banner. Visible
+       only while the banner itself is (i.e. until React mounts). Lets
+       the user re-navigate from any HTML-loaded-but-React-failed state
+       without waiting for the JUCE-side watchdog. */
+    #d-reload {
+      position: absolute; top: 8px; right: 12px;
+      background: oklch(0.28 0.006 60); color: #f6efe1;
+      border: 1px solid oklch(0.4 0.008 60); border-radius: 6px;
+      padding: 4px 10px; font: 11px ui-sans-serif, system-ui, sans-serif;
+      cursor: pointer;
+    }
+    #d-reload:hover { background: oklch(0.34 0.006 60); }
     /* Once React mounts (root has children), hide the banner. */
     body:has(#root > *) #diag { display: none; }
     /* Fit-to-window scaling drives `#plugin` (the actual 1520x960 UI
@@ -47,6 +59,7 @@
 </head>
 <body>
   <div id="diag" aria-live="polite">
+    <button id="d-reload" onclick="window.__doobieReload && window.__doobieReload()">↻ Reload</button>
     <div class="row ok" id="d-html"><span class="tick"></span>HTML loaded</div>
     <div class="row" id="d-juce"><span class="tick"></span>juce bridge</div>
     <div class="row" id="d-react"><span class="tick"></span>React</div>
@@ -64,6 +77,18 @@
     };
     window.addEventListener('error',           (e) => fail('JS error: ' + (e.message || e.error) + ' @ ' + (e.filename || '?') + ':' + (e.lineno || '?')));
     window.addEventListener('unhandledrejection', (e) => fail('unhandled rejection: ' + e.reason));
+    // Manual reload — calls the JUCE-side native function once the juce
+    // bridge has loaded; before that, falls back to a plain page reload
+    // (location.reload) which still re-runs the script chain.
+    window.__doobieReload = function () {
+      try {
+        if (window.juce && typeof window.juce.getNativeFunction === 'function') {
+          window.juce.getNativeFunction('reloadUI')();
+          return;
+        }
+      } catch (_) {}
+      try { location.reload(); } catch (_) {}
+    };
     // Fit-to-window: target `#plugin` (the 1520x960 UI container; see
     // doobie.css). transform: scale() makes browsers translate
     // pointer events through the matrix, so clicks and drags still

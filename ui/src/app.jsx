@@ -459,4 +459,23 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+// Fail-loud mount. If React throws synchronously during the first render,
+// surface it in the diag banner (the user sees something) and report it on
+// `window.__doobieMountError` so the JUCE-side health watchdog can pull it
+// via evaluateJavascript. `window.__doobieReady` is the alive-signal the
+// watchdog polls — it stays false if React never completes its first
+// commit, which is the exact failure mode that produces a blank window.
+try {
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  // Mark ready on the next macrotask so we don't claim "ready" before the
+  // very first commit has flushed. React's createRoot is asynchronous; the
+  // setTimeout(0) lets the initial paint land before the watchdog polls.
+  setTimeout(() => { window.__doobieReady = true; }, 0);
+} catch (e) {
+  const msg = (e && (e.stack || e.message)) || String(e);
+  window.__doobieMountError = msg;
+  try {
+    const banner = document.getElementById('d-err');
+    if (banner) { banner.textContent = 'React mount failed: ' + msg; banner.classList.add('on'); }
+  } catch (_) {}
+}

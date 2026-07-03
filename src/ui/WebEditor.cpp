@@ -20,6 +20,7 @@
 #include <optional>
 #include <vector>
 #include <cstddef>
+#include <iostream>
 
 namespace doobie
 {
@@ -78,6 +79,13 @@ namespace
                     return r;
                 }
             }
+            // 404: log to stderr so a terminal-launched standalone surfaces
+            // missing-resource bugs immediately. The blank-window failure
+            // class includes "JSX file silently missing from BinaryData" —
+            // this line is what catches that.
+            DBG ("WebEditor resource MISS: \"" << url << "\" (looked up as \"" << name << "\")");
+            std::cerr << "Doobie WebEditor: resource not found — \"" << url
+                      << "\" (looked up as \"" << name << "\")" << std::endl;
             return std::nullopt;
         }
 
@@ -158,6 +166,10 @@ WebEditor::WebEditor (::DoobieAudioProcessor& proc)
     : juce::AudioProcessorEditor (&proc), doobieProcessor (proc)
 {
     setResizable (true, true);
+    // Editor takes keyboard focus when nothing inside the WebView is
+    // claiming it — gives Cmd+R a path through to keyPressed() when the
+    // WebView has gone dead and stops handling input.
+    setWantsKeyboardFocus (true);
     // Limits cover ~50 % of design size up through ~2x. The WebView's
     // JS fit-to-window scaler (see ui/src/index.html) keeps the 1520x960
     // layout filling whatever bounds JUCE hands us, so the min just has
@@ -236,6 +248,17 @@ WebEditor::WebEditor (::DoobieAudioProcessor& proc)
             [] (const juce::String& url) { return resourceTable().lookup (url); },
             juce::URL (juce::WebBrowserComponent::getResourceProviderRoot()).getOrigin())
         .withUserScript ("window.DOOBIE_VERSION_STR = 'v" DOOBIE_VERSION " · " DOOBIE_GIT_BRANCH "';")
+        // Manual reload affordance — exposed to JS so the Header / diag
+        // banner can call `juce.getNativeFunction('reloadUI')()` to force
+        // a re-navigate. Useful when React mounted but went into a stuck
+        // state (rare but possible); the JUCE-side watchdog handles the
+        // dead-WebView case automatically.
+        .withNativeFunction (juce::Identifier { "reloadUI" },
+            [this] (const juce::Array<juce::var>&, juce::WebBrowserComponent::NativeFunctionCompletion complete)
+            {
+                juce::MessageManager::callAsync ([this] { reloadWebView(); });
+                complete (juce::var());
+            })
         .withNativeFunction (juce::Identifier { "presetPrev" },
             [this] (const juce::Array<juce::var>&, juce::WebBrowserComponent::NativeFunctionCompletion complete)
             {
@@ -389,19 +412,157 @@ WebEditor::WebEditor (::DoobieAudioProcessor& proc)
 
     // 4) Now we have the WebView, set the editor size — resized() will lay
     // it out. (Doing this before the WebView existed left it bounds-less.)
-    // 1216 x 768 fits a 13" MBP (1440 x 900) at default scaling with
-    // headroom for menu bar + dock. The JS fit-to-window scaler in
-    // index.html shrinks the 1520x960 design canvas to match.
-    setSize (1216, 768);
+    // 1520x960 = the native design canvas size. Fresh installs open at
+    // 1:1, no UI scaling, no host-chrome border. On a 13" MBP (1440x900)
+    // the user drags the corner down and the JS fit-to-window scaler in
+    // index.html scales the 1520x960 design canvas to whatever new size
+    // the editor lands on.
+    setSize (1520, 960);
 
     // 5) Load the HTML shell.
     webView->goToURL (juce::WebBrowserComponent::getResourceProviderRoot() + "index.html");
 
-    // 6) Live data emission timer.
+    // 6) Arm the WebView health watchdog. If the page doesn't set
+    // `window.__doobieReady = true` within 4 seconds, the timerCallback
+    // will surface a JUCE-side fallback panel on top of the WebView with
+    // a Reload button — so a wedged WKWebView never leaves the user with
+    // an unactionable blank/grey window.
+    startHealthWatchdog();
+
+    // 7) Live data emission timer. Also drives the watchdog poll above.
     startTimerHz (30);
 }
 
 WebEditor::~WebEditor() = default;
+
+// ============================================================================
+// WebViewFallback — shown on top of the WebView when the watchdog detects
+// the page hasn't reached its mount sentinel. The user sees a panel with the
+// detected JS error (if any), the most likely causes, and a Reload button.
+// Without this, a wedged WebView is indistinguishable from a fresh blank
+// editor.
+// ============================================================================
+class WebEditor::WebViewFallback : public juce::Component
+{
+public:
+    explicit WebViewFallback (std::function<void()> onReload)
+        : reloadCallback (std::move (onReload))
+    {
+        reloadButton.setButtonText ("Reload UI");
+        reloadButton.onClick = [this] { if (reloadCallback) reloadCallback(); };
+        addAndMakeVisible (reloadButton);
+    }
+
+    void setDiagnostic (const juce::String& s) { diagText = s; repaint(); }
+
+    void paint (juce::Graphics& g) override
+    {
+        g.fillAll (juce::Colour (0xff100c08));
+        auto bounds = getLocalBounds().reduced (40);
+        auto card = bounds.withSizeKeepingCentre (520, 280);
+        g.setColour (juce::Colour (0xff1c1814));
+        g.fillRoundedRectangle (card.toFloat(), 12.0f);
+        g.setColour (juce::Colour (0xff453a2d));
+        g.drawRoundedRectangle (card.toFloat(), 12.0f, 1.0f);
+
+        auto inner = card.reduced (24);
+        g.setColour (juce::Colour (0xffef9436));
+        g.setFont (juce::Font (juce::FontOptions (16.0f).withStyle ("Bold")));
+        g.drawText ("UI failed to load", inner.removeFromTop (24), juce::Justification::topLeft);
+
+        inner.removeFromTop (10);
+        g.setColour (juce::Colour (0xffd0c8be));
+        g.setFont (juce::Font (juce::FontOptions (12.0f)));
+        g.drawFittedText (
+            "The WebView didn't reach its ready signal within 4 seconds. "
+            "Common causes: macOS killed the WKWebView content process "
+            "(memory / sandbox), a stale browser cache, or a JS error in a "
+            "script tag. Reload retries the navigation; if that doesn't "
+            "help, fully quit the host and reopen.",
+            inner.removeFromTop (90), juce::Justification::topLeft, 5);
+
+        inner.removeFromTop (8);
+        if (! diagText.isEmpty())
+        {
+            g.setColour (juce::Colour (0xffff8888));
+            g.setFont (juce::Font (juce::FontOptions (juce::Font::getDefaultMonospacedFontName(),
+                                                     11.0f, juce::Font::plain)));
+            g.drawFittedText (diagText, inner.removeFromTop (80),
+                              juce::Justification::topLeft, 6);
+        }
+    }
+
+    void resized() override
+    {
+        auto bounds = getLocalBounds().reduced (40)
+                          .withSizeKeepingCentre (520, 280)
+                          .reduced (24);
+        reloadButton.setBounds (bounds.removeFromBottom (32).withWidth (120));
+    }
+
+private:
+    juce::TextButton reloadButton;
+    juce::String     diagText;
+    std::function<void()> reloadCallback;
+};
+
+void WebEditor::startHealthWatchdog()
+{
+    webViewHealthy = false;
+    // 4 s deadline at 30 Hz = 120 ticks. Poll every 4 ticks (~7 Hz) to keep
+    // evaluateJavascript() cost negligible.
+    healthTicksRemaining = 120;
+    healthPollEveryTicks = 4;
+    if (fallback != nullptr && fallback->isVisible())
+        fallback->setVisible (false);
+}
+
+void WebEditor::pollHealthOnce()
+{
+    if (webView == nullptr) return;
+    webView->evaluateJavascript (
+        "(function(){"
+        "  if (window.__doobieReady === true) return 'ready';"
+        "  if (window.__doobieMountError) return 'mount-error:' + window.__doobieMountError;"
+        "  return 'pending';"
+        "})()",
+        [this] (juce::WebBrowserComponent::EvaluationResult result)
+        {
+            const juce::var* v = result.getResult();
+            if (v == nullptr || ! v->isString())
+                return;
+            const auto s = v->toString();
+            if (s == "ready")
+            {
+                webViewHealthy = true;
+                healthTicksRemaining = 0;
+                if (fallback != nullptr && fallback->isVisible())
+                    fallback->setVisible (false);
+            }
+            else if (s.startsWith ("mount-error:"))
+            {
+                onWebViewWedged ("React mount threw:\n" + s.substring (12));
+            }
+        });
+}
+
+void WebEditor::onWebViewWedged (const juce::String& jsErrorIfAny)
+{
+    if (fallback == nullptr)
+        fallback = std::make_unique<WebViewFallback> ([this] { reloadWebView(); });
+    addAndMakeVisible (*fallback);
+    fallback->setBounds (getLocalBounds());
+    fallback->toFront (false);
+    fallback->setDiagnostic (jsErrorIfAny);
+    healthTicksRemaining = 0;
+}
+
+void WebEditor::reloadWebView()
+{
+    if (webView == nullptr) return;
+    webView->goToURL (juce::WebBrowserComponent::getResourceProviderRoot() + "index.html");
+    startHealthWatchdog();
+}
 
 void WebEditor::paint (juce::Graphics& g)
 {
@@ -414,10 +575,41 @@ void WebEditor::resized()
 {
     if (webView != nullptr)
         webView->setBounds (getLocalBounds());
+    if (fallback != nullptr && fallback->isVisible())
+        fallback->setBounds (getLocalBounds());
+}
+
+bool WebEditor::keyPressed (const juce::KeyPress& k)
+{
+    // Last-resort reload — Cmd/Ctrl+R works when the WebView has gone dead
+    // (no longer accepting key input) so the keystroke reaches the editor.
+    // When the WebView is healthy it normally captures keystrokes itself;
+    // the user reloads via the in-page header button instead. Either way
+    // the user has a path back.
+    if (k.getModifiers().isCommandDown() && k.getTextCharacter() == 'r')
+    {
+        reloadWebView();
+        return true;
+    }
+    return false;
 }
 
 void WebEditor::timerCallback()
 {
+    // Health watchdog — interleaved with the regular 30 Hz UI emission.
+    if (healthTicksRemaining > 0)
+    {
+        --healthTicksRemaining;
+        if ((healthTicksRemaining % healthPollEveryTicks) == 0)
+            pollHealthOnce();
+
+        if (healthTicksRemaining == 0 && ! webViewHealthy)
+        {
+            // Hit the deadline with no ready signal — surface the fallback.
+            onWebViewWedged ({});
+        }
+    }
+
     emitLevels();
     emitPresetInfo();
     emitIRInfo();

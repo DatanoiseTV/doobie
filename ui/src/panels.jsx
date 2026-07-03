@@ -115,6 +115,13 @@ function Header({ preset, onPrev, onNext, onSave, modOpen, setModOpen, onBrowse 
       </div>
       <button className="btn ghost" data-on={modOpen ? '1' : '0'} onClick={() => setModOpen(!modOpen)}>Mod</button>
       <button className="btn accent" onClick={onSave}>Save</button>
+      {/* Manual UI reload — calls a JUCE native function that re-navigates
+          the WebView. Use this if the page goes weird without dying
+          outright (the JUCE-side watchdog handles the dead-WebView case
+          on its own after 4 s). Cmd+R / Ctrl+R does the same. */}
+      <button className="btn ghost" title="Reload UI (Cmd+R)"
+              style={{ minWidth: 28, padding: '0 8px' }}
+              onClick={() => window.__doobieReload && window.__doobieReload()}>↻</button>
     </div>
   );
 }
