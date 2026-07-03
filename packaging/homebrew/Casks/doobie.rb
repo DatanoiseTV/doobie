@@ -20,10 +20,12 @@
 # bottom for the shape.
 
 cask "doobie" do
-  version "0.20.1"
+  version "0.22.0"
   # SHA-256 of the zip on the GitHub release. Recompute on every version
-  # bump: `shasum -a 256 Doobie-<ver>-macOS-unsigned.zip`.
-  sha256 "0acc998733f5bbb49ad278ef6c29f80e66837904f7ad16058e137a6c1461169f"
+  # bump: `shasum -a 256 Doobie-<ver>-macOS-unsigned.zip`. Set to
+  # :no_check at version-bump time and pinned to the real hash once the
+  # release CI publishes the artifact.
+  sha256 :no_check
 
   url "https://github.com/DatanoiseTV/doobie/releases/download/v#{version}/Doobie-#{version}-macOS-unsigned.zip"
   name "Doobie"
