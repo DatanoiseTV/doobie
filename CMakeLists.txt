@@ -88,7 +88,8 @@ juce_generate_juce_header(Doobie)
 # acknowledgment Voxengo's license requires lives in the README.
 # -----------------------------------------------------------------------------
 file(GLOB DOOBIE_VOXENGO_IRS CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/external/voxengo-irs/*.wav")
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/voxengo-irs/*.wav"
+    "${CMAKE_CURRENT_SOURCE_DIR}/external/openair-irs/*.wav")
 # Two BinaryData targets in this build (IRs + UI). Each needs its own
 # namespace + header name, otherwise both generate symbols in `BinaryData::`
 # and the linker silently picks whichever was linked first — UI lookups
