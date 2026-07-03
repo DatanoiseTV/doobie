@@ -42,7 +42,7 @@ html{ scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
 body{
   margin:0; font-family:var(--font); color:var(--txt); background:var(--bg);
   -webkit-font-smoothing:antialiased; line-height:1.5;
-  overflow-x:hidden;
+  overflow-x:clip;
 }
 body::before{
   content:""; position:fixed; inset:0; z-index:-2; pointer-events:none;
@@ -237,6 +237,7 @@ h1 .grad::after { transform:translate(.115em, .105em); opacity:.15; filter:blur(
   animation:breathe 7s ease-in-out infinite alternate;
 }
 @keyframes breathe{ from{ opacity:.30; transform:scale(.97); } to{ opacity:.62; transform:scale(1.03); } }
+@media(max-width:760px){ .shot::before{ inset:-36px 0; } }
 /* ground reflection (WebKit/Blink; others just skip it) */
 @media(min-width:760px){
   .shot video, .shot > img{
@@ -300,7 +301,7 @@ section{ padding:92px 0; position:relative; }
 
 /* giant echo poster behind the Listen head — the delay, at editorial scale */
 .echo-bg{
-  position:absolute; top:96px; left:50%; transform:translateX(-50%);
+  position:absolute; top:96px; left:0; right:0; justify-content:center; overflow:hidden;
   display:flex; gap:.35em; white-space:nowrap; z-index:-1; pointer-events:none;
   font-weight:700; letter-spacing:-0.02em; line-height:1;
   font-size:clamp(80px, 12.5vw, 165px); text-transform:uppercase;
@@ -449,7 +450,7 @@ h2{ font-size:clamp(1.8rem, 3.8vw, 2.7rem); font-weight:700; letter-spacing:-0.0
   max-width:1120px; margin:0 auto; display:grid;
   grid-template-columns:minmax(0,1fr) 268px; gap:18px; align-items:start;
 }
-@media(max-width:920px){ .player-grid{ grid-template-columns:1fr; } }
+@media(max-width:920px){ .player-grid{ grid-template-columns:1fr; } .pl-info{ position:static; } }
 .player{
   min-width:0; border:1px solid var(--line);
   border-radius:16px; overflow:hidden;
