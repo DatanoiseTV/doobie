@@ -42,6 +42,15 @@
 html,body{ margin:0; height:100%; background:#000; overflow:hidden; }
 body{ font-family:var(--font); color:var(--c-txt); -webkit-font-smoothing:antialiased; }
 
+/* Native-app feel: WebKit (the WKWebView in the AU/VST) draws its accent
+   focus ring on any button/select clicked with the mouse — on the Bi/Uni and
+   other segmented toggles that reads as a broken orange box around the active
+   item, since state is already shown by colour/data-on. Suppress the ring for
+   pointer focus only; keyboard users still get :focus-visible for a11y. */
+button:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+[role="button"]:focus:not(:focus-visible) { outline: none; }
+
 /* ---- stage / scaling ---- */
 #stage{
   position:fixed; inset:0; display:grid; place-items:center;
@@ -868,7 +877,7 @@ input, textarea, [contenteditable="true"] {
   padding:6px 12px; font-family:var(--font); font-size:10.5px;
   font-weight:600; letter-spacing:0.08em; text-transform:uppercase;
   border-radius:5px; transition:.12s; white-space:nowrap;
-  -webkit-appearance:none; appearance:none;
+  -webkit-appearance:none; appearance:none; outline:none;
 }
 .seg button:hover{ color:var(--c-txt-2); }
 .seg button[data-on="1"]{
