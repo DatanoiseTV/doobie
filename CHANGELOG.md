@@ -6,6 +6,8 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.23.0] — 2026-07-03
+
 ### Added
 - **Ten OpenAIR convolution rooms.** Real-space impulse responses (Hamilton
   Mausoleum, Maes Howe Tomb, R1 Reactor Hall, York Minster, and more) join
@@ -19,6 +21,13 @@ uses [Semantic Versioning](https://semver.org/).
 - **Reverb / output panels fit the right column.** The Reverb panel and
   Output bar are scaled down slightly and the Verb LC/HC knobs folded into
   existing rows so the Gated/Shimmer modes and decay graph fit.
+
+### Fixed
+- **UI no longer renders off-center in narrow host windows.** When the DAW
+  window was narrower than the design width, WebKit pinned the oversized
+  scaled canvas to the left, leaving a black gutter and a right-shifted UI.
+  The canvas now centers by its own geometry (`translate(-50%,-50%) scale`),
+  independent of flex/grid overflow alignment.
 
 ## [0.22.0] — 2026-07-03
 
