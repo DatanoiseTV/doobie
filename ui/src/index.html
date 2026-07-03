@@ -76,16 +76,21 @@
     // (catches the case where JUCE sets WebView bounds from C++
     // without bubbling a window 'resize' event).
     (function () {
-      var DESIGN_W = 1520, DESIGN_H = 960;
-      var lastW = 0, lastH = 0;
+      var DESIGN_W = 1520;
+      var lastW = 0, lastH = 0, lastPH = 0;
       function fit() {
         var el = document.getElementById('plugin');
         if (!el) return;
         var w = window.innerWidth  || document.documentElement.clientWidth;
         var h = window.innerHeight || document.documentElement.clientHeight;
         if (!w || !h) return;
-        lastW = w; lastH = h;
-        var s = Math.min(w / DESIGN_W, h / DESIGN_H);
+        // Design height is the plugin's NATURAL rendered height, not a fixed
+        // 960 — the reverb column grows/shrinks with the reverb mode. offsetHeight
+        // is a layout measure unaffected by our own transform, so re-measuring
+        // after scaling is stable (no feedback loop).
+        var designH = el.offsetHeight || 960;
+        lastW = w; lastH = h; lastPH = designH;
+        var s = Math.min(w / DESIGN_W, h / designH);
         el.style.transform = 'scale(' + s + ')';
       }
       window.addEventListener('resize', fit);
@@ -96,23 +101,35 @@
       if (typeof ResizeObserver === 'function') {
         try { new ResizeObserver(fit).observe(document.body); } catch (_) {}
       }
-      // #plugin is React-mounted; retry until it exists, then settle.
+      // #plugin is React-mounted; retry until it exists, then settle. Once it's
+      // there, observe IT too so a reverb-mode change (which changes the column
+      // height) re-fits — the body observer above can't see that, since body
+      // stays a fixed 100% of the WebView.
+      var pluginRO = null;
       (function poll(tries) {
-        if (document.getElementById('plugin')) { fit(); return; }
+        var el = document.getElementById('plugin');
+        if (el) {
+          fit();
+          if (typeof ResizeObserver === 'function' && !pluginRO) {
+            try { pluginRO = new ResizeObserver(fit); pluginRO.observe(el); } catch (_) {}
+          }
+          return;
+        }
         if (tries <= 0) return;
         setTimeout(function () { poll(tries - 1); }, 30);
       })(60);
-      // Persistent watchdog: every 500 ms, if window.innerWidth/Height
-      // disagrees with the size we last fit to, re-fit. Belt-and-braces
+      // Persistent watchdog: every 500 ms, if the window size OR the plugin's
+      // own height disagrees with what we last fit to, re-fit. Belt-and-braces
       // for the case where JUCE's WebView setBounds() from C++ doesn't
       // bubble as a DOM 'resize' event and the ResizeObserver also
       // misses it (some engine builds do not invalidate body's layout
-      // box on bounds change). Cheap — no work unless dimensions
-      // changed.
+      // box on bounds change). Cheap — no work unless something changed.
       setInterval(function () {
+        var el = document.getElementById('plugin');
         var w = window.innerWidth  || document.documentElement.clientWidth;
         var h = window.innerHeight || document.documentElement.clientHeight;
-        if (w !== lastW || h !== lastH) fit();
+        var ph = el ? el.offsetHeight : 0;
+        if (w !== lastW || h !== lastH || ph !== lastPH) fit();
       }, 500);
     })();
     // Native-app feel: kill the browser context menu + drag-select gestures.

@@ -49,7 +49,12 @@ body{ font-family:var(--font); color:var(--c-txt); -webkit-font-smoothing:antial
     radial-gradient(120% 120% at 50% 0%, oklch(0.10 0.004 60) 0%, #000 80%);
 }
 #plugin{
-  width:1520px; height:960px; position:relative; transform-origin:center center;
+  /* Height is content-driven, not a fixed 960: the reverb column grows in the
+     Shimmer / Gated / Convolution modes, and a hard height with overflow:hidden
+     used to clip those controls and let them overlap the output bar. The
+     fit-to-window scaler (index.html + app.jsx) measures the actual rendered
+     height so the whole UI always scales to fit whatever the current mode needs. */
+  width:1520px; height:auto; position:relative; transform-origin:center center;
   background:
     radial-gradient(140% 100% at 50% -10%, oklch(0.205 0.006 60) 0%, var(--c-bg) 55%, oklch(0.14 0.005 60) 100%);
   border-radius:18px;
@@ -128,7 +133,10 @@ body{ font-family:var(--font); color:var(--c-txt); -webkit-font-smoothing:antial
 .body{
   flex:1; min-height:0; display:grid;
   grid-template-columns: 392px 1fr 1fr;
-  grid-template-rows: auto 1fr auto;
+  /* Middle row is `auto` (not `1fr`): the columns take their natural height so
+     the canvas grows to fit them instead of clipping. The outbar then sits
+     directly below the tallest column. */
+  grid-template-rows: auto auto auto;
   gap:14px; padding:14px;
 }
 .flowbar{ grid-column:1 / -1; }

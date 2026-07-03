@@ -316,7 +316,12 @@ function App() {
     document.getElementById('root').classList.add('ready');
     const el = rootRef.current; if (!el) return;
     const fit = () => {
-      const s = Math.min(window.innerWidth / 1520, window.innerHeight / 960);
+      // Match index.html's scaler: divide by the plugin's natural rendered
+      // height, not a fixed 960 — the reverb column grows/shrinks by mode, and
+      // a hard 960 clipped the tall modes. offsetHeight ignores our transform,
+      // so this is stable.
+      const designH = el.offsetHeight || 960;
+      const s = Math.min(window.innerWidth / 1520, window.innerHeight / designH);
       el.style.transform = `scale(${s})`;
     };
     fit();
