@@ -11,7 +11,7 @@
 <meta property="og:image" content="assets/doobie-ui-og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:      oklch(0.148 0.006 60);
@@ -32,6 +32,7 @@
   --teal:    oklch(0.74 0.090 190);
   --red:     oklch(0.63 0.205 28);
   --font: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --text: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, monospace;
   --serif: 'Instrument Serif', Georgia, serif;
   --maxw: 1120px;
@@ -63,6 +64,19 @@ img{ max-width:100%; display:block; }
 .wrap{ width:100%; max-width:var(--maxw); margin:0 auto; padding:0 24px; }
 .mono{ font-family:var(--mono); }
 .amber{ color:var(--amber); }
+
+
+/* ---------- long-form copy uses the text face; SG stays for display/labels */
+.sub, .sound, .sec-head p, .routing .lead, .route-list .t,
+.card p, .pal-tile p, .cpu-txt p, .dl-card p, .note, .gk-body,
+.flow-legend, .pl-tag, .pi-drynote{
+  font-family:var(--text);
+}
+.card p{ line-height:1.62; font-size:0.94rem; }
+.route-list .t{ line-height:1.55; }
+.sec-head p, .routing .lead{ line-height:1.6; }
+.gk-body{ line-height:1.65; }
+.card h3{ font-size:1.09rem; letter-spacing:-0.015em; }
 
 /* ---------- nav ---------- */
 nav{
