@@ -491,11 +491,13 @@ function FeedbackPanel({ p, setP, mods }) {
         <KB label="Bass"     k="fbBass"    p={p} setP={setP} bipolar format={fmt.db}      mods={mods} />
         <KB label="Treble"   k="fbTreble"  p={p} setP={setP} bipolar format={fmt.db}      mods={mods} />
       </div>
-      {/* Resonance row — same scale as the Input filter's Res so muscle
-          memory carries over. Drives the new Svf-based ToneStack HP/LP. */}
-      <div className="eqrow" style={{ marginTop: 4 }}>
-        <KB label="LC Res"  k="hpRes" p={p} setP={setP} format={fmt.pct} size="sm" />
-        <KB label="HC Res"  k="lpRes" p={p} setP={setP} format={fmt.pct} size="sm" />
+      {/* Resonance row — small knobs aligned under the LC / HC slots
+          they affect. 4-column grid kept (so the knobs line up with
+          their parent cut knobs); right two cells deliberately blank
+          since Bass / Treble shelves don't have Q. */}
+      <div className="eqrow" style={{ marginTop: 2 }}>
+        <KB label="LC Res" k="hpRes" p={p} setP={setP} format={fmt.pct} size="sm" />
+        <KB label="HC Res" k="lpRes" p={p} setP={setP} format={fmt.pct} size="sm" />
         <div /> <div />
       </div>
     </div>
@@ -563,8 +565,16 @@ function ReverbPanel({ p, setP, mods, irInfo, midiNote }) {
   const semiChips = [-24, -19, -12, -7, -5, 0, 5, 7, 12, 19, 24];
   const routeBtn = (k, lab) =>
     <button data-on={p.route === k ? '1' : '0'} onClick={() => setP('route', k)}>{lab}</button>;
+  // `zoom: 0.88` scales the entire Reverb panel content (knobs,
+  // labels, dropdowns, decay graph) so the full panel fits inside
+  // the right column even with the gated/shimmer modes that have
+  // more rows. WebKit + Chromium both support CSS zoom on
+  // descendant layout and hit-tests, so pointer events stay
+  // accurate. The 0.88 ratio leaves the panel slightly smaller
+  // than its neighbours but recovers enough room for the decay
+  // graph at the bottom.
   return (
-    <div className="panel compact" style={{ flex: 1 }}>
+    <div className="panel compact" style={{ flex: 1, zoom: 0.88 }}>
       <PHead title="Reverb" icon={Ico.rev} meta={p.route === 'fb' ? 'in feedback' : p.route === 'pre' ? 'pre' : 'post'} />
       <div className="row" style={{ gap: 10, marginBottom: 8 }}>
         <div className="sel" style={{ flex: 1 }}>
@@ -578,22 +588,15 @@ function ReverbPanel({ p, setP, mods, irInfo, midiNote }) {
         <span className="route-lab">Route</span>
         <div className="seg">{routeBtn('pre', 'Pre')}{routeBtn('fb', 'In Feedback')}{routeBtn('post', 'Post')}</div>
       </div>
-      {/* Post-reverb HP/LP — applies inside applyReverb() so all three
-          routes (post / pre / in-feedback) get the same shaping. Defaults
-          park at the extremes (Low Cut 20 Hz, High Cut 20 kHz) so they
-          stay out of the way until the user reaches for them. */}
-      <div className="eqrow" style={{ marginBottom: 8, gridTemplateColumns: 'repeat(2, 1fr)' }}>
-        <KB label="Verb Low Cut"  k="revHpFreq" p={p} setP={setP}
-            format={fmt.hz(20, 2000)} size="sm" />
-        <KB label="Verb High Cut" k="revLpFreq" p={p} setP={setP}
-            format={fmt.hz(200, 20000)} size="sm" />
-      </div>
       {isConv && <IRPicker irInfo={irInfo} />}
       {/* Convolution doesn't use the spring/plate engine — the IR is the
-          reverb. Only IR gain + width apply, so the 8-knob block collapses
-          to two knobs and the panel fits comfortably alongside the Phaser. */}
+          reverb. The Verb LC / HC post-filter knobs sit in the same row
+          as IR Gain / Speed / Width so we don't add a new row that would
+          push the decay graph off the bottom. */}
       {isConv ? (
-        <div className="eqrow" style={{ marginBottom: 8, gridTemplateColumns: 'repeat(3, 1fr)' }}>
+        <div className="eqrow" style={{ marginBottom: 8, gridTemplateColumns: 'repeat(5, 1fr)' }}>
+          <KB label="V-LC"     k="revHpFreq" p={p} setP={setP} format={fmt.hz(20, 2000)} />
+          <KB label="V-HC"     k="revLpFreq" p={p} setP={setP} format={fmt.hz(200, 20000)} />
           <KB label="IR Gain"  k="irGain"   p={p} setP={setP} format={fmt.db}  mods={mods} lit />
           {/* IR Speed resamples the impulse — 1.00× = native, 0.5× = octave
               down + 2× length, 2.0× = octave up + half length. Log-skewed
@@ -613,11 +616,17 @@ function ReverbPanel({ p, setP, mods, irInfo, midiNote }) {
             <KB label="Damp"   k="revDamp"   p={p} setP={setP} format={fmt.pct} mods={mods} />
             <KB label="Mod"    k="revMod"    p={p} setP={setP} format={fmt.pct} mods={mods} />
           </div>
-          <div className="eqrow" style={{ marginBottom: 8 }}>
+          {/* Second knob row for non-Convolution modes — extended from 4
+              to 6 cells to absorb the Verb LC / HC post-filter knobs
+              without adding a new row that would push the decay graph
+              off the bottom. */}
+          <div className="eqrow" style={{ marginBottom: 8, gridTemplateColumns: 'repeat(6, 1fr)' }}>
             <KB label="Decay"     k="revPlate" p={p} setP={setP} format={fmt.pct} mods={mods} />
             <KB label="Size"      k="revSize"  p={p} setP={setP} format={fmt.pct} mods={mods} />
             <KB label="Pre-Delay" k="revPre"   p={p} setP={setP} format={(v) => (v * 200).toFixed(0) + ' ms'} />
             <KB label="Width"     k="revWidth" p={p} setP={setP} format={fmt.pct} mods={mods} />
+            <KB label="V-LC"      k="revHpFreq" p={p} setP={setP} format={fmt.hz(20, 2000)} />
+            <KB label="V-HC"      k="revLpFreq" p={p} setP={setP} format={fmt.hz(200, 20000)} />
           </div>
         </>
       )}
@@ -679,8 +688,13 @@ function ReverbPanel({ p, setP, mods, irInfo, midiNote }) {
 
 /* ============================== OUTPUT BAR ============================== */
 function OutputBar({ p, setP, levels, mods }) {
+  // `zoom: 0.85` slims the output bar's overall height by ~15 %, which
+  // gives the right-side column (Feedback / Phaser / Reverb) enough
+  // vertical room for the Reverb panel's Gated mode (which has a 3rd
+  // gate-row + decay graph). Bar still reads clearly because the meters
+  // and knobs all scale together.
   return (
-    <div className="panel">
+    <div className="panel" style={{ zoom: 0.85 }}>
       <div className="outrow">
         <span className="hicon" style={{ color: 'var(--accent)' }}>{Ico.out}</span>
         <h2 style={{ margin: '0 18px 0 10px', fontSize: 11.5, fontWeight: 600, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--c-txt-2)' }}>Output</h2>
