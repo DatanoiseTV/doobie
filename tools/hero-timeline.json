@@ -1,0 +1,22 @@
+{
+  "_comment": "Shared automation timeline for the landing-page hero video, applied on top of the 'Vox' factory preset over the male-vocal dry loop at 90 BPM. tools/RenderHero.cpp plays it through the real DSP to produce the audio; tools/record-hero.mjs plays the same timeline into the standalone WebView UI while recording, so every knob move on screen is exactly what you hear. sliders: [t, normalisedValue] breakpoints, linearly interpolated. toggles/combos: [t, value] step events. Story: vocal slaps on one head with the auto-wah filter breathing -> gentle feedback swell -> heads B and C punch in -> plate flips route Post -> In Feedback (tail blooms, stays tasteful) -> a little wow warble -> a short freeze catches the last phrase as a pad -> release, everything returns so the loop closes. Feedback never leaves the musical zone.",
+  "duration": 20.0,
+  "sliders": {
+    "feedback": [[0, 0.375], [2, 0.375], [4.5, 0.55], [12, 0.55], [14, 0.45], [17, 0.375], [20, 0.375]],
+    "wow":      [[0, 0.2], [8, 0.2], [9.5, 0.45], [11.5, 0.45], [12.5, 0.2], [20, 0.2]]
+  },
+  "toggles": {
+    "syncMode":   [[0, 1]],
+    "inFilterOn": [[0, 1]],
+    "head2On":    [[0, 0], [5.5, 1], [18.5, 0]],
+    "head3On":    [[0, 0], [8, 1], [18.7, 0]],
+    "freeze":     [[11.8, 1], [15, 0]]
+  },
+  "combos": {
+    "delayMode":    [[0, 1]],
+    "syncDiv":      [[0, 7]],
+    "inFilterType": [[0, 2]],
+    "reverbMode":   [[0, 2]],
+    "reverbRoute":  [[0, 0], [8.5, 2], [16.5, 0]]
+  }
+}

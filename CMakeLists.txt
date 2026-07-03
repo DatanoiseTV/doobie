@@ -175,4 +175,29 @@ if(PROJECT_IS_TOP_LEVEL)
         juce::juce_gui_extra
         juce::juce_recommended_config_flags
         juce::juce_recommended_warning_flags)
+
+    # Offline preset-demo renderer (bounces the factory presets through a dry
+    # source loop to WAVs + a manifest for the landing-page player, no DAW).
+    add_executable(doobie_render_demo tools/RenderDemo.cpp)
+    target_include_directories(doobie_render_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(doobie_render_demo PRIVATE
+        Doobie
+        juce::juce_audio_utils
+        juce::juce_dsp
+        juce::juce_gui_extra
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags)
+
+    # Hero-video audio renderer: plays a dry loop through the engine while
+    # automating parameters from tools/hero-timeline.json (paired with the
+    # UI recorder in tools/record-hero.mjs).
+    add_executable(doobie_render_hero tools/RenderHero.cpp)
+    target_include_directories(doobie_render_hero PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    target_link_libraries(doobie_render_hero PRIVATE
+        Doobie
+        juce::juce_audio_utils
+        juce::juce_dsp
+        juce::juce_gui_extra
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags)
 endif()
