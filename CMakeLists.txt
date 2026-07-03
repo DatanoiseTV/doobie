@@ -197,26 +197,32 @@ if(PROJECT_IS_TOP_LEVEL)
 
     # Offline preset-demo renderer (bounces the factory presets through a dry
     # source loop to WAVs + a manifest for the landing-page player, no DAW).
-    add_executable(doobie_render_demo tools/RenderDemo.cpp)
-    target_include_directories(doobie_render_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-    target_link_libraries(doobie_render_demo PRIVATE
-        Doobie
-        juce::juce_audio_utils
-        juce::juce_dsp
-        juce::juce_gui_extra
-        juce::juce_recommended_config_flags
-        juce::juce_recommended_warning_flags)
+    # Local-only dev tool: the source is not tracked yet, so guard on it so a
+    # clean checkout (CI) configures without it.
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tools/RenderDemo.cpp)
+        add_executable(doobie_render_demo tools/RenderDemo.cpp)
+        target_include_directories(doobie_render_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+        target_link_libraries(doobie_render_demo PRIVATE
+            Doobie
+            juce::juce_audio_utils
+            juce::juce_dsp
+            juce::juce_gui_extra
+            juce::juce_recommended_config_flags
+            juce::juce_recommended_warning_flags)
+    endif()
 
     # Hero-video audio renderer: plays a dry loop through the engine while
     # automating parameters from tools/hero-timeline.json (paired with the
-    # UI recorder in tools/record-hero.mjs).
-    add_executable(doobie_render_hero tools/RenderHero.cpp)
-    target_include_directories(doobie_render_hero PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-    target_link_libraries(doobie_render_hero PRIVATE
-        Doobie
-        juce::juce_audio_utils
-        juce::juce_dsp
-        juce::juce_gui_extra
-        juce::juce_recommended_config_flags
-        juce::juce_recommended_warning_flags)
+    # UI recorder in tools/record-hero.mjs). Local-only dev tool; guard as above.
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tools/RenderHero.cpp)
+        add_executable(doobie_render_hero tools/RenderHero.cpp)
+        target_include_directories(doobie_render_hero PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+        target_link_libraries(doobie_render_hero PRIVATE
+            Doobie
+            juce::juce_audio_utils
+            juce::juce_dsp
+            juce::juce_gui_extra
+            juce::juce_recommended_config_flags
+            juce::juce_recommended_warning_flags)
+    endif()
 endif()
