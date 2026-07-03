@@ -314,6 +314,10 @@ function App() {
 
   React.useEffect(() => {
     document.getElementById('root').classList.add('ready');
+    // Real health signal for the JUCE watchdog: this effect runs only after a
+    // successful first commit, so __doobieReady is true iff the UI actually
+    // mounted — not on an unconditional timer (see the mount block below).
+    window.__doobieReady = true;
     const el = rootRef.current; if (!el) return;
     const fit = () => {
       // Match index.html's scaler: divide by the plugin's natural rendered
@@ -465,18 +469,35 @@ function App() {
   );
 }
 
-// Fail-loud mount. If React throws synchronously during the first render,
-// surface it in the diag banner (the user sees something) and report it on
-// `window.__doobieMountError` so the JUCE-side health watchdog can pull it
-// via evaluateJavascript. `window.__doobieReady` is the alive-signal the
-// watchdog polls — it stays false if React never completes its first
-// commit, which is the exact failure mode that produces a blank window.
+// Fail-loud mount + health signal.
+//
+// React 18's createRoot().render() is ASYNCHRONOUS — a render-time throw
+// happens after this call returns, so the try/catch here only catches a
+// synchronous failure (e.g. React itself missing). A throw during rendering is
+// caught by <ErrorBoundary>, which reports it on window.__doobieMountError and
+// shows the diag banner. Crucially, window.__doobieReady is set from App's
+// post-commit effect (a genuine "mounted" signal), NOT unconditionally on a
+// timer — an earlier version fired setTimeout(0) regardless of success, so the
+// JUCE watchdog saw "ready" even over a blank window. Now it stays false unless
+// the first commit actually lands, which is the failure the watchdog polls for.
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { failed: false }; }
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(error) {
+    const msg = (error && (error.stack || error.message)) || String(error);
+    window.__doobieMountError = msg;
+    try {
+      const banner = document.getElementById('d-err');
+      if (banner) { banner.textContent = 'React error: ' + msg; banner.classList.add('on'); }
+    } catch (_) {}
+  }
+  render() { return this.state.failed ? null : this.props.children; }
+}
+
 try {
-  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  // Mark ready on the next macrotask so we don't claim "ready" before the
-  // very first commit has flushed. React's createRoot is asynchronous; the
-  // setTimeout(0) lets the initial paint land before the watchdog polls.
-  setTimeout(() => { window.__doobieReady = true; }, 0);
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    <ErrorBoundary><App /></ErrorBoundary>
+  );
 } catch (e) {
   const msg = (e && (e.stack || e.message)) || String(e);
   window.__doobieMountError = msg;
