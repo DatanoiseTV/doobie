@@ -320,8 +320,10 @@ function App() {
       // height, not a fixed 960 — the reverb column grows/shrinks by mode, and
       // a hard 960 clipped the tall modes. offsetHeight ignores our transform,
       // so this is stable.
-      const designH = el.offsetHeight || 960;
-      const s = Math.min(window.innerWidth / 1520, window.innerHeight / designH);
+      // DESIGN_H is fixed (matches #plugin's fixed height in doobie.css) so the
+      // scale is CONSTANT across reverb modes — a content-driven height rescaled
+      // the whole UI whenever a taller mode (Shimmer/Gated) grew the canvas.
+      const s = Math.min(window.innerWidth / 1520, window.innerHeight / 1048);
       // translate(-50%,-50%) centres #plugin by its own centre (position:absolute
       // at left/top 50%); scale() fits it. Centring here rather than via the
       // #stage grid avoids WebKit right-shifting an overflowing box when the

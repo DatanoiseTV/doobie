@@ -49,11 +49,14 @@ body{ font-family:var(--font); color:var(--c-txt); -webkit-font-smoothing:antial
     radial-gradient(120% 120% at 50% 0%, oklch(0.10 0.004 60) 0%, #000 80%);
 }
 #plugin{
-  /* Height is content-driven, not a fixed 960: the reverb column grows in the
-     Shimmer / Gated / Convolution modes, and a hard height with overflow:hidden
-     used to clip those controls and let them overlap the output bar. The
-     fit-to-window scaler (index.html + app.jsx) measures the actual rendered
-     height so the whole UI always scales to fit whatever the current mode needs. */
+  /* FIXED design size 1520x1048. The height is CONSTANT across reverb modes on
+     purpose: the tallest mode (Gated) needs ~1039px and Shimmer ~1023, so 1048
+     fits them all with margin. A constant height means the fit-to-window scale
+     (index.html + app.jsx, DESIGN_H = 1048) never changes when you switch
+     presets/modes — a content-driven height made the whole UI rescale and
+     letterbox whenever a taller mode grew the canvas. Shorter modes take up the
+     slack via `.body`'s `1fr` middle row. overflow:hidden clips any sub-pixel
+     spill so the scale stays stable. */
   /* Centre by our OWN geometry (absolute + translate(-50%,-50%)), NOT by the
      #stage grid's place-items. When the window is narrower than the 1520px
      design width the unscaled box is wider than the viewport, and WebKit (the
@@ -62,7 +65,7 @@ body{ font-family:var(--font); color:var(--c-txt); -webkit-font-smoothing:antial
      scaled UI and left a black gutter on the left. Positioning from our own
      centre is immune to that overflow-alignment quirk. The fit scalers
      (index.html + app.jsx) set `translate(-50%,-50%) scale(s)`. */
-  width:1520px; height:auto; position:absolute; left:50%; top:50%; transform-origin:center center;
+  width:1520px; height:1048px; position:absolute; left:50%; top:50%; transform-origin:center center;
   background:
     radial-gradient(140% 100% at 50% -10%, oklch(0.205 0.006 60) 0%, var(--c-bg) 55%, oklch(0.14 0.005 60) 100%);
   border-radius:18px;
@@ -141,10 +144,11 @@ body{ font-family:var(--font); color:var(--c-txt); -webkit-font-smoothing:antial
 .body{
   flex:1; min-height:0; display:grid;
   grid-template-columns: 392px 1fr 1fr;
-  /* Middle row is `auto` (not `1fr`): the columns take their natural height so
-     the canvas grows to fit them instead of clipping. The outbar then sits
-     directly below the tallest column. */
-  grid-template-rows: auto auto auto;
+  /* Middle row is `1fr`: the columns stretch to fill the fixed-height canvas
+     and the outbar is pinned to the bottom. The canvas is sized (1048px) for
+     the tallest reverb mode, so nothing clips; shorter modes absorb the slack
+     here rather than changing the overall height (which would rescale the UI). */
+  grid-template-rows: auto 1fr auto;
   gap:14px; padding:14px;
 }
 .flowbar{ grid-column:1 / -1; }
