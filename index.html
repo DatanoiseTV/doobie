@@ -105,14 +105,6 @@ nav .links a:not(.btn):hover::after{ right:0; }
 .btn-ghost{ color:var(--txt); border-color:var(--line); background:oklch(0.238 0.007 60 / .5); }
 .btn-ghost:hover{ border-color:var(--amber-dim); color:var(--amber); }
 nav .btn{ padding:8px 15px; font-size:13px; }
-.tapecount{
-  display:inline-flex; align-items:center; gap:7px;
-  font-family:var(--mono); font-size:11.5px; letter-spacing:0.14em;
-  color:var(--txt-3); user-select:none;
-}
-.tapecount b{ font-weight:500; font-variant-numeric:tabular-nums; min-width:3ch; }
-.tapecount svg{ display:block; }
-@media(max-width:860px){ .tapecount{ display:none; } }
 @media(max-width:720px){ nav .links a:not(.btn){ display:none; } }
 #pgbar{
   position:fixed; top:0; left:0; height:2px; width:0; z-index:60; pointer-events:none;
@@ -838,7 +830,6 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
       <a href="#features">Features</a>
       <a href="#specs">Specs</a>
       <a href="https://github.com/DatanoiseTV/doobie" target="_blank" rel="noopener">Source</a>
-      <span id="tapecount" class="tapecount" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.6" fill="none" stroke="currentColor" stroke-width="1.2"/><line x1="7" y1="1.4" x2="7" y2="4.4" stroke="currentColor" stroke-width="1.2"/></svg><b>000</b></span>
       <a class="btn btn-amber" href="#download">Download</a>
     </div>
   </div>
@@ -1623,20 +1614,15 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
   audio.addEventListener('ended', function(){ mark(cur, false); });
 })();
 
-/* nav tape counter + progress hairline: scroll position as transport */
+/* scroll progress hairline */
 (function(){
-  var el = document.getElementById('tapecount');
   var bar = document.getElementById('pgbar');
-  if(!el && !bar) return;
-  var num = el && el.querySelector('b'), reel = el && el.querySelector('svg');
+  if(!bar) return;
   var raf = 0;
   function update(){
     raf = 0;
     var max = document.documentElement.scrollHeight - innerHeight;
-    var pct = max > 0 ? (scrollY / max * 100) : 0;
-    if(num) num.textContent = String(Math.round(pct)).padStart(3, '0');
-    if(reel) reel.style.transform = 'rotate(' + (scrollY / 4) + 'deg)';
-    if(bar) bar.style.width = pct + '%';
+    bar.style.width = (max > 0 ? (scrollY / max * 100) : 0) + '%';
   }
   addEventListener('scroll', function(){ if(!raf) raf = requestAnimationFrame(update); }, { passive:true });
   update();
@@ -1813,6 +1799,13 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
       if(cur >= 0) m.presets[cur]._el.classList.toggle('playing', playing);
     }
     function warmNext(i){ pre.src = base + m.presets[(i+1) % m.presets.length].file; }
+    /* keep the active row visible by scrolling ONLY the list — never the page
+       (scrollIntoView would yank the viewport back on every auto-advance) */
+    function revealInList(el){
+      var lr = list.getBoundingClientRect(), er = el.getBoundingClientRect();
+      if(er.top < lr.top) list.scrollTop += er.top - lr.top - 40;
+      else if(er.bottom > lr.bottom) list.scrollTop += er.bottom - lr.bottom + 8;
+    }
     var infoCard = document.getElementById('pl-info');
     var dryNote = infoCard ? infoCard.querySelector('.pi-drynote') : null;
     function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -1878,7 +1871,7 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
       cur = i;
       var p = m.presets[i];
       p._el.classList.add('active');
-      if(!noScroll) p._el.scrollIntoView({ block:'nearest' });
+      if(!noScroll) revealInList(p._el);
       showPreset(p);
       audio.src = base + p.file;
       warmNext(i);
