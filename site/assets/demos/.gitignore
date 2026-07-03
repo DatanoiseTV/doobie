@@ -1,0 +1,3 @@
+# Rendered demo banks (~100 MB) live only on gh-pages.
+# Regenerate: tools/render-demos.sh <key> <source> [bpm]
+*/
