@@ -1,8 +1,25 @@
 {
   "sources": [
-    { "key": "rhodes", "label": "Rhodes",    "default": true },
-    { "key": "vocals", "label": "Vocal (M)" },
-    { "key": "vocalf", "label": "Vocal (F)" },
-    { "key": "acid",   "label": "Acid Bass" }
+    {
+      "key": "rhodes",
+      "label": "Rhodes",
+      "default": true
+    },
+    {
+      "key": "vocals",
+      "label": "Vocal (M)"
+    },
+    {
+      "key": "vocalf",
+      "label": "Vocal (F)"
+    },
+    {
+      "key": "acid",
+      "label": "Acid Bass"
+    },
+    {
+      "key": "guitar",
+      "label": "Guitar"
+    }
   ]
 }
