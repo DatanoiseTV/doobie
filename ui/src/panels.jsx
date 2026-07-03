@@ -909,7 +909,7 @@ function ModDrawer({ open, onClose, p, setP, matrix, setMx, numSlots, levels }) 
             </div>
             :
             <div className="modcard">
-              <div className="subhead" style={{ display: 'grid', gridTemplateColumns: '24px 1fr 56px 22px 1fr 56px 1.2fr 64px', gap: 10 }}>
+              <div className="subhead" style={{ display: 'grid', gridTemplateColumns: '24px 1fr 56px 22px 1fr 70px 1.2fr 64px', gap: 10 }}>
                 <span>#</span><span>Source</span><span>Scope</span><span /><span>Destination</span><span>Mode</span><span>Amount</span><span style={{ textAlign: 'right' }}>Value</span>
               </div>
               {matrix.map((m, i) =>

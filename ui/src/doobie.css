@@ -471,7 +471,9 @@ body{ font-family:var(--font); color:var(--c-txt); -webkit-font-smoothing:antial
 .mm-row{ display:grid; grid-template-columns:24px 1fr 22px 1fr 1.2fr 64px; gap:10px; align-items:center; padding:5px 0; }
 /* When the matrix row carries an inline source scope (Sources column
    between Source and the arrow). Adds a 56-px scope cell. */
-.mm-row-scoped{ grid-template-columns:24px 1fr 56px 22px 1fr 56px 1.2fr 64px; }
+/* MODE column is 70px (not 56): the Bi/Uni segmented control is ~60px wide,
+   so 56 squished it and clipped "UNI". Header grid in panels.jsx matches. */
+.mm-row-scoped{ grid-template-columns:24px 1fr 56px 22px 1fr 70px 1.2fr 64px; }
 .mm-mode-seg{ height:22px; padding:2px; }
 .mm-mode-seg button{ font-size:9.5px; padding:0 6px; height:18px; min-width:0; }
 .mm-scope{ width:56px; height:22px; display:flex; align-items:center; justify-content:center; }
