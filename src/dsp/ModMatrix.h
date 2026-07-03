@@ -92,7 +92,12 @@ enum class ModDest : int
 
 inline juce::StringArray modSourceNames()
 {
-    return { "Off", "LFO 1", "LFO 2", "Env" };
+    // MUST list every ModSource in enum order — the slot Source choice param is
+    // built from this and the audio thread casts the choice index straight to
+    // ModSource. A short list (this used to stop at "Env" as index 3) makes the
+    // index and the enum disagree: "Env" landed on Lfo3, and Lfo3/Lfo4/Env were
+    // unreachable. Keep in sync with MOD_SOURCES in ui/src/juce-bridge.jsx.
+    return { "Off", "LFO 1", "LFO 2", "LFO 3", "LFO 4", "Env" };
 }
 
 inline juce::StringArray modDestNames()

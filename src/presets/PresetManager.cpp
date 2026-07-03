@@ -63,7 +63,11 @@ namespace
     // Source / dest indices follow doobie::ModSource / doobie::ModDest in
     // src/dsp/ModMatrix.h. We use ints here because PresetManager values are
     // floats stored as ints in the APVTS choice params.
-    enum { SrcOff = 0, SrcLfo1 = 1, SrcLfo2 = 2, SrcEnv = 3 };
+    // Must match doobie::ModSource exactly: Env is 5, not 3. Before the
+    // modSourceNames() fix the Source choice list stopped at index 3, so the
+    // presets below that ask for SrcEnv were silently routing Lfo3 (an LFO)
+    // instead of the envelope follower.
+    enum { SrcOff = 0, SrcLfo1 = 1, SrcLfo2 = 2, SrcLfo3 = 3, SrcLfo4 = 4, SrcEnv = 5 };
     // Plugin ModDest indices (must mirror src/dsp/ModMatrix.h's enum order).
     // The hardware appends 7 destinations the plugin didn't have; we keep the
     // same names + add them in the same order at the end of the enum.
