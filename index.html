@@ -238,27 +238,9 @@ h1 .grad::after { transform:translate(.115em, .105em); opacity:.15; filter:blur(
 }
 @keyframes breathe{ from{ opacity:.30; transform:scale(.97); } to{ opacity:.62; transform:scale(1.03); } }
 @media(max-width:760px){ .shot::before{ inset:-36px 0; } }
-/* ground reflection (WebKit/Blink; others just skip it) */
-@media(min-width:760px){
-  .shot video, .shot > img{
-    -webkit-box-reflect: below 12px linear-gradient(transparent 76%, rgba(0,0,0,.20));
-  }
-}
 /* pointer parallax gets per-frame transforms — keep only opacity on the reveal */
 .hero .shot{ will-change:transform; }
 .hero .shot.in{ transition:opacity .6s ease; }
-/* periodic specular sweep across the glass */
-.shot .sheen{ position:absolute; inset:10px; z-index:2; border-radius:9px; overflow:hidden; pointer-events:none; }
-.shot .sheen::before{
-  content:""; position:absolute; top:-25%; bottom:-25%; left:0; width:20%;
-  background:linear-gradient(105deg, transparent, oklch(0.92 0.04 80 / .065) 50%, transparent);
-  transform:skewX(-14deg) translateX(-160%);
-  animation:sheen 11s ease-in-out infinite;
-}
-@keyframes sheen{
-  0%, 58%{ transform:skewX(-14deg) translateX(-160%); }
-  74%, 100%{ transform:skewX(-14deg) translateX(760%); }
-}
 .shot img, .shot video{ border-radius:9px; width:100%; height:auto; aspect-ratio:3040 / 1920; display:block; }
 .shot-sound{
   position:absolute; right:22px; bottom:22px; z-index:2;
@@ -821,7 +803,6 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
 @media(prefers-reduced-motion:reduce){
   .reveal{ opacity:1; transform:none; transition:none; }
   .sec-head.reveal .sec-tag, .sec-head.reveal h2, .sec-head.reveal p{ opacity:1; transform:none; transition:none; }
-  .shot .sheen::before{ animation:none; }
   html{ scroll-behavior:auto; }
   .hero .wrap > *, h1 .grad::before, h1 .grad::after,
   .tapeline .reel, .tapeline .tl-track, .tapeline .tl-dot,
@@ -886,7 +867,6 @@ footer .lic a{ color:var(--txt-2); border-bottom:1px solid var(--line); }
     </div>
 
     <div class="shot reveal">
-      <i class="sheen" aria-hidden="true"></i>
       <video id="hero-video" muted loop playsinline preload="metadata"
              poster="assets/doobie-hero-poster.jpg" width="2280" height="1440"
              aria-label="Doobie playing a dub performance: heads punching in, feedback riding up, the reverb route switching, and a buffer freeze — every knob move rendered through the real engine.">
