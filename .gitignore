@@ -23,3 +23,10 @@ Thumbs.db
 TODO.md
 STRUCTURE.md
 CLAUDE.md
+
+# Generated landing-page media (produced by tools/render-demos.sh and
+# tools/record-hero.mjs). The site source is committed; the demo audio and
+# hero video are deployed separately, not stored in git history.
+site/assets/**/*.mp3
+site/assets/**/*.wav
+site/assets/**/*.mp4
