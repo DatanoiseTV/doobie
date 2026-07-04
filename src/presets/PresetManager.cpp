@@ -106,23 +106,21 @@ namespace
     PV envRel   (float ms)         { return { dID::envRelease, ms }; }
     PV envSens  (float v)          { return { dID::envSens,    v }; }
 
-    // Concatenate helper.
+    // Concatenate helper — glues a raw brace-list to singleHead()/tone()/mod()
+    // chains (a + b appends b's PVs after a's; later PVs for the same ID win).
     std::vector<PV> operator+ (std::vector<PV> a, const std::vector<PV>& b)
-    {
-        a.insert (a.end(), b.begin(), b.end());
-        return a;
-    }
-    std::vector<PV>& operator+= (std::vector<PV>& a, const std::vector<PV>& b)
     {
         a.insert (a.end(), b.begin(), b.end());
         return a;
     }
 
     // ---- The factory bank ---------------------------------------------------
-    // Ported from /Users/syso/dev/Keinedelay2.1_DFM/src/dub/Presets.cpp (the
-    // hardware Keinedelay/DFM build). 64 curated presets exercising every
-    // corner of the engine: dub voices, ambient washes, modulated filters,
-    // phaser routings, frozen pads, gated 80s, octave shimmer.
+    // 128 curated presets exercising every corner of the engine: dub voices,
+    // ambient washes, modulated filters, phaser routings, frozen pads, gated
+    // 80s, octave shimmer, pitch/granular textures, rhythmic multi-taps,
+    // self-oscillating feedback drones, lo-fi tape degrade, and stereo utility.
+    // Presets 0..79 were ported from the hardware Keinedelay/DFM build's
+    // Presets.cpp; 80..127 fill the coverage gaps (see the 80.. bank header).
     //
     // Each entry only lists overrides; PresetManager::applyPreset resets
     // every APVTS parameter to its default first. Helpers above map the
@@ -138,7 +136,7 @@ namespace
         P ("Classic Dub", std::vector<PV>{
             { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
             { dID::delayMode, 1 }, { dID::feedback, 0.68f },
-            { dID::drive, 0.45f }, { dID::hiss, 0.22f }, { dID::wow, 0.2f },
+            { dID::drive, 0.45f }, { dID::hiss, 0.4f }, { dID::wow, 0.2f },
             { dID::reverbMode, (float) hwRev (1) }, { dID::reverbRoute, 2 },
             { dID::reverbMix, 0.40f }, { dID::springDecay, 0.6f },
             { dID::mix, 0.42f },
@@ -147,8 +145,8 @@ namespace
         // 1: King Tubby
         P ("King Tubby", std::vector<PV>{
             { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
-            { dID::delayMode, 1 }, { dID::feedback, 0.78f },
-            { dID::drive, 0.55f }, { dID::hiss, 0.35f }, { dID::wow, 0.3f },
+            { dID::delayMode, 1 }, { dID::feedback, 0.75f },
+            { dID::drive, 0.55f }, { dID::hiss, 0.5f }, { dID::wow, 0.3f },
             { dID::hpFreq, 180.0f },
             { dID::reverbMode, (float) hwRev (1) }, { dID::reverbRoute, 2 },
             { dID::reverbMix, 0.45f }, { dID::springDecay, 0.65f },
@@ -329,7 +327,7 @@ namespace
         // 19: Filter Sweep
         P ("Filter Sweep", std::vector<PV>{
             { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
-            { dID::delayMode, 1 }, { dID::feedback, 0.66f }, { dID::drive, 0.4f },
+            { dID::delayMode, 1 }, { dID::feedback, 0.6f }, { dID::drive, 0.4f }, { dID::hiss, 0.35f },
             { dID::inFilterOn, 1 }, { dID::inFilterType, 0 },
             { dID::inFilterCutoff, 1600.0f }, { dID::inFilterRes, 0.45f },
             lfoRate (0, 0.07f), lfoDepth (0, 1.0f), lfoWave (0, 0),
@@ -400,7 +398,7 @@ namespace
         // 26: Liquid Filter
         P ("Liquid Filter", std::vector<PV>{
             { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
-            { dID::delayMode, 1 }, { dID::feedback, 0.66f }, { dID::drive, 0.4f },
+            { dID::delayMode, 1 }, { dID::feedback, 0.6f }, { dID::drive, 0.4f }, { dID::hiss, 0.35f },
             { dID::inFilterOn, 1 }, { dID::inFilterType, 0 },
             { dID::inFilterCutoff, 800.0f }, { dID::inFilterRes, 0.5f },
             lfoRate (0, 0.10f), lfoWave (0, 0),
@@ -481,7 +479,7 @@ namespace
         // 32: Dub Siren
         P ("Dub Siren", std::vector<PV>{
             { dID::delayMode, 2 }, { dID::syncMode, 1 }, { dID::syncDiv, 9 }, { dID::timeMs, 375.0f },
-            { dID::feedback, 0.72f }, { dID::wow, 0.2f },
+            { dID::feedback, 0.68f }, { dID::wow, 0.2f }, { dID::hiss, 0.4f },
             lfoRate (0, 1.2f), lfoWave (0, 0),
             { dID::reverbMode, (float) hwRev (1) }, { dID::reverbRoute, 2 },
             { dID::reverbMix, 0.35f }, { dID::mix, 0.45f },
@@ -507,11 +505,11 @@ namespace
         // 35: Self Osc
         P ("Self Osc", std::vector<PV>{
             { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
-            { dID::feedback, 0.95f }, { dID::drive, 0.4f },
-            lfoRate (0, 0.2f), lfoWave (0, 0),
+            { dID::feedback, 0.95f }, { dID::drive, 0.4f }, { dID::hiss, 0.55f },
+            lfoRate (0, 0.3f), lfoWave (0, 0),
             { dID::reverbMode, (float) hwRev (1) }, { dID::reverbRoute, 2 },
             { dID::reverbMix, 0.3f }, { dID::mix, 0.4f },
-        } + singleHead() + tone (3000.0f) + mod (0, SrcLfo1, DstFeedback, 0.2f));
+        } + singleHead() + tone (3000.0f) + mod (0, SrcLfo1, DstFeedback, 0.5f));
 
         // 36: Endless Pad
         P ("Endless Pad", std::vector<PV>{
@@ -583,7 +581,7 @@ namespace
         // 42: Random Filter
         P ("Random Filter", std::vector<PV>{
             { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 8 }, { dID::timeMs, 333.0f },
-            { dID::feedback, 0.55f },
+            { dID::feedback, 0.55f }, { dID::hiss, 0.35f },
             { dID::inFilterOn, 1 }, { dID::inFilterType, 0 },
             { dID::inFilterCutoff, 1500.0f }, { dID::inFilterRes, 0.6f },
             lfoRate (0, 4.0f), lfoWave (0, 5),
@@ -603,7 +601,7 @@ namespace
         // 44: Acid
         P ("Acid", std::vector<PV>{
             { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 8 }, { dID::timeMs, 300.0f },
-            { dID::feedback, 0.6f },
+            { dID::feedback, 0.55f }, { dID::hiss, 0.4f },
             { dID::inFilterOn, 1 }, { dID::inFilterType, 2 },
             { dID::inFilterCutoff, 700.0f }, { dID::inFilterRes, 0.75f },
             lfoRate (0, 0.5f), lfoWave (0, 3),
@@ -625,7 +623,7 @@ namespace
         // 46: Downsweep
         P ("Downsweep", std::vector<PV>{
             { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
-            { dID::feedback, 0.66f }, { dID::drive, 0.4f },
+            { dID::feedback, 0.6f }, { dID::drive, 0.4f }, { dID::hiss, 0.35f },
             { dID::inFilterOn, 1 }, { dID::inFilterType, 0 },
             { dID::inFilterCutoff, 3000.0f }, { dID::inFilterRes, 0.45f },
             lfoRate (0, 0.3f), lfoWave (0, 3),
@@ -888,7 +886,7 @@ namespace
             { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
             { dID::delayMode, 1 }, { dID::feedback, 0.62f },
             { dID::preHpFreq, 120.0f }, { dID::drive, 0.32f },
-            { dID::wow, 0.18f }, { dID::flutter, 0.08f }, { dID::hiss, 0.15f },
+            { dID::wow, 0.18f }, { dID::flutter, 0.08f }, { dID::hiss, 0.35f },
             { dID::reverbMode, (float) hwRev (1) }, { dID::reverbRoute, 2 },
             { dID::reverbMix, 0.38f }, { dID::springDecay, 0.55f },
             { dID::mix, 0.36f },
@@ -948,7 +946,10 @@ namespace
 
         // 74: Cathedral Vox — long, dense gothic-cathedral reverb for solo
         // sustained vocals. No delay; the predelay + tail do the work.
-        P ("Cathedral", std::vector<PV>{
+        // Named "Cathedral Vox" (not "Cathedral") so it doesn't collide with
+        // preset 6 — loadByName returns the first match, so a duplicate name
+        // makes this patch unreachable by name.
+        P ("Cathedral Vox", std::vector<PV>{
             { dID::syncMode, 0 }, { dID::delayBypass, 1 },
             { dID::preHpFreq, 100.0f },
             { dID::reverbMode, (float) hwRev (5) }, { dID::reverbRoute, 0 },
@@ -1025,6 +1026,589 @@ namespace
             { dID::reverbMix, 0.25f }, { dID::plateDecay, 0.55f }, { dID::platePredelay, 30.0f },
             { dID::width, 1.4f }, { dID::mix, 0.42f },
         } + singleHead());
+
+        // ====================================================================
+        // 80..127: Second wave — fills the coverage gaps found in the 0..79
+        // bank (dub deepening, pitch/granular, rhythmic-sync, feedback drones,
+        // lo-fi degrade, clean stereo utility, and more gated/80s) to reach a
+        // round 128 factory patches. New patches use the plugin's reverbMode
+        // indices directly (no hwRev port helper): 1=Spring, 2=Plate,
+        // 3=Spring>Plate, 4=Spring+Plate, 5=Hall, 6=Shimmer, 8=Gated.
+        //
+        // The 100..104 "feedback drone" group runs feedback at or above 1.0
+        // (self-oscillation). Each carries enough AGE (the `hiss` macro:
+        // dropouts + progressive HF loss + instability, applied inside the
+        // feedback loop) that the oscillation breaks up and darkens instead of
+        // holding a sterile runaway tone — verified by a 30 s offline render
+        // of every preset (tools/StabilityCheck.cpp) that flags any patch whose
+        // level is still climbing at the end of the window.
+        // ====================================================================
+
+        // ---- Dub deepening (80..86) ----------------------------------------
+
+        // 80: BBD Dub — bucket-brigade grit, high-passed for a riddim pocket.
+        P ("BBD Dub", std::vector<PV>{
+            { dID::delayMode, 2 }, { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
+            { dID::feedback, 0.65f }, { dID::drive, 0.4f }, { dID::wow, 0.25f }, { dID::hiss, 0.4f },
+            { dID::hpFreq, 140.0f },
+            { dID::reverbMode, 1 }, { dID::reverbRoute, 2 },
+            { dID::reverbMix, 0.4f }, { dID::springDecay, 0.6f },
+            { dID::mix, 0.42f },
+        } + singleHead() + tone (2400.0f));
+
+        // 81: Dub Plate — plate sitting in the feedback loop so the wash grows
+        // over each repeat. The classic "plate dub" tail.
+        P ("Dub Plate", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
+            { dID::feedback, 0.68f }, { dID::drive, 0.4f }, { dID::wow, 0.2f },
+            { dID::reverbMode, 2 }, { dID::reverbRoute, 2 },
+            { dID::reverbMix, 0.42f }, { dID::plateDecay, 0.7f }, { dID::plateSize, 0.75f },
+            { dID::mix, 0.42f },
+        } + singleHead() + tone (2600.0f));
+
+        // 82: HP Riddim — high-passed 1/8 steppers, tight and dry-ish for the
+        // upbeat skank.
+        P ("HP Riddim", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 7 }, { dID::timeMs, 250.0f },
+            { dID::feedback, 0.66f }, { dID::drive, 0.45f }, { dID::wow, 0.22f }, { dID::hiss, 0.4f },
+            { dID::hpFreq, 240.0f },
+            { dID::reverbMode, 1 }, { dID::reverbRoute, 2 },
+            { dID::reverbMix, 0.35f }, { dID::springDecay, 0.55f },
+            { dID::mix, 0.4f },
+        } + singleHead() + tone (2600.0f));
+
+        // 83: Melodica Echo — bright dotted-quarter spring echo, Augustus-Pablo
+        // lead voice.
+        P ("Melodica Echo", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 12 }, { dID::timeMs, 750.0f },
+            { dID::feedback, 0.6f }, { dID::drive, 0.35f }, { dID::wow, 0.25f }, { dID::hiss, 0.35f },
+            { dID::reverbMode, 1 }, { dID::reverbRoute, 2 },
+            { dID::reverbMix, 0.38f }, { dID::springDecay, 0.6f },
+            { dID::mix, 0.42f },
+        } + singleHead() + tone (3400.0f));
+
+        // 84: Dubwise Steppers — triplet ping-pong, two heads bouncing L/R.
+        P ("Dubwise Steppers", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 8 }, { dID::timeMs, 333.0f },
+            { dID::feedback, 0.6f }, { dID::pingPong, 1 }, { dID::drive, 0.4f }, { dID::wow, 0.2f }, { dID::hiss, 0.4f },
+            ho (0, true), hl (0, 0.9f), hr (0, 1.0f),  hp (0, -0.5f),
+            ho (1, true), hl (1, 0.7f), hr (1, 0.5f),  hp (1,  0.5f),
+            ho (2, false), ho (3, false),
+            { dID::reverbMode, 1 }, { dID::reverbRoute, 2 },
+            { dID::reverbMix, 0.34f }, { dID::springDecay, 0.58f },
+            { dID::mix, 0.42f },
+        } + tone (2800.0f));
+
+        // 85: Tape Dub Wobble — wobbly quarter dub with an LFO nudging the
+        // delay time for drunk-tape pitch drift.
+        P ("Tape Dub Wobble", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
+            { dID::feedback, 0.7f }, { dID::wow, 0.5f }, { dID::flutter, 0.4f }, { dID::drive, 0.45f },
+            { dID::hiss, 0.3f },
+            lfoRate (0, 0.5f), lfoWave (0, 0),
+            { dID::reverbMode, 1 }, { dID::reverbRoute, 2 },
+            { dID::reverbMix, 0.35f }, { dID::springDecay, 0.6f },
+            { dID::mix, 0.42f },
+        } + singleHead() + tone (2500.0f) + mod (0, SrcLfo1, DstDelayTime, 0.2f));
+
+        // 86: Sub Bass Dub — half-note sub-heavy dub, plate in feedback,
+        // strong feedback for a deep pressure-drop tail.
+        P ("Sub Bass Dub", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::timeMs, 1000.0f },
+            { dID::feedback, 0.7f }, { dID::drive, 0.45f }, { dID::wow, 0.2f }, { dID::hiss, 0.35f },
+            { dID::hpFreq, 45.0f },
+            { dID::reverbMode, 2 }, { dID::reverbRoute, 2 },
+            { dID::reverbMix, 0.4f }, { dID::plateDecay, 0.6f },
+            { dID::mix, 0.42f },
+        } + singleHead() + tone (2200.0f));
+
+        // ---- Shimmer / pitch / granular (87..93) ---------------------------
+
+        // 87: Sub Shimmer — octave-DOWN shimmer, a subterranean pad under the
+        // source. Fills the "-12 shimmer" gap.
+        P ("Sub Shimmer", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::timeMs, 1000.0f },
+            { dID::feedback, 0.4f },
+            { dID::reverbMode, 6 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.6f }, { dID::plateDecay, 0.85f }, { dID::plateSize, 0.85f },
+            { dID::plateDamp, 0.45f }, { dID::reverbMod, 0.4f }, { dID::shimmerSemis, -12.0f },
+            { dID::width, 1.4f }, { dID::mix, 0.5f },
+        } + singleHead() + tone (5000.0f));
+
+        // 88: Octave Cloud — dense +12 shimmer with slow pan drift, a rising
+        // cloud of overtones.
+        P ("Octave Cloud", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::timeMs, 1000.0f },
+            { dID::feedback, 0.5f },
+            { dID::reverbMode, 6 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.62f }, { dID::plateDecay, 0.88f }, { dID::plateSize, 0.9f },
+            { dID::plateDamp, 0.35f }, { dID::reverbMod, 0.5f }, { dID::shimmerSemis, 12.0f },
+            { dID::width, 1.4f },
+            lfoRate (0, 0.05f), lfoWave (0, 1),
+            { dID::mix, 0.52f },
+        } + singleHead() + tone (6500.0f) + mod (0, SrcLfo1, DstPan, 0.6f));
+
+        // 89: Detuned Shimmer — heavy reverb-mod detune on a +12 shimmer for a
+        // seasick, chorused sparkle.
+        P ("Detuned Shimmer", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::timeMs, 1000.0f },
+            { dID::feedback, 0.45f },
+            { dID::reverbMode, 6 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.6f }, { dID::plateDecay, 0.85f }, { dID::plateSize, 0.8f },
+            { dID::plateDamp, 0.4f }, { dID::reverbMod, 0.85f }, { dID::shimmerSemis, 12.0f },
+            { dID::width, 1.4f }, { dID::mix, 0.5f },
+        } + singleHead() + tone (6000.0f));
+
+        // 90: Granular Smear — granular pitch engine at unison + spread, feeds
+        // a plate; the grains blur the repeats into a texture.
+        P ("Granular Smear", std::vector<PV>{
+            { dID::delayMode, 4 }, { dID::pitchOn, 1 }, { dID::pitchAlgo, 1 /* granular */ },
+            { dID::pitchSemis, 0.0f }, { dID::pitchSpread, 40.0f },
+            { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
+            { dID::feedback, 0.55f },
+            { dID::reverbMode, 2 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.45f }, { dID::plateDecay, 0.75f }, { dID::plateSize, 0.85f },
+            { dID::width, 1.3f }, { dID::mix, 0.5f },
+        } + singleHead() + tone (5000.0f));
+
+        // 91: Reverse Bloom — diffuse smear + a big pre-route plate with a slow
+        // LFO swelling the plate size, an in-breath reverse-ish bloom.
+        P ("Reverse Bloom", std::vector<PV>{
+            { dID::delayMode, 3 }, { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::timeMs, 1000.0f },
+            { dID::feedback, 0.5f }, { dID::duck, 0.4f },
+            { dID::reverbMode, 2 }, { dID::reverbRoute, 1 },
+            { dID::reverbMix, 0.6f }, { dID::plateDecay, 0.85f }, { dID::plateSize, 0.7f },
+            { dID::reverbMod, 0.35f },
+            { dID::width, 1.4f },
+            lfoRate (0, 0.06f), lfoWave (0, 2),
+            { dID::mix, 0.55f },
+        } + singleHead() + tone (7000.0f) + mod (0, SrcLfo1, DstPlateSize, 0.6f));
+
+        // 92: Dual Interval Stack — granular pitch +7 (a fifth) with spread,
+        // plate; a Gregorian power-stack thickener on the tail.
+        P ("Dual Interval Stack", std::vector<PV>{
+            { dID::delayMode, 4 }, { dID::pitchOn, 1 }, { dID::pitchSemis, 7.0f },
+            { dID::pitchSpread, 25.0f },
+            { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
+            { dID::feedback, 0.5f },
+            { dID::reverbMode, 2 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.4f }, { dID::plateDecay, 0.7f }, { dID::plateSize, 0.8f },
+            { dID::width, 1.3f }, { dID::mix, 0.48f },
+        } + singleHead() + tone (5500.0f));
+
+        // 93: Pitch Riser — octave-up pitch delay with an LFO ramping the delay
+        // time; each repeat climbs, a Risset-style perpetual riser.
+        P ("Pitch Riser", std::vector<PV>{
+            { dID::delayMode, 4 }, { dID::pitchOn, 1 }, { dID::pitchSemis, 12.0f },
+            { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
+            { dID::feedback, 0.6f },
+            { dID::reverbMode, 2 }, { dID::reverbRoute, 2 },
+            { dID::reverbMix, 0.4f }, { dID::plateDecay, 0.7f },
+            { dID::width, 1.3f },
+            lfoRate (0, 0.12f), lfoWave (0, 2),
+            { dID::mix, 0.48f },
+        } + singleHead() + tone (5500.0f) + mod (0, SrcLfo1, DstDelayTime, 0.3f));
+
+        // ---- Rhythmic / tempo-synced (94..99) ------------------------------
+
+        // 94: Dotted Eighth — clean digital dotted-1/8 ping-pong, the U2/Edge
+        // rhythmic delay.
+        P ("Dotted Eighth", std::vector<PV>{
+            { dID::delayMode, 0 }, { dID::syncMode, 1 }, { dID::syncDiv, 9 }, { dID::timeMs, 375.0f },
+            { dID::feedback, 0.5f }, { dID::pingPong, 1 },
+            { dID::wow, 0.0f }, { dID::flutter, 0.0f },
+            { dID::reverbMode, 2 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.18f }, { dID::width, 1.3f }, { dID::mix, 0.4f },
+        } + singleHead() + tone (11000.0f));
+
+        // 95: Gallop 16th — fast 1/16 ping-pong gallop, tight and clean.
+        P ("Gallop 16th", std::vector<PV>{
+            { dID::delayMode, 0 }, { dID::syncMode, 1 }, { dID::syncDiv, 4 }, { dID::timeMs, 125.0f },
+            { dID::feedback, 0.45f }, { dID::pingPong, 1 },
+            { dID::wow, 0.0f }, { dID::flutter, 0.0f },
+            { dID::reverbMode, 2 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.15f }, { dID::width, 1.4f }, { dID::mix, 0.4f },
+        } + singleHead() + tone (10000.0f));
+
+        // 96: Polymeter Heads — four heads at 1/1, 3/4, 1/2, 1/3 of the base
+        // time, fanned across the stereo field: a cross-rhythmic tap cluster.
+        P ("Polymeter Heads", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
+            { dID::feedback, 0.5f }, { dID::drive, 0.3f },
+            ho (0, true), hl (0, 0.85f), hr (0, 1.0f),  hp (0, -0.7f),
+            ho (1, true), hl (1, 0.7f),  hr (1, 0.75f), hp (1, -0.25f),
+            ho (2, true), hl (2, 0.6f),  hr (2, 0.5f),  hp (2,  0.25f),
+            ho (3, true), hl (3, 0.5f),  hr (3, 0.33f), hp (3,  0.7f),
+            { dID::reverbMode, 2 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.25f }, { dID::width, 1.3f }, { dID::mix, 0.44f },
+        } + tone (4500.0f));
+
+        // 97: Cross Rhythm — triplet ping-pong against a straight source, wide.
+        P ("Cross Rhythm", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 5 }, { dID::timeMs, 166.0f },
+            { dID::feedback, 0.55f }, { dID::pingPong, 1 }, { dID::drive, 0.3f },
+            { dID::reverbMode, 1 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.28f }, { dID::width, 1.4f }, { dID::mix, 0.42f },
+        } + singleHead() + tone (5000.0f));
+
+        // 98: Triplet Steppers — 1/4-triplet three-head fan into an in-feedback
+        // spring; a rolling dub triplet.
+        P ("Triplet Steppers", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 8 }, { dID::timeMs, 333.0f },
+            { dID::feedback, 0.58f }, { dID::drive, 0.4f }, { dID::wow, 0.2f }, { dID::hiss, 0.45f },
+            ho (0, true), hl (0, 0.85f), hr (0, 1.0f),  hp (0, -0.5f),
+            ho (1, true), hl (1, 0.7f),  hr (1, 0.66f), hp (1,  0.0f),
+            ho (2, true), hl (2, 0.6f),  hr (2, 0.33f), hp (2,  0.5f),
+            ho (3, false),
+            { dID::reverbMode, 1 }, { dID::reverbRoute, 2 },
+            { dID::reverbMix, 0.32f }, { dID::springDecay, 0.55f }, { dID::mix, 0.42f },
+        } + tone (3200.0f));
+
+        // 99: Syncopated Taps — dotted-1/16 twin taps offset off the grid for a
+        // stuttering syncopation.
+        P ("Syncopated Taps", std::vector<PV>{
+            { dID::delayMode, 0 }, { dID::syncMode, 1 }, { dID::syncDiv, 6 }, { dID::timeMs, 187.0f },
+            { dID::feedback, 0.5f },
+            ho (0, true), hl (0, 0.9f), hr (0, 1.0f),  hp (0, -0.4f),
+            ho (1, true), hl (1, 0.7f), hr (1, 0.75f), hp (1,  0.4f),
+            ho (2, false), ho (3, false),
+            { dID::headOffset[1], 12.0f },
+            { dID::reverbMode, 2 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.2f }, { dID::width, 1.3f }, { dID::mix, 0.42f },
+        } + tone (9000.0f));
+
+        // ---- Feedback drones — self-oscillation (100..104) -----------------
+        // These run feedback >= 1.0. AGE (hiss) is dialled up so the oscillation
+        // decays / breaks up rather than holding a pure runaway tone; see the
+        // bank header note. The output leveler (on by default) is the second
+        // safety net. Values verified against tools/StabilityCheck.cpp.
+
+        // 100: Resonant Riser — self-oscillating tape with a resonant low-pass
+        // sweeping up; the pitch of the oscillation rides the filter.
+        P ("Resonant Riser", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
+            { dID::feedback, 1.0f }, { dID::drive, 0.4f }, { dID::hiss, 0.8f },
+            { dID::inFilterOn, 1 }, { dID::inFilterType, 0 },
+            { dID::inFilterCutoff, 600.0f }, { dID::inFilterRes, 0.7f },
+            lfoRate (0, 0.08f), lfoWave (0, 2),
+            lfoRate (1, 0.2f),  lfoWave (1, 0),
+            { dID::reverbMode, 1 }, { dID::reverbRoute, 2 },
+            { dID::reverbMix, 0.3f }, { dID::mix, 0.4f },
+        } + singleHead() + tone (3000.0f)
+          + mod (0, SrcLfo1, DstInFilterCutoff, 0.7f)
+          + mod (1, SrcLfo2, DstFeedback,       0.6f));
+
+        // 101: Filtered Self-Osc — feedback at unity with a dark feedback
+        // low-pass; the loop sings but the AGE HF-loss keeps folding it down.
+        P ("Filtered Self-Osc", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
+            { dID::feedback, 0.98f }, { dID::drive, 0.5f }, { dID::hiss, 0.8f },
+            { dID::lpFreq, 2200.0f },
+            lfoRate (0, 0.25f), lfoWave (0, 0),
+            { dID::reverbMode, 1 }, { dID::reverbRoute, 2 },
+            { dID::reverbMix, 0.3f }, { dID::mix, 0.4f },
+        } + singleHead() + tone (2400.0f) + mod (0, SrcLfo1, DstFeedback, 0.6f));
+
+        // 102: HP Buildup Drone — over-unity feedback with a rising high-pass;
+        // the drone thins out as the low end is walked away underneath it.
+        P ("HP Buildup Drone", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::timeMs, 1000.0f },
+            { dID::feedback, 1.0f }, { dID::drive, 0.45f }, { dID::hiss, 0.75f },
+            { dID::hpFreq, 120.0f },
+            lfoRate (0, 0.05f), lfoWave (0, 2),
+            { dID::reverbMode, 1 }, { dID::reverbRoute, 2 },
+            { dID::reverbMix, 0.3f }, { dID::mix, 0.42f },
+        } + singleHead() + tone (2600.0f) + mod (0, SrcLfo1, DstHpFreq, 0.6f));
+
+        // 103: Karplus Bloom — very short free-time loop near unity feedback,
+        // so the delay rings as a plucked pitch (Karplus-Strong). AGE detunes
+        // and decays the ring so it blooms rather than screaming.
+        P ("Karplus Bloom", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 0 }, { dID::timeMs, 9.0f },
+            { dID::feedback, 0.98f }, { dID::drive, 0.4f }, { dID::hiss, 0.55f },
+            { dID::wow, 0.3f },
+            { dID::reverbMode, 2 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.35f }, { dID::plateDecay, 0.6f },
+            { dID::width, 1.2f }, { dID::mix, 0.45f },
+        } + singleHead() + tone (4000.0f));
+
+        // 104: Infinite Feedback — the extreme: feedback well over unity into a
+        // plate. Heavy AGE + the leveler are what stop it being a sine to the
+        // ceiling; the character is a slowly-collapsing, darkening howl.
+        P ("Infinite Feedback", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
+            { dID::feedback, 1.05f }, { dID::drive, 0.5f }, { dID::hiss, 0.8f }, { dID::wow, 0.3f },
+            lfoRate (0, 0.18f), lfoWave (0, 0),
+            { dID::reverbMode, 2 }, { dID::reverbRoute, 2 },
+            { dID::reverbMix, 0.35f }, { dID::plateDecay, 0.7f },
+            { dID::mix, 0.4f },
+        } + singleHead() + tone (2600.0f) + mod (0, SrcLfo1, DstFeedback, 0.45f));
+
+        // ---- Lo-fi / degraded (105..109) -----------------------------------
+
+        // 105: VHS Warble — heavy wow/flutter, band-limited, with an LFO adding
+        // extra flutter for that tracking-error VHS wobble.
+        P ("VHS Warble", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 9 }, { dID::timeMs, 375.0f },
+            { dID::feedback, 0.55f }, { dID::wow, 0.7f }, { dID::flutter, 0.6f },
+            { dID::drive, 0.5f }, { dID::hiss, 0.5f }, { dID::preLpFreq, 3000.0f },
+            lfoRate (0, 1.3f), lfoWave (0, 0),
+            { dID::reverbMode, 1 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.25f }, { dID::mix, 0.44f },
+        } + singleHead() + tone (2400.0f) + mod (0, SrcLfo1, DstFlutter, 0.4f));
+
+        // 106: Vinyl Crackle — AGE cranked for maximum hiss/dropouts, dark and
+        // dusty; a worn-record delay.
+        P ("Vinyl Crackle", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
+            { dID::feedback, 0.5f }, { dID::wow, 0.35f }, { dID::flutter, 0.25f },
+            { dID::drive, 0.5f }, { dID::hiss, 0.85f }, { dID::preLpFreq, 4500.0f },
+            { dID::reverbMode, 1 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.25f }, { dID::mix, 0.42f },
+        } + singleHead() + tone (2300.0f));
+
+        // 107: Radio Dropout — an LFO sweeping AGE so the signal fades and
+        // stutters like a drifting AM station.
+        P ("Radio Dropout", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 9 }, { dID::timeMs, 375.0f },
+            { dID::feedback, 0.5f }, { dID::wow, 0.4f }, { dID::hiss, 0.6f },
+            { dID::preHpFreq, 300.0f }, { dID::preLpFreq, 3500.0f },
+            lfoRate (0, 0.3f), lfoWave (0, 5),
+            { dID::reverbMode, 1 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.2f }, { dID::mix, 0.44f },
+        } + singleHead() + tone (2400.0f) + mod (0, SrcLfo1, DstAge, 0.5f));
+
+        // 108: Half Speed — long varispeed-down tape: big wow, an LFO dragging
+        // the delay time for that spun-down-to-half-speed drift.
+        P ("Half Speed", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 0 }, { dID::timeMs, 700.0f },
+            { dID::feedback, 0.6f }, { dID::wow, 0.8f }, { dID::flutter, 0.4f },
+            { dID::drive, 0.55f }, { dID::hiss, 0.5f }, { dID::preLpFreq, 3200.0f },
+            lfoRate (0, 0.07f), lfoWave (0, 0),
+            { dID::reverbMode, 1 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.3f }, { dID::mix, 0.45f },
+        } + singleHead() + tone (2200.0f) + mod (0, SrcLfo1, DstDelayTime, 0.3f));
+
+        // 109: Broken Motor — capstan-failure extreme: maxed wow/flutter with
+        // an LFO on wow, barely holding pitch.
+        P ("Broken Motor", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 9 }, { dID::timeMs, 400.0f },
+            { dID::feedback, 0.5f }, { dID::wow, 0.95f }, { dID::flutter, 0.7f },
+            { dID::drive, 0.6f }, { dID::hiss, 0.7f }, { dID::preLpFreq, 3000.0f },
+            lfoRate (0, 0.25f), lfoWave (0, 0),
+            { dID::reverbMode, 1 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.3f }, { dID::mix, 0.45f },
+        } + singleHead() + tone (2100.0f) + mod (0, SrcLfo1, DstWow, 0.5f));
+
+        // ---- Clean / stereo utility (110..116) -----------------------------
+
+        // 110: Mix Slap — a dry, uncoloured ~90 ms slap for parallel mix use;
+        // no reverb, minimal feedback.
+        P ("Mix Slap", std::vector<PV>{
+            { dID::delayMode, 0 }, { dID::syncMode, 0 }, { dID::timeMs, 90.0f },
+            { dID::feedback, 0.12f }, { dID::wow, 0.0f }, { dID::flutter, 0.0f },
+            { dID::reverbMode, 0 }, { dID::mix, 0.35f },
+        } + singleHead() + tone (12000.0f));
+
+        // 111: Mid-Side Widener — two hard-panned unison heads and a wide
+        // stereo image; a clean doubler/widener utility.
+        P ("Mid-Side Widener", std::vector<PV>{
+            { dID::delayMode, 0 }, { dID::syncMode, 0 }, { dID::timeMs, 18.0f },
+            { dID::feedback, 0.0f },
+            ho (0, true), hl (0, 0.8f), hr (0, 1.0f),  hp (0, -1.0f),
+            ho (1, true), hl (1, 0.8f), hr (1, 0.99f), hp (1,  1.0f),
+            ho (2, false), ho (3, false),
+            { dID::headOffset[1], 0.4f },
+            { dID::reverbMode, 0 }, { dID::width, 1.8f }, { dID::mix, 0.5f },
+        });
+
+        // 112: Mono Thicken — a very short single-tap doubling for a fatter
+        // mono source; stays centred.
+        P ("Mono Thicken", std::vector<PV>{
+            { dID::delayMode, 0 }, { dID::syncMode, 0 }, { dID::timeMs, 22.0f },
+            { dID::feedback, 0.05f },
+            { dID::reverbMode, 0 }, { dID::width, 1.0f }, { dID::mix, 0.4f },
+        } + singleHead() + tone (11000.0f));
+
+        // 113: Haas Widener — a Haas pair (±12 ms, hard panned) for width
+        // without an audible repeat.
+        P ("Haas Widener", std::vector<PV>{
+            { dID::delayMode, 0 }, { dID::syncMode, 0 }, { dID::timeMs, 12.0f },
+            { dID::feedback, 0.0f },
+            ho (0, true), hl (0, 0.8f), hr (0, 1.0f),  hp (0, -1.0f),
+            ho (1, true), hl (1, 0.8f), hr (1, 1.0f),  hp (1,  1.0f),
+            ho (2, false), ho (3, false),
+            { dID::headOffset[0], -6.0f }, { dID::headOffset[1], 6.0f },
+            { dID::reverbMode, 0 }, { dID::width, 1.5f }, { dID::mix, 0.5f },
+        });
+
+        // 114: Stereo Cross-Feedback — ping-pong tape with high feedback for a
+        // long cross-panned bounce that fills the stereo field.
+        P ("Stereo Cross-Feedback", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 7 }, { dID::timeMs, 250.0f },
+            { dID::feedback, 0.7f }, { dID::pingPong, 1 }, { dID::drive, 0.35f },
+            { dID::reverbMode, 2 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.25f }, { dID::width, 1.6f }, { dID::mix, 0.42f },
+        } + singleHead() + tone (5000.0f));
+
+        // 115: Rotary Stereo — a fast triangle LFO panning the wet, a
+        // Leslie-style rotating image over a plate.
+        P ("Rotary Stereo", std::vector<PV>{
+            { dID::delayMode, 0 }, { dID::syncMode, 1 }, { dID::syncDiv, 7 }, { dID::timeMs, 250.0f },
+            { dID::feedback, 0.4f },
+            lfoRate (0, 5.5f), lfoWave (0, 1),
+            { dID::reverbMode, 2 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.25f }, { dID::width, 1.4f }, { dID::mix, 0.45f },
+        } + singleHead() + tone (7000.0f) + mod (0, SrcLfo1, DstPan, 0.85f));
+
+        // 116: Clean Hall — a pristine digital quarter into a bright hall; a
+        // no-nonsense ambience utility.
+        P ("Clean Hall", std::vector<PV>{
+            { dID::delayMode, 0 }, { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
+            { dID::feedback, 0.4f }, { dID::wow, 0.0f }, { dID::flutter, 0.0f },
+            { dID::reverbMode, 5 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.4f }, { dID::plateDecay, 0.8f }, { dID::plateSize, 0.85f },
+            { dID::plateDamp, 0.3f }, { dID::width, 1.4f }, { dID::mix, 0.45f },
+        } + singleHead() + tone (10000.0f));
+
+        // ---- Gated / 80s (117..120) ----------------------------------------
+
+        // 117: Big Snare Gate — the Collins/Hugh-Padgham gated ambience: a big
+        // plate slammed shut by the gate, short slap in front.
+        P ("Big Snare Gate", std::vector<PV>{
+            { dID::delayMode, 0 }, { dID::syncMode, 0 }, { dID::timeMs, 60.0f },
+            { dID::feedback, 0.1f },
+            { dID::reverbMode, 8 /* gated */ }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.6f }, { dID::plateDecay, 0.9f }, { dID::plateSize, 0.8f },
+            { dID::plateDamp, 0.2f },
+            { dID::gateThreshold, -24.0f }, { dID::gateHold, 140.0f }, { dID::gateRelease, 6.0f },
+            { dID::width, 1.3f }, { dID::mix, 0.5f },
+        } + singleHead() + tone (9000.0f));
+
+        // 118: Reverse Gate — a long gate hold with a slow release fakes a
+        // swelling reverse-reverb envelope.
+        P ("Reverse Gate", std::vector<PV>{
+            { dID::delayMode, 0 }, { dID::syncMode, 0 }, { dID::timeMs, 80.0f },
+            { dID::feedback, 0.1f },
+            { dID::reverbMode, 8 /* gated */ }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.6f }, { dID::plateDecay, 0.9f }, { dID::plateSize, 0.85f },
+            { dID::plateDamp, 0.25f },
+            { dID::gateThreshold, -30.0f }, { dID::gateHold, 300.0f }, { dID::gateRelease, 120.0f },
+            { dID::width, 1.4f }, { dID::mix, 0.5f },
+        } + singleHead() + tone (8000.0f));
+
+        // 119: Stutter Gate — a fast square LFO chopping the output over a
+        // gated plate; a rhythmic 80s stutter.
+        P ("Stutter Gate", std::vector<PV>{
+            { dID::delayMode, 0 }, { dID::syncMode, 1 }, { dID::syncDiv, 7 }, { dID::timeMs, 250.0f },
+            { dID::feedback, 0.35f },
+            lfoRate (0, 8.0f), lfoWave (0, 4),
+            { dID::reverbMode, 8 /* gated */ }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.5f }, { dID::plateDecay, 0.8f }, { dID::plateSize, 0.7f },
+            { dID::gateThreshold, -26.0f }, { dID::gateHold, 120.0f }, { dID::gateRelease, 8.0f },
+            { dID::width, 1.2f }, { dID::mix, 0.5f },
+        } + singleHead() + tone (9000.0f) + mod (0, SrcLfo1, DstOutLevel, 0.9f));
+
+        // 120: Room Gate — a tighter, smaller gated room for drum bus glue.
+        P ("Room Gate", std::vector<PV>{
+            { dID::delayMode, 0 }, { dID::syncMode, 0 }, { dID::timeMs, 45.0f },
+            { dID::feedback, 0.08f },
+            { dID::reverbMode, 8 /* gated */ }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.5f }, { dID::plateDecay, 0.7f }, { dID::plateSize, 0.5f },
+            { dID::plateDamp, 0.35f },
+            { dID::gateThreshold, -22.0f }, { dID::gateHold, 90.0f }, { dID::gateRelease, 5.0f },
+            { dID::width, 1.2f }, { dID::mix, 0.45f },
+        } + singleHead() + tone (8000.0f));
+
+        // ---- Ambient / experimental to 128 (121..127) ---------------------
+
+        // 121: Deep Space — huge diffuse plate with dual LFOs breathing the
+        // size and pan; a slow interstellar drift.
+        P ("Deep Space", std::vector<PV>{
+            { dID::delayMode, 3 }, { dID::syncMode, 1 }, { dID::syncDiv, 16 }, { dID::timeMs, 2000.0f },
+            { dID::feedback, 0.55f },
+            { dID::reverbMode, 2 }, { dID::reverbRoute, 1 },
+            { dID::reverbMix, 0.62f }, { dID::plateDecay, 0.9f }, { dID::plateSize, 0.9f },
+            { dID::plateDamp, 0.2f }, { dID::reverbMod, 0.4f },
+            { dID::width, 1.5f },
+            lfoRate (0, 0.03f), lfoWave (0, 1),
+            lfoRate (1, 0.05f), lfoWave (1, 0),
+            { dID::mix, 0.6f },
+        } + singleHead() + tone (8000.0f)
+          + mod (0, SrcLfo1, DstPan,       0.7f)
+          + mod (1, SrcLfo2, DstPlateSize, 0.4f));
+
+        // 122: Tape Choir — a warm tape half-note feeding a +12 shimmer for a
+        // choral overtone bed.
+        P ("Tape Choir", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::timeMs, 1000.0f },
+            { dID::feedback, 0.5f }, { dID::drive, 0.35f }, { dID::wow, 0.25f },
+            { dID::reverbMode, 6 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.55f }, { dID::plateDecay, 0.85f }, { dID::plateSize, 0.85f },
+            { dID::plateDamp, 0.4f }, { dID::reverbMod, 0.4f }, { dID::shimmerSemis, 12.0f },
+            { dID::width, 1.4f }, { dID::mix, 0.5f },
+        } + singleHead() + tone (4000.0f));
+
+        // 123: Glass Cathedral — a thin high-passed source into a vast hall;
+        // glassy, airy, cathedral-scale.
+        P ("Glass Cathedral", std::vector<PV>{
+            { dID::delayMode, 3 }, { dID::syncMode, 1 }, { dID::syncDiv, 16 }, { dID::timeMs, 2000.0f },
+            { dID::feedback, 0.45f },
+            { dID::inFilterOn, 1 }, { dID::inFilterType, 1 },
+            { dID::inFilterCutoff, 300.0f }, { dID::inFilterRes, 0.2f },
+            { dID::reverbMode, 5 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.55f }, { dID::plateDecay, 0.92f }, { dID::plateSize, 0.95f },
+            { dID::plateDamp, 0.2f }, { dID::platePredelay, 60.0f }, { dID::reverbMod, 0.3f },
+            { dID::width, 1.5f }, { dID::mix, 0.55f },
+        } + singleHead() + tone (12000.0f));
+
+        // 124: Warm Ambient — a gentle half-note tape into a pre-route plate;
+        // an unfussy warm ambient bed.
+        P ("Warm Ambient", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 13 }, { dID::timeMs, 1000.0f },
+            { dID::feedback, 0.55f }, { dID::drive, 0.3f }, { dID::wow, 0.2f },
+            { dID::reverbMode, 2 }, { dID::reverbRoute, 1 },
+            { dID::reverbMix, 0.5f }, { dID::plateDecay, 0.8f }, { dID::plateSize, 0.8f },
+            { dID::plateDamp, 0.45f }, { dID::width, 1.4f }, { dID::mix, 0.52f },
+        } + singleHead() + tone (3400.0f));
+
+        // 125: Phaser Drone — freeze the buffer and slowly phase it, with an
+        // LFO wandering the phaser rate; an evolving frozen drone.
+        P ("Phaser Drone", std::vector<PV>{
+            { dID::freeze, 1 },
+            { dID::phaserOn, 1 }, { dID::phaserRoute, 0 }, { dID::phaserRate, 0.12f },
+            { dID::phaserDepth, 0.8f }, { dID::phaserFb, 0.5f }, { dID::phaserMix, 0.6f },
+            { dID::reverbMode, 2 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.5f }, { dID::plateDecay, 0.85f }, { dID::plateSize, 0.9f },
+            { dID::reverbMod, 0.4f }, { dID::width, 1.4f },
+            lfoRate (0, 0.04f), lfoWave (0, 0),
+            { dID::mix, 0.65f },
+        } + mod (0, SrcLfo1, DstPhaserRate, 0.4f));
+
+        // 126: Modulated Plate — a plate with a slow LFO breathing its size for
+        // a living, chorused reverb.
+        P ("Modulated Plate", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
+            { dID::feedback, 0.5f },
+            { dID::reverbMode, 2 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.5f }, { dID::plateDecay, 0.82f }, { dID::plateSize, 0.75f },
+            { dID::plateDamp, 0.35f }, { dID::reverbMod, 0.5f },
+            { dID::width, 1.3f },
+            lfoRate (0, 0.07f), lfoWave (0, 0),
+            { dID::mix, 0.5f },
+        } + singleHead() + tone (5000.0f) + mod (0, SrcLfo1, DstPlateSize, 0.5f));
+
+        // 127: Endless Shimmer — freeze into a +12 shimmer with a slow pan
+        // drift; an infinite, self-renewing sparkle pad.
+        P ("Endless Shimmer", std::vector<PV>{
+            { dID::freeze, 1 },
+            { dID::reverbMode, 6 }, { dID::reverbRoute, 0 },
+            { dID::reverbMix, 0.62f }, { dID::plateDecay, 0.92f }, { dID::plateSize, 0.92f },
+            { dID::plateDamp, 0.4f }, { dID::reverbMod, 0.5f }, { dID::shimmerSemis, 12.0f },
+            { dID::width, 1.5f },
+            lfoRate (0, 0.04f), lfoWave (0, 1),
+            { dID::mix, 0.7f },
+        } + mod (0, SrcLfo1, DstPan, 0.6f));
 
         return out;
     }
