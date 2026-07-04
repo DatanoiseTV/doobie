@@ -14,6 +14,7 @@
 #include "PluginEditor.h"
 #include "ui/WebEditor.h"
 #include "ParameterIDs.h"
+#include "dsp/FactoryIRs.h"
 
 namespace
 {
@@ -291,6 +292,14 @@ DoobieAudioProcessor::DoobieAudioProcessor()
             presetDirty.store (false, std::memory_order_relaxed);
             suppressPresetDirty.store (false, std::memory_order_relaxed);
         });
+    });
+    // Convolution presets name a built-in IR by display name; resolve it to an
+    // index and load it (same path as the UI's IR picker, so it also stamps
+    // factoryIrIndexProperty for save/restore). Unknown names are ignored.
+    presetManager.setIrLoadHook ([this] (const juce::String& irName) {
+        const int idx = doobie::factoryIRNames().indexOf (irName);
+        if (idx >= 0)
+            loadFactoryIR (idx);
     });
 
     // First-load snapshot so the initial state (before any preset is

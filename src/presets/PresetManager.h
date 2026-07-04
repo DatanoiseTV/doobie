@@ -22,10 +22,14 @@ class PresetManager
 {
 public:
     // One named bundle of parameter values (in real, un-normalised units).
+    // A Convolution preset also names a built-in impulse response by its
+    // display name (see FactoryIRs); applyPreset resolves it through the
+    // IR-load hook. Empty means "no IR" (every non-Convolution preset).
     struct Preset
     {
         juce::String name;
         std::vector<std::pair<juce::String, float>> values;
+        juce::String factoryIrName;
     };
 
     explicit PresetManager (juce::AudioProcessorValueTreeState& state);
@@ -39,6 +43,10 @@ public:
     // Called right AFTER a preset's values have been written into APVTS.
     // Lets the processor clear any "dirty since last load" state it tracks.
     void setPostLoadHook (std::function<void()> fn) { postLoadHook = std::move (fn); }
+    // Called when a Convolution preset names a factory IR, with that IR's
+    // display name. The processor resolves it and loads the IR into the engine
+    // (PresetManager stays independent of the IR table). No-op if unset.
+    void setIrLoadHook (std::function<void (const juce::String&)> fn) { irLoadHook = std::move (fn); }
 
     juce::StringArray getFactoryNames() const;
     juce::StringArray getUserNames() const;
@@ -72,4 +80,5 @@ private:
     juce::String currentName;
     std::function<void()> preLoadHook;
     std::function<void()> postLoadHook;
+    std::function<void (const juce::String&)> irLoadHook;
 };

@@ -6,6 +6,19 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.25.0] — 2026-07-04
+
+### Added
+- **10 convolution / real-room presets (bank is now 138).** The Convolution
+  reverb now has factory presets driving the bundled Voxengo + OpenAIR impulse
+  responses, which no preset reached before: Real Cathedral (York Minster),
+  Opera House (La Scala), Grand Concert Hall (Musikvereinsaal), Studio Drum Room,
+  Reactor Hall (R1), Dub Warehouse, Parking Garage, Ancient Tomb (Maes Howe),
+  Prehistoric Cave, and Stone Church. A preset can now name a built-in IR by its
+  display name; the preset manager resolves and loads it (and stamps the factory
+  IR index so it survives save/restore). The `presets` CI test asserts every
+  convolution preset actually resolves + loads an IR.
+
 ## [0.24.0] — 2026-07-04
 
 ### Added

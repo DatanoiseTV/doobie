@@ -66,7 +66,7 @@ static void testAllPresetsContained()
         DoobieAudioProcessor probe;
         names = probe.getPresetManager().getFactoryNames();
     }
-    check (names.size() == 128, "factory bank has 128 presets");
+    check (names.size() == 138, "factory bank has 138 presets");
 
     juce::Random rng (0x0D0B1E);
     int checked = 0;
@@ -141,11 +141,45 @@ static void testFactoryNamesUnique()
     }
 }
 
+// Every Convolution preset (reverbMode == 7) must actually resolve and load a
+// factory IR when applied — i.e. its named IR exists and the IR-load hook fired
+// and stamped factoryIrIndexProperty. A typo in a preset's IR name would leave
+// the convolution engine empty (silent wet); this catches that.
+static void testConvolutionPresetsLoadIR()
+{
+    juce::StringArray names;
+    {
+        DoobieAudioProcessor probe;
+        names = probe.getPresetManager().getFactoryNames();
+    }
+
+    int convChecked = 0;
+    for (const auto& name : names)
+    {
+        DoobieAudioProcessor proc;
+        proc.prepareToPlay (48000.0, 512);
+        proc.getPresetManager().loadByName (name);
+        auto& apvts = proc.getValueTreeState();
+
+        if ((int) std::lround (apvts.getRawParameterValue (dID::reverbMode)->load()) != 7)
+            continue;   // not a convolution preset
+
+        const int irIdx = (int) apvts.state.getProperty (dID::factoryIrIndexProperty, -1);
+        if (irIdx < 0)
+            std::printf ("  convolution preset loaded no IR: %s\n", name.toRawUTF8());
+        check (irIdx >= 0, "convolution preset resolves + loads its factory IR");
+        ++convChecked;
+    }
+    check (convChecked >= 10, "at least 10 convolution presets present");
+    std::printf ("checked %d convolution presets\n", convChecked);
+}
+
 int main()
 {
     juce::ScopedJuceInitialiser_GUI guiInit;
 
     testFactoryNamesUnique();
+    testConvolutionPresetsLoadIR();
     testAllPresetsContained();
 
     if (failures == 0)

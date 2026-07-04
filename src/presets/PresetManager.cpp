@@ -115,12 +115,13 @@ namespace
     }
 
     // ---- The factory bank ---------------------------------------------------
-    // 128 curated presets exercising every corner of the engine: dub voices,
+    // 138 curated presets exercising every corner of the engine: dub voices,
     // ambient washes, modulated filters, phaser routings, frozen pads, gated
     // 80s, octave shimmer, pitch/granular textures, rhythmic multi-taps,
-    // self-oscillating feedback drones, lo-fi tape degrade, and stereo utility.
-    // Presets 0..79 were ported from the hardware Keinedelay/DFM build's
-    // Presets.cpp; 80..127 fill the coverage gaps (see the 80.. bank header).
+    // self-oscillating feedback drones, lo-fi tape degrade, stereo utility, and
+    // real-room convolution. Presets 0..79 were ported from the hardware
+    // Keinedelay/DFM build's Presets.cpp; 80..127 fill the coverage gaps (see
+    // the 80.. bank header); 128..137 are the convolution / real-room bank.
     //
     // Each entry only lists overrides; PresetManager::applyPreset resets
     // every APVTS parameter to its default first. Helpers above map the
@@ -130,7 +131,15 @@ namespace
     {
         std::vector<PresetManager::Preset> out;
         const auto P = [&] (juce::String name, std::vector<PV> v)
-        { out.push_back ({ std::move (name), std::move (v) }); };
+        { out.push_back ({ std::move (name), std::move (v), {} }); };
+        // Convolution preset: names a built-in IR by its display name (resolved
+        // + loaded via the IR hook when applied). reverbMode is forced to 7
+        // (Convolution) so the caller need not set it.
+        const auto PC = [&] (juce::String name, juce::String ir, std::vector<PV> v)
+        {
+            v.push_back ({ dID::reverbMode, 7.0f });
+            out.push_back ({ std::move (name), std::move (v), std::move (ir) });
+        };
 
         // 0: Classic Dub
         P ("Classic Dub", std::vector<PV>{
@@ -1610,6 +1619,117 @@ namespace
             { dID::mix, 0.7f },
         } + mod (0, SrcLfo1, DstPan, 0.6f));
 
+        // ====================================================================
+        // 128..137: Convolution / real-room bank. These put the plugin's
+        // Convolution reverb (reverbMode 7) to work with the bundled Voxengo +
+        // OpenAIR impulse responses — real cathedrals, halls, chambers and
+        // rooms that no other preset reaches. Each names its IR by display name
+        // (see FactoryIRs); PresetManager resolves + loads it via the IR hook
+        // when the preset is applied. irGain (dB makeup on the wet) and the wet
+        // HP/LP shape the convolved tail. PC() forces reverbMode to Convolution.
+        // ====================================================================
+
+        // 128: Real Cathedral — the York Minster IR, a vast stone nave. Pure
+        // ambience, no delay tail; the impulse does all the work.
+        PC ("Real Cathedral", "York Minster", std::vector<PV>{
+            { dID::syncMode, 0 }, { dID::delayBypass, 1 },
+            { dID::preHpFreq, 90.0f },
+            { dID::reverbRoute, 0 }, { dID::reverbMix, 0.5f },
+            { dID::irGain, 5.0f }, { dID::revLpFreq, 12000.0f },
+            { dID::width, 1.5f }, { dID::mix, 0.45f },
+        } + singleHead());
+
+        // 129: Opera House — La Scala's hall IR behind a soft quarter delay for
+        // a grand, singing space.
+        PC ("Opera House", "Scala Milan Opera Hall", std::vector<PV>{
+            { dID::delayMode, 0 }, { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
+            { dID::feedback, 0.35f }, { dID::wow, 0.0f }, { dID::flutter, 0.0f },
+            { dID::reverbRoute, 0 }, { dID::reverbMix, 0.42f },
+            { dID::irGain, 4.0f },
+            { dID::width, 1.4f }, { dID::mix, 0.45f },
+        } + singleHead() + tone (11000.0f));
+
+        // 130: Grand Concert Hall — the Musikvereinsaal IR, clean and bright,
+        // for orchestral ambience over a pristine digital tap.
+        PC ("Grand Concert Hall", "Musikvereinsaal", std::vector<PV>{
+            { dID::delayMode, 0 }, { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
+            { dID::feedback, 0.3f }, { dID::wow, 0.0f }, { dID::flutter, 0.0f },
+            { dID::reverbRoute, 0 }, { dID::reverbMix, 0.4f },
+            { dID::irGain, 4.0f },
+            { dID::width, 1.4f }, { dID::mix, 0.42f },
+        } + singleHead() + tone (12000.0f));
+
+        // 131: Studio Drum Room — the Nice Drum Room IR, tight and punchy, in
+        // front of a short slap for drum-bus body.
+        PC ("Studio Drum Room", "Nice Drum Room", std::vector<PV>{
+            { dID::delayMode, 0 }, { dID::syncMode, 0 }, { dID::timeMs, 55.0f },
+            { dID::feedback, 0.1f },
+            { dID::reverbRoute, 0 }, { dID::reverbMix, 0.35f },
+            { dID::irGain, 6.0f },
+            { dID::width, 1.2f }, { dID::mix, 0.4f },
+        } + singleHead());
+
+        // 132: Reactor Hall — the enormous R1 nuclear-reactor-building IR
+        // (OpenAIR). Cavernous, slow, otherworldly; delay bypassed.
+        PC ("Reactor Hall", "R1 Reactor Hall", std::vector<PV>{
+            { dID::syncMode, 0 }, { dID::delayBypass, 1 },
+            { dID::preHpFreq, 80.0f },
+            { dID::reverbRoute, 0 }, { dID::reverbMix, 0.55f },
+            { dID::irGain, 4.0f }, { dID::revLpFreq, 10000.0f },
+            { dID::width, 1.6f }, { dID::mix, 0.5f },
+        } + singleHead());
+
+        // 133: Dub Warehouse — the Terrys Warehouse IR in the feedback path of a
+        // tape dub delay, so every repeat swells into the concrete.
+        PC ("Dub Warehouse", "Terrys Warehouse", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 10 }, { dID::timeMs, 500.0f },
+            { dID::feedback, 0.55f }, { dID::drive, 0.4f }, { dID::wow, 0.2f }, { dID::hiss, 0.25f },
+            { dID::hpFreq, 120.0f },
+            { dID::reverbRoute, 2 }, { dID::reverbMix, 0.4f },
+            { dID::irGain, 3.0f },
+            { dID::mix, 0.42f },
+        } + singleHead() + tone (2800.0f));
+
+        // 134: Parking Garage — the Parking Garage IR, a mid-sized concrete
+        // slapback space, with a rhythmic eighth tap.
+        PC ("Parking Garage", "Parking Garage", std::vector<PV>{
+            { dID::delayMode, 0 }, { dID::syncMode, 1 }, { dID::syncDiv, 7 }, { dID::timeMs, 250.0f },
+            { dID::feedback, 0.3f },
+            { dID::reverbRoute, 0 }, { dID::reverbMix, 0.4f },
+            { dID::irGain, 5.0f },
+            { dID::width, 1.3f }, { dID::mix, 0.42f },
+        } + singleHead() + tone (8000.0f));
+
+        // 135: Ancient Tomb — the Maes Howe neolithic tomb IR, a dark low stone
+        // chamber; wet rolled off up top for that buried feel.
+        PC ("Ancient Tomb", "Maes Howe Tomb", std::vector<PV>{
+            { dID::syncMode, 0 }, { dID::delayBypass, 1 },
+            { dID::preHpFreq, 70.0f },
+            { dID::reverbRoute, 0 }, { dID::reverbMix, 0.5f },
+            { dID::irGain, 5.0f }, { dID::revLpFreq, 5000.0f },
+            { dID::width, 1.3f }, { dID::mix, 0.48f },
+        } + singleHead());
+
+        // 136: Prehistoric Cave — the Small Prehistoric Cave IR behind a warm
+        // tape echo; damp, close, dripping stone.
+        PC ("Prehistoric Cave", "Small Prehistoric Cave", std::vector<PV>{
+            { dID::delayMode, 1 }, { dID::syncMode, 1 }, { dID::syncDiv, 9 }, { dID::timeMs, 375.0f },
+            { dID::feedback, 0.45f }, { dID::drive, 0.35f }, { dID::wow, 0.25f }, { dID::hiss, 0.2f },
+            { dID::reverbRoute, 0 }, { dID::reverbMix, 0.45f },
+            { dID::irGain, 5.0f }, { dID::revLpFreq, 6000.0f },
+            { dID::width, 1.3f }, { dID::mix, 0.44f },
+        } + singleHead() + tone (3000.0f));
+
+        // 137: Stone Church — the St Nicolaes Church IR, a bright reflective
+        // sanctuary for vocals; long predelay-free tail, no delay.
+        PC ("Stone Church", "St Nicolaes Church", std::vector<PV>{
+            { dID::syncMode, 0 }, { dID::delayBypass, 1 },
+            { dID::preHpFreq, 100.0f },
+            { dID::reverbRoute, 0 }, { dID::reverbMix, 0.45f },
+            { dID::irGain, 4.0f }, { dID::revLpFreq, 11000.0f },
+            { dID::width, 1.5f }, { dID::mix, 0.42f },
+        } + singleHead());
+
         return out;
     }
 }
@@ -1710,6 +1830,11 @@ void PresetManager::applyPreset (const Preset& preset)
     for (const auto& [id, value] : preset.values)
         if (auto* p = apvts.getParameter (id))
             p->setValueNotifyingHost (p->convertTo0to1 (value));
+
+    // Convolution presets name a built-in IR; the processor resolves + loads it
+    // (and stamps factoryIrIndexProperty so it survives save/restore).
+    if (preset.factoryIrName.isNotEmpty() && irLoadHook)
+        irLoadHook (preset.factoryIrName);
 
     currentName = preset.name;
 
