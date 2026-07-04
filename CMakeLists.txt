@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(Doobie VERSION 0.23.3 LANGUAGES C CXX)
+project(Doobie VERSION 0.24.0 LANGUAGES C CXX)
 
 # -----------------------------------------------------------------------------
 # Project-wide settings
@@ -203,6 +203,22 @@ if(PROJECT_IS_TOP_LEVEL)
         add_executable(doobie_render_demo tools/RenderDemo.cpp)
         target_include_directories(doobie_render_demo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
         target_link_libraries(doobie_render_demo PRIVATE
+            Doobie
+            juce::juce_audio_utils
+            juce::juce_dsp
+            juce::juce_gui_extra
+            juce::juce_recommended_config_flags
+            juce::juce_recommended_warning_flags)
+    endif()
+
+    # Offline preset-stability check: excites every factory preset then renders
+    # silence and watches the tail, flagging self-oscillating presets and any
+    # non-finite output. Tracked in-repo (unlike the render tools) so it can
+    # gate the factory bank. Guard kept for parity with the other tools.
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tools/StabilityCheck.cpp)
+        add_executable(doobie_stability_check tools/StabilityCheck.cpp)
+        target_include_directories(doobie_stability_check PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+        target_link_libraries(doobie_stability_check PRIVATE
             Doobie
             juce::juce_audio_utils
             juce::juce_dsp

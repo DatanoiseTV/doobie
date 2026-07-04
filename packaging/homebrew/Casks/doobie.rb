@@ -20,7 +20,7 @@
 # bottom for the shape.
 
 cask "doobie" do
-  version "0.23.3"
+  version "0.24.0"
   # SHA-256 of the zip on the GitHub release. Recompute on every version
   # bump: `shasum -a 256 Doobie-<ver>-macOS-unsigned.zip`. Set to
   # :no_check at version-bump time and pinned to the real hash once the

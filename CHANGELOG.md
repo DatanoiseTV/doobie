@@ -6,6 +6,41 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.24.0] — 2026-07-04
+
+### Added
+- **48 new factory presets — the bank is now 128.** New coverage: deeper dub
+  (BBD Dub, Dub Plate, HP Riddim, Melodica Echo, Dubwise/Triplet Steppers, Sub
+  Bass Dub), pitch/granular textures (Sub/Octave/Detuned Shimmer, Granular
+  Smear, Reverse Bloom, Dual Interval Stack, Pitch Riser), rhythmic multi-taps
+  (Dotted Eighth, Gallop 16th, Polymeter Heads, Cross Rhythm, Syncopated Taps),
+  self-oscillating feedback drones (Resonant Riser, Filtered Self-Osc, HP
+  Buildup Drone, Karplus Bloom, Infinite Feedback), lo-fi tape degrade (VHS
+  Warble, Vinyl Crackle, Radio Dropout, Half Speed, Broken Motor), clean stereo
+  utility (Mix Slap, Mid-Side/Haas Widener, Mono Thicken, Stereo Cross-Feedback,
+  Rotary Stereo, Clean Hall), more gated/80s (Big Snare / Reverse / Stutter /
+  Room Gate), and ambient (Deep Space, Tape Choir, Glass Cathedral, Warm
+  Ambient, Phaser Drone, Modulated Plate, Endless Shimmer).
+- **`doobie_stability_check` offline tool + `presets` CI test.** Renders every
+  preset through a burst-then-silence pass and reports each tail's level, jitter
+  and spectral flatness, classifying it as decaying / freeze-held / aged wash /
+  tonal sustain. The paired CI test asserts every one of the 128 presets stays
+  finite and under a +12 dBFS ceiling (no self-oscillating preset runs away) and
+  that all factory names are unique.
+
+### Changed
+- **Self-oscillating presets carry tape AGE so runaway feedback degrades
+  musically instead of ringing as a sterile tone.** The 30 s stability render
+  found 20 presets that self-oscillate; each now has AGE dialled in (and the
+  feedback drones modulate their feedback around unity) so the oscillation
+  breaks up and darkens. A lot of feedback is fine — every preset is contained
+  (measured: 0 non-finite, 0 over ceiling across the whole bank).
+
+### Fixed
+- **Duplicate "Cathedral" preset name.** The live-vocal cathedral patch shared
+  its name with the earlier hall preset, so `loadByName("Cathedral")` could
+  never reach it; it is now "Cathedral Vox".
+
 ## [0.23.3] — 2026-07-04
 
 ### Fixed

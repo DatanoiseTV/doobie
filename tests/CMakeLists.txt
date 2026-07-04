@@ -33,4 +33,19 @@ if(APPLE OR WIN32)
         juce::juce_recommended_warning_flags)
 
     add_test(NAME state COMMAND doobie_state_tests)
+
+    # Factory-preset containment test: loads all 128 presets, bursts + silence,
+    # asserts finite + bounded output (no self-oscillating preset runs away) and
+    # unique names. Same Apple/Windows guard rationale as the state test above.
+    add_executable(doobie_preset_tests test_presets.cpp)
+    target_include_directories(doobie_preset_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+    target_compile_features(doobie_preset_tests PRIVATE cxx_std_20)
+    target_link_libraries(doobie_preset_tests PRIVATE
+        Doobie
+        juce::juce_audio_utils
+        juce::juce_dsp
+        juce::juce_recommended_config_flags
+        juce::juce_recommended_warning_flags)
+
+    add_test(NAME presets COMMAND doobie_preset_tests)
 endif()
