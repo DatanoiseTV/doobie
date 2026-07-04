@@ -69,7 +69,7 @@ jobs:
           if [[ "${{ matrix.os }}" == ubuntu-* ]]; then
             cmake --build build --target Doobie_All Doobie_CLAP doobie_tests -j
           else
-            cmake --build build --target Doobie_All Doobie_CLAP doobie_tests doobie_state_tests -j
+            cmake --build build --target Doobie_All Doobie_CLAP doobie_tests doobie_state_tests doobie_preset_tests -j
           fi
 
       - name: tests
