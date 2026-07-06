@@ -31,3 +31,4 @@ CLAUDE.md
 site/assets/**/*.mp3
 site/assets/**/*.wav
 site/assets/**/*.mp4
+build-ios/

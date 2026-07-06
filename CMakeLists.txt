@@ -15,12 +15,28 @@ endif()
 # Universal binary on Apple silicon + Intel for distributable plugins. Can be
 # overridden on the command line (e.g. -DCMAKE_OSX_ARCHITECTURES=arm64) for fast
 # local iteration builds.
-if(APPLE)
+if(APPLE AND NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
     if(NOT CMAKE_OSX_ARCHITECTURES)
         set(CMAKE_OSX_ARCHITECTURES "arm64;x86_64" CACHE STRING "Build architectures")
     endif()
     if(NOT CMAKE_OSX_DEPLOYMENT_TARGET)
         set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version")
+    endif()
+endif()
+
+# iOS / iPadOS: configure with  -G Xcode -DCMAKE_SYSTEM_NAME=iOS  (see
+# tools/build-ios.sh). Builds the Standalone app with the AUv3 app extension
+# embedded, so it runs on its own and loads in AUM / GarageBand / Logic.
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    if(NOT CMAKE_OSX_DEPLOYMENT_TARGET)
+        set(CMAKE_OSX_DEPLOYMENT_TARGET "15.0" CACHE STRING "Minimum iOS version" FORCE)
+    endif()
+    # Device builds need a team for automatic signing; the simulator does not
+    # (build with CODE_SIGNING_ALLOWED=NO). Must be set before targets exist.
+    set(DOOBIE_IOS_DEV_TEAM "" CACHE STRING "Apple Development Team ID for iOS device signing")
+    if(DOOBIE_IOS_DEV_TEAM)
+        set(CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM ${DOOBIE_IOS_DEV_TEAM})
+        set(CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_STYLE Automatic)
     endif()
 endif()
 
@@ -51,7 +67,9 @@ add_subdirectory(external/JUCE)
 # bundles the CLAP SDK + helpers as its own nested submodules). Wraps the JUCE
 # plugin as a CLAP alongside the AU/VST3/Standalone builds. EXCLUDE_FROM_ALL so
 # only the CLAP target we attach below participates in the build.
-add_subdirectory(external/clap-juce-extensions EXCLUDE_FROM_ALL)
+if(NOT IOS)
+    add_subdirectory(external/clap-juce-extensions EXCLUDE_FROM_ALL)
+endif()
 
 # Local-install copy is on by default for developer iteration; CI builds set
 # -DDOOBIE_INSTALL_LOCAL=OFF so they don't try to write into
@@ -59,12 +77,27 @@ add_subdirectory(external/clap-juce-extensions EXCLUDE_FROM_ALL)
 # wrong destination for a runner-built artefact anyway).
 option(DOOBIE_INSTALL_LOCAL "Copy built plugins into the user's plug-in dirs" ON)
 
+if(IOS)
+    set(DOOBIE_INSTALL_LOCAL OFF)                     # no user plug-in dirs on iOS
+    set(DOOBIE_FORMATS Standalone AUv3)
+    set(DOOBIE_IOS_ARGS
+        MICROPHONE_PERMISSION_ENABLED TRUE
+        MICROPHONE_PERMISSION_TEXT "Doobie processes live audio input through its tape delay."
+        BACKGROUND_AUDIO_ENABLED    TRUE
+        REQUIRES_FULL_SCREEN        TRUE
+        IPHONE_SCREEN_ORIENTATIONS  UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        IPAD_SCREEN_ORIENTATIONS    UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight)
+else()
+    set(DOOBIE_FORMATS AU VST3 Standalone)
+    set(DOOBIE_IOS_ARGS)
+endif()
+
 juce_add_plugin(Doobie
     COMPANY_NAME            "DatanoiseTV"
     BUNDLE_ID               "com.datanoisetv.doobie"
     PLUGIN_MANUFACTURER_CODE Dnse
     PLUGIN_CODE             Doob
-    FORMATS                 AU VST3 Standalone
+    FORMATS                 ${DOOBIE_FORMATS}
     PRODUCT_NAME            "Doobie"
     DESCRIPTION             "Analog dub delay"
     IS_SYNTH                FALSE
@@ -82,7 +115,8 @@ juce_add_plugin(Doobie
     # target even with acceptsMidi() returning true at runtime (auval flags
     # this as a warning). Using aumf fixes the routing while staying
     # functionally an audio effect for hosts that don't care about the tag.
-    AU_MAIN_TYPE            kAudioUnitType_MusicEffect)
+    AU_MAIN_TYPE            kAudioUnitType_MusicEffect
+    ${DOOBIE_IOS_ARGS})
 
 juce_generate_juce_header(Doobie)
 
@@ -92,11 +126,13 @@ juce_generate_juce_header(Doobie)
 # COPY_PLUGIN_AFTER_BUILD, so a local build installs it into the user's CLAP dir
 # alongside the AU/VST3. CLAP_FEATURES tags the plugin's category for hosts.
 # -----------------------------------------------------------------------------
-clap_juce_extensions_plugin(TARGET Doobie
-    CLAP_ID              "com.datanoisetv.doobie"
-    CLAP_FEATURES        audio-effect delay stereo
-    CLAP_MANUAL_URL      "https://github.com/DatanoiseTV/doobie"
-    CLAP_SUPPORT_URL     "https://github.com/DatanoiseTV/doobie/issues")
+if(NOT IOS)
+    clap_juce_extensions_plugin(TARGET Doobie
+        CLAP_ID              "com.datanoisetv.doobie"
+        CLAP_FEATURES        audio-effect delay stereo
+        CLAP_MANUAL_URL      "https://github.com/DatanoiseTV/doobie"
+        CLAP_SUPPORT_URL     "https://github.com/DatanoiseTV/doobie/issues")
+endif()
 
 # -----------------------------------------------------------------------------
 # Voxengo free impulse responses — bundled as JUCE BinaryData so the
@@ -180,7 +216,7 @@ target_link_libraries(Doobie PRIVATE
 # -----------------------------------------------------------------------------
 # Unit tests (TDD for the DSP cores). Built only when this is the top project.
 # -----------------------------------------------------------------------------
-if(PROJECT_IS_TOP_LEVEL)
+if(PROJECT_IS_TOP_LEVEL AND NOT IOS)
     enable_testing()
     add_subdirectory(tests)
 
@@ -241,4 +277,13 @@ if(PROJECT_IS_TOP_LEVEL)
             juce::juce_recommended_config_flags
             juce::juce_recommended_warning_flags)
     endif()
+endif()
+
+# iPad-only for now (device family 2); drop this to also target iPhone.
+if(IOS)
+    foreach(t Doobie_Standalone Doobie_AUv3)
+        if(TARGET ${t})
+            set_target_properties(${t} PROPERTIES XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "2")
+        endif()
+    endforeach()
 endif()
