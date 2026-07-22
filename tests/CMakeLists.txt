@@ -48,4 +48,14 @@ if(APPLE OR WIN32)
         juce::juce_recommended_warning_flags)
 
     add_test(NAME presets COMMAND doobie_preset_tests)
+
+    # Windows: linking Doobie cascades juce_gui_extra.cpp into these targets,
+    # and Doobie's PUBLIC JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING define
+    # comes with it — so the tests also need the WebView2 SDK headers and
+    # loader lib. juce::juce_webview2 is the interface target JUCE's
+    # NEEDS_WEBVIEW2 handling created while processing the plugin target.
+    if(WIN32)
+        target_link_libraries(doobie_state_tests  PRIVATE juce::juce_webview2)
+        target_link_libraries(doobie_preset_tests PRIVATE juce::juce_webview2)
+    endif()
 endif()
