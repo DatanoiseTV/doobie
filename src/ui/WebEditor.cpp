@@ -240,7 +240,24 @@ WebEditor::WebEditor (::DoobieAudioProcessor& proc)
     // parameters so attachments do the unit conversion for us.
     juce::WebBrowserComponent::Options options;
     options = options
+        // On Windows, defaultBackend instantiates the legacy IE Win32WebView,
+        // which has no resource provider — the WebView2 backend must be
+        // requested explicitly (JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING is
+        // defined in CMakeLists, NEEDS_WEBVIEW2 links the loader). Everywhere
+        // else defaultBackend already picks the modern platform view.
+       #if JUCE_WINDOWS
+        .withBackend (juce::WebBrowserComponent::Options::Backend::webview2)
+        // WebView2 defaults its user-data folder next to the host executable,
+        // which is read-only under Program Files (DAW installs) and kills the
+        // WebView silently. Point it at a per-user writable location.
+        .withWinWebView2Options (juce::WebBrowserComponent::Options::WinWebView2{}
+            .withUserDataFolder (juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
+                                     .getChildFile ("DoobieWebView2"))
+            .withStatusBarDisabled()
+            .withBuiltInErrorPageDisabled())
+       #else
         .withBackend (juce::WebBrowserComponent::Options::Backend::defaultBackend)
+       #endif
         .withKeepPageLoadedWhenBrowserIsHidden()
         .withNativeIntegrationEnabled (true)
         // JUCE serves resource-provider URLs from the `juce://` scheme on

@@ -164,6 +164,11 @@ target_compile_definitions(Doobie
         JUCE_USE_CURL=0
         JUCE_VST3_CAN_REPLACE_VST2=0
         JUCE_REPORT_APP_USAGE=0
+        # Windows: NEEDS_WEBVIEW2 only LINKS the WebView2 loader; the module
+        # compile flag must be set separately or juce_gui_extra falls back to
+        # the legacy IE backend, which has no resource provider (and
+        # withResourceProvider fails to compile). Implies JUCE_USE_WIN_WEBVIEW2.
+        $<$<PLATFORM_ID:Windows>:JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING=1>
     PRIVATE
         DOOBIE_VERSION="${PROJECT_VERSION}"
         DOOBIE_GIT_HASH="${DOOBIE_GIT_HASH}"
