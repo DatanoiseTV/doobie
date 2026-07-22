@@ -1,4 +1,5 @@
-# Fast PR / branch CI: builds Doobie on macOS + Linux, runs the unit tests.
+# Fast PR / branch CI: builds Doobie on macOS + Linux + Windows, runs the unit
+# tests.
 # No signing, no notarization — just the proof that main and proposed merges
 # compile clean on both platforms. The full release pipeline
 # (signed/notarized .pkg + uploaded artefacts) lives in release.yml and runs
@@ -23,7 +24,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ macos-14, ubuntu-22.04, ubuntu-24.04 ]
+        os: [ macos-14, ubuntu-22.04, ubuntu-24.04, windows-2022 ]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -54,17 +55,41 @@ jobs:
         if: matrix.os == 'macos-14'
         run: brew install ninja
 
+      # Windows: put MSVC (cl.exe, link.exe, rc.exe) on PATH so the same
+      # single-config Ninja invocation works as on macOS/Linux. Ninja itself
+      # ships preinstalled on the windows runners.
+      - name: set up msvc environment
+        if: startsWith(matrix.os, 'windows')
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      # JUCE's FindWebView2 does NOT fetch the SDK — it expects the
+      # Microsoft.Web.WebView2 NuGet package on disk and hard-fails configure
+      # otherwise (NEEDS_WEBVIEW2 TRUE). Version pinned to the one JUCE's own
+      # error message recommends.
+      - name: install webview2 sdk
+        if: startsWith(matrix.os, 'windows')
+        shell: bash
+        run: |
+          nuget install Microsoft.Web.WebView2 -Version 1.0.3485.44 \
+                -OutputDirectory webview2-sdk -NonInteractive
+          echo "WEBVIEW2_DIR=$(cygpath -m "$PWD/webview2-sdk")" >> "$GITHUB_ENV"
+
       - name: configure
+        shell: bash
         run: >
           cmake -S . -B build -G Ninja
           -DCMAKE_BUILD_TYPE=Release
           -DDOOBIE_INSTALL_LOCAL=OFF
+          ${WEBVIEW2_DIR:+-DJUCE_WEBVIEW2_PACKAGE_LOCATION=$WEBVIEW2_DIR}
 
       - name: build
         # State tests need the full Doobie target which cascades juce_gui_extra
         # sources into the test compile -- works on Apple/Win but on Linux
         # requires the WebKit subprocess-helper-binary-data header from
         # juceaide, which the test target doesn't get. Skip on any Linux.
+        shell: bash
         run: |
           if [[ "${{ matrix.os }}" == ubuntu-* ]]; then
             cmake --build build --target Doobie_All Doobie_CLAP doobie_tests -j
@@ -73,4 +98,5 @@ jobs:
           fi
 
       - name: tests
+        shell: bash
         run: ctest --test-dir build --output-on-failure

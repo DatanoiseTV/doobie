@@ -73,6 +73,9 @@ juce_add_plugin(Doobie
     IS_MIDI_EFFECT          FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
     NEEDS_WEB_BROWSER       TRUE   # pulls webkit2gtk + gtk pkg-config on Linux
+    NEEDS_WEBVIEW2          TRUE   # Windows: statically link the WebView2 loader
+                                   # so the WebView editor works (runtime ships
+                                   # with Win11 / evergreen installer on Win10)
     COPY_PLUGIN_AFTER_BUILD ${DOOBIE_INSTALL_LOCAL}
     VST3_CATEGORIES         Fx Delay
     # MusicEffect (aumf) is Apple's tag for "audio effect that ALSO takes MIDI"

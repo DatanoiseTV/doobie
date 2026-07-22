@@ -1,4 +1,4 @@
-## macOS build is currently unsigned
+## macOS and Windows builds are currently unsigned
 
 Doobie's Apple Developer agreement is in the process of being
 re-accepted. While that's pending, the macOS build ships as an
@@ -25,6 +25,18 @@ brew install --cask doobie
 ```
 
 Linux is unaffected (no signing concept).
+
+### Windows
+
+The Windows build is also unsigned (no Authenticode certificate yet).
+Windows SmartScreen may warn the first time you run the Standalone
+`Doobie.exe` — click "More info" then "Run anyway". Plugins:
+
+    VST3: copy `Doobie.vst3` to `C:\Program Files\Common Files\VST3\`
+    CLAP: copy `Doobie.clap` to `C:\Program Files\Common Files\CLAP\`
+
+The WebView interface uses the Microsoft WebView2 Runtime, which is
+preinstalled on Windows 11 and on any up-to-date Windows 10.
 
 ---
 

@@ -11,6 +11,8 @@
 #   - macOS:  Doobie-<version>-macOS.pkg  (universal, signed, notarized,
 #             stapled; installs AU + VST3 + CLAP + Standalone)
 #   - Linux:  Doobie-<version>-Linux-x86_64.tar.gz  (VST3 + CLAP + Standalone)
+#   - Windows: Doobie-<version>-Windows-x86_64.zip  (VST3 + CLAP + Standalone,
+#              unsigned — no Authenticode cert yet)
 
 name: release
 
@@ -232,12 +234,86 @@ jobs:
           retention-days: 14
 
   # --------------------------------------------------------------------------
-  # Publish: collect both job artefacts and push them to a GitHub release.
+  # Windows: VST3 + CLAP + Standalone, zip. Unsigned (no Authenticode cert);
+  # SmartScreen may warn on first run of the Standalone — noted in the
+  # release banner alongside the macOS quarantine note.
+  # --------------------------------------------------------------------------
+  windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: resolve version
+        id: ver
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+              v="${GITHUB_REF#refs/tags/v}"
+          else
+              v="0.0.0-nightly.$(date -u +%Y%m%d).$(git rev-parse --short HEAD)"
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - name: set up msvc environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      # Same as ci.yml: JUCE's FindWebView2 needs the NuGet SDK on disk.
+      - name: install webview2 sdk
+        shell: bash
+        run: |
+          nuget install Microsoft.Web.WebView2 -Version 1.0.3485.44 \
+                -OutputDirectory webview2-sdk -NonInteractive
+          echo "WEBVIEW2_DIR=$(cygpath -m "$PWD/webview2-sdk")" >> "$GITHUB_ENV"
+
+      - name: configure
+        shell: bash
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DDOOBIE_INSTALL_LOCAL=OFF
+          -DJUCE_WEBVIEW2_PACKAGE_LOCATION="$WEBVIEW2_DIR"
+
+      - name: build
+        shell: bash
+        run: cmake --build build --target Doobie_All Doobie_CLAP doobie_tests doobie_state_tests doobie_preset_tests -j
+
+      - name: tests
+        shell: bash
+        run: ctest --test-dir build --output-on-failure
+
+      - name: package zip
+        shell: bash
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist "staging/Doobie-$VERSION"
+          cp -R "build/Doobie_artefacts/Release/VST3/Doobie.vst3"      "staging/Doobie-$VERSION/"
+          cp -R "build/Doobie_artefacts/Release/CLAP/Doobie.clap"      "staging/Doobie-$VERSION/"
+          cp    "build/Doobie_artefacts/Release/Standalone/Doobie.exe" "staging/Doobie-$VERSION/"
+          cp README.md CHANGELOG.md LICENSE "staging/Doobie-$VERSION/" 2>/dev/null || true
+          cd staging
+          7z a "../dist/Doobie-${VERSION}-Windows-x86_64.zip" "Doobie-$VERSION"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: doobie-windows
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  # --------------------------------------------------------------------------
+  # Publish: collect all job artefacts and push them to a GitHub release.
   # Tag push  -> versioned release tagged vX.Y.Z, "latest".
   # main push -> rolling "nightly" prerelease, replaced each main push.
   # --------------------------------------------------------------------------
   publish:
-    needs: [ macos, linux ]
+    needs: [ macos, linux, windows ]
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-22.04
     permissions:
